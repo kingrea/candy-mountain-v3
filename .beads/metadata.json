@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "candy_mountain_v3",
+  "project_id": "dd7856ee-b77a-474b-80d3-fea00c4f7de2"
+}
