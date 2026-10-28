@@ -1,0 +1,21 @@
+{
+  "name": "@candy-mountain/cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "candy-mountain": "./dist/index.mjs"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@candy-mountain/config": "workspace:*",
+    "@candy-mountain/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "tsdown": "^0.23.2"
+  }
+}

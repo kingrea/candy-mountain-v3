@@ -4,3 +4,17 @@
 *.db
 .beads-credential-key
 .beads/proxieddb/
+
+# Dependencies and build output
+node_modules/
+dist/
+.nuxt/
+.output/
+.data/
+.nitro/
+.cache/
+coverage/
+*.log
+.env
+.env.*
+!.env.example

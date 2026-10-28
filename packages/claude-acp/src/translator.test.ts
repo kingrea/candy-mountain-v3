@@ -1,0 +1,53 @@
+import { test } from 'vitest';
+import assert from 'node:assert/strict';
+import type { SessionUpdate } from '@agentclientprotocol/sdk';
+import { ClaudeEventTranslator, convertPrompt } from './translator';
+const stream=(event:unknown,parent_tool_use_id:string|null=null)=>({type:'stream_event',event,parent_tool_use_id});
+const start=(id:string)=>stream({type:'message_start',message:{id}});
+test('incremental text, final message and final result do not duplicate text',async()=>{
+ const updates:SessionUpdate[]=[];const t=new ClaudeEventTranslator(u=>{updates.push(u);},'/checkout');
+ await t.accept(start('m1'));
+ await t.accept(stream({type:'content_block_start',index:0,content_block:{type:'text',text:''}}));
+ await t.accept(stream({type:'content_block_delta',index:0,delta:{type:'text_delta',text:'Hel'}}));
+ assert.equal(updates.length,1);
+ await t.accept(stream({type:'content_block_delta',index:0,delta:{type:'text_delta',text:'lo'}}));
+ await t.accept({type:'assistant',message:{id:'m1',content:[{type:'text',text:'Hello'}]}});
+ await t.accept({type:'result',subtype:'success',result:'Hello'});
+ assert.deepEqual(updates.map((u:any)=>u.content?.text),['Hel','lo']);
+ t.beginTurn();await t.accept({type:'result',subtype:'success',result:'Another turn'});assert.equal((updates.at(-1) as any).content.text,'Another turn');
+});
+test('interleaved tools keep input, result and file identity, nested streams separate',async()=>{
+ const updates:SessionUpdate[]=[];const t=new ClaudeEventTranslator(u=>{updates.push(u);},'/checkout');
+ await t.accept(start('m1'));
+ await t.accept(stream({type:'content_block_start',index:0,content_block:{type:'tool_use',id:'bash1',name:'Bash',input:{}}}));
+ await t.accept(stream({type:'content_block_delta',index:0,delta:{type:'input_json_delta',partial_json:'{"command":'}}));
+ await t.accept(stream({type:'content_block_delta',index:0,delta:{type:'input_json_delta',partial_json:'"pwd"}'}}));
+ await t.accept(stream({type:'content_block_stop',index:0}));
+ await t.accept({type:'assistant',message:{id:'m1',content:[{type:'tool_use',id:'bash1',name:'Bash',input:{command:'pwd'}},{type:'tool_use',id:'edit2',name:'Edit',input:{file_path:'src/main.ts',old_string:'a',new_string:'b'}}]}});
+ await t.accept({type:'user',message:{content:[{type:'tool_result',tool_use_id:'edit2',content:'write denied',is_error:true}]}});
+ await t.accept({type:'user',message:{content:[{type:'tool_result',tool_use_id:'bash1',content:[{type:'text',text:'/checkout'}]}]}});
+ const starts=updates.filter((u:any)=>u.sessionUpdate==='tool_call') as any[];
+ assert.deepEqual(starts.map(u=>u.toolCallId),['bash1','edit2']);
+ assert.equal(starts[1].locations[0].path,'/checkout/src/main.ts');
+ const results=updates.filter((u:any)=>['completed','failed'].includes(u.status)) as any[];
+ assert.deepEqual(results.map(u=>[u.toolCallId,u.status]),[['edit2','failed'],['bash1','completed']]);
+ assert.deepEqual(results[1].rawInput,{command:'pwd'});assert.equal(results[1].content[0].content.text,'/checkout');
+ await t.accept(stream({type:'message_start',message:{id:'nested'}},'agent1'));
+ await t.accept(stream({type:'content_block_start',index:0,content_block:{type:'tool_use',id:'read3',name:'Read',input:{file_path:'README.md'}}},'agent1'));
+ assert.equal((updates.at(-1) as any)._meta.parentToolCallId,'agent1');
+});
+test('unknown events and error results never create successful answer; malformed delta rejects',async()=>{
+ const updates:SessionUpdate[]=[];const t=new ClaudeEventTranslator(u=>{updates.push(u);},'/checkout');
+ await t.accept({type:'future_event',result:'do not display'});
+ await t.accept({type:'result',subtype:'future_success',result:'do not display'});
+ await t.accept({type:'result',subtype:'error_during_execution',is_error:true,result:'do not display'});
+ assert.deepEqual(updates,[]);
+ await assert.rejects(t.accept(stream({type:'content_block_delta',index:0,delta:{type:'text_delta',text:'bad'}})),/before content block/);
+});
+test('mixed text and images preserve order and payload; unsupported inputs reject explicitly',()=>{
+ const data='aGVsbG8=';
+ assert.deepEqual(convertPrompt([{type:'text',text:'describe'},{type:'image',mimeType:'image/png',data},{type:'text',text:'briefly'}]),[{type:'text',text:'describe'},{type:'image',source:{type:'base64',media_type:'image/png',data}},{type:'text',text:'briefly'}]);
+ assert.throws(()=>convertPrompt([{type:'audio',mimeType:'audio/wav',data}]),/Unsupported/);
+ assert.throws(()=>convertPrompt([{type:'image',mimeType:'image/svg+xml',data}]),/MIME/);
+ assert.throws(()=>convertPrompt([{type:'image',mimeType:'image/png',data:'!bad'}]),/base64/);
+});
