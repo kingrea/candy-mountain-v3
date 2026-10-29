@@ -67,4 +67,4 @@
 
 export.auto: true
 sync:
-    remote: "https://github.com/kingrea/candy-mountain-v3.git"
+    remote: "git+https://github.com/kingrea/candy-mountain-v3.git"
