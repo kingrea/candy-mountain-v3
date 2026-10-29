@@ -141,7 +141,8 @@ describe('platform agent in the registry', () => {
     const p = await boot()
     const rungs = resolveActorRungs(p, { roles: ['nobody'] })
     expect(rungs['platform-agent']).toBe('chat')
-    expect(rungs.overview).toBe('none')
+    expect(rungs.overview).toBe('read')
+    expect(rungs.issues).toBe('none')
 
     const bad = () => assertCapability({ ...platformAgentCapability, everyoneRung: 'manage' })
     expect(bad).toThrow(CapabilityManifestError)
@@ -165,7 +166,8 @@ describe('platform agent tools', () => {
 
     expect(openView(turnFor(ADMIN, alpha), 'overview')).toEqual({ refused: false, action: { kind: 'navigate', to: '/p/alpha', projectSlug: 'alpha', viewId: 'overview', capabilityId: 'overview' }, summary: expect.stringContaining('Overview') })
     expect(openView(turnFor(ADMIN, alpha), 'nope')).toMatchObject({ refused: true, code: 'not_found' })
-    expect(openView(turnFor(DEVELOPER, alpha), 'overview')).toEqual({ refused: true, code: 'not_granted', reason: expect.stringContaining("Rung 'none' of 'overview'") })
+    expect(openView(turnFor(DEVELOPER, alpha), 'overview')).toMatchObject({ refused: false, action: { kind: 'navigate', to: '/p/alpha' } })
+    expect(openView(turnFor(DEVELOPER, alpha), 'issues')).toEqual({ refused: true, code: 'not_granted', reason: expect.stringContaining("Rung 'none' of 'issues'") })
 
     expect(startChat(turnFor(ADMIN, alpha), 'claude-code')).toEqual({ refused: false, action: { kind: 'open_thread', agentId: 'claude-code' }, summary: expect.stringContaining('Claude Code') })
     expect(startChat(turnFor(ADMIN, alpha), 'codex')).toMatchObject({ refused: true, code: 'not_ready' })
@@ -273,10 +275,10 @@ describe('platform agent threads', () => {
     await project()
     await configureGateway()
 
-    const { events } = await converse('open overview', DEVELOPER)
+    const { events } = await converse('open issues', DEVELOPER)
     expect(kindsOf(events)).toEqual(['prompt', 'tool_call', 'tool_result', 'text', 'turn_end'])
     expect(events[2]).toMatchObject({ kind: 'tool_result', update: { rawOutput: { refused: true, code: 'not_granted' } } })
-    expect(textOf(events)).toMatch(/^I can't do that: Rung 'none' of 'overview' does not show view 'overview'/)
+    expect(textOf(events)).toMatch(/^I can't do that: Rung 'none' of 'issues' does not show view 'issues'/)
   })
 
   it('fails the turn cleanly when the gateway is removed between the thread and the prompt', async () => {

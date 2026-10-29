@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import readline from 'node:readline';
 
-// A stand-in for the stock `claude` binary: only `auth login --claudeai` and `auth status --json`.
+// A stand-in for the stock `claude` binary: only `--version`, `auth login --claudeai` and `auth status --json`.
 // Login success leaves a marker file in CLAUDE_CONFIG_DIR; it is never a real credential.
 const args = process.argv.slice(2);
 const configDir = process.env.CLAUDE_CONFIG_DIR;
@@ -23,7 +23,12 @@ if (configDir) {
   }));
 }
 
-if (args.join(' ') === 'auth status --json') {
+if (args.join(' ') === '--version') {
+  if (mode === 'no-version') { process.stderr.write('boom\n'); process.exit(1); }
+  process.stdout.write('9.9.9 (Claude Code)\n');
+  process.exit(0);
+}
+else if (args.join(' ') === 'auth status --json') {
   if (mode === 'hang') { setTimeout(() => {}, 60_000); }
   else if (mode === 'garbage') { process.stdout.write('not json\n'); process.exit(0); }
   else if (process.env.CLAUDE_CODE_OAUTH_TOKEN) {

@@ -11,12 +11,12 @@ function toItems(group: NavGroup): NavigationMenuItem[] {
     icon: entry.icon,
     to: entry.to,
     exact: entry.exact,
-    ...(entry.locked ? { trailingIcon: 'i-lucide-lock', ui: { linkTrailingIcon: 'text-warning' } } : {}),
+    ...(entry.locked ? { slot: 'locked', warning: group.warning } : {}),
   }))
 }
 
 function labelItem(group: NavGroup): NavigationMenuItem {
-  return { label: group.label, type: 'label', ...(group.warning ? { slot: 'degraded', warning: group.warning } : {}) }
+  return { label: group.label, type: 'label' }
 }
 
 // Nuxt UI types a custom slot's item as never when the slot name is not a literal.
@@ -34,15 +34,16 @@ const systemItems = computed(() => [labelItem(systemGroup.value), ...toItems(sys
     orientation="vertical"
     tooltip
   >
-    <template #degraded-trailing="{ item }">
-      <UTooltip :ui="{ content: 'h-auto max-w-72 py-1.5' }">
+    <template #locked-trailing="{ item }">
+      <UTooltip v-if="warningOf(item)" :ui="{ content: 'h-auto max-w-72 py-1.5' }">
         <template #content>
           <p class="whitespace-normal">
             {{ warningOf(item) }}
           </p>
         </template>
-        <UIcon name="i-lucide-triangle-alert" class="size-4 text-warning" aria-label="Needs setup" data-testid="nav-degraded" />
+        <UIcon name="i-lucide-triangle-alert" class="size-4 text-warning" aria-label="Needs setup" data-testid="nav-locked" />
       </UTooltip>
+      <UIcon v-else name="i-lucide-triangle-alert" class="size-4 text-warning" aria-label="Needs setup" data-testid="nav-locked" />
     </template>
   </UNavigationMenu>
   <UNavigationMenu

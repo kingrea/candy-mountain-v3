@@ -3,10 +3,9 @@ import type { ModuleDefinition } from '@candy-mountain/shared'
 export const ISSUES_MODULE: ModuleDefinition = {
   id: 'issues',
   label: 'Issues',
-  description: 'The project\'s issues and its home page.',
+  description: 'The project\'s issues.',
   icon: 'i-lucide-list-todo',
   capabilities: [
-    { capabilityId: 'overview', defaultRung: 'read' },
     { capabilityId: 'issues', defaultRung: 'write' },
   ],
 }

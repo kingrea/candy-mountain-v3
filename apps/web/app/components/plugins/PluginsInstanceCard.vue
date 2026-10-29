@@ -77,7 +77,7 @@ const menu = computed<DropdownMenuItem[][]>(() => [
     :data-scope="instance.scope"
   >
     <div class="flex flex-wrap items-start gap-3">
-      <UIcon :name="pluginTypeIcon(instance.type)" class="mt-0.5 size-5 shrink-0 text-muted" />
+      <PluginsIcon :type="instance.type" class="mt-0.5" />
       <div class="min-w-0 flex-1">
         <div class="flex flex-wrap items-center gap-2">
           <span class="font-medium text-highlighted">{{ name }}</span>

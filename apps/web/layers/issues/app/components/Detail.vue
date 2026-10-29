@@ -302,6 +302,7 @@ async function copyId() {
               :items="issuesTypeItems(issue.type)"
               :icon="issuesTypeMeta(shownType).icon"
               :color="issuesTypeMeta(shownType).color"
+              :ui="{ leadingIcon: issuesTypeColorClass(shownType) }"
               variant="soft"
               size="xs"
               :loading="edit.isSaving('type')"
@@ -309,12 +310,18 @@ async function copyId() {
               aria-label="Type"
               data-testid="issue-type"
               @update:model-value="saveField('type', $event)"
-            />
+            >
+              <!-- The slot replaces the default option icon, whose highlighted state would drop the type colour. -->
+              <template #item-leading="{ item }">
+                <UIcon :name="item.icon" class="size-4 shrink-0" :class="issuesTypeColorClass(item.value)" />
+              </template>
+            </USelect>
             <USelect
               :model-value="shownPriority"
               :items="ISSUES_PRIORITY_ITEMS"
               icon="i-lucide-flame"
-              :color="issuesPriorityMeta(shownPriority).color"
+              color="neutral"
+              :ui="{ leadingIcon: issuesPriorityFlameClass(shownPriority) }"
               variant="soft"
               size="xs"
               :loading="edit.isSaving('priority')"
@@ -322,11 +329,21 @@ async function copyId() {
               aria-label="Priority"
               data-testid="issue-priority"
               @update:model-value="saveField('priority', $event)"
-            />
+            >
+              <!-- The slot replaces the default option icon, whose highlighted state would recolour the flame. -->
+              <template #item-leading="{ item }">
+                <UIcon name="i-lucide-flame" class="size-4 shrink-0" :class="issuesPriorityFlameClass(item.value)" />
+              </template>
+            </USelect>
           </template>
           <template v-else>
             <UBadge v-bind="issuesTypeMeta(issue.type)" variant="subtle" data-testid="issue-type" />
-            <UBadge v-bind="issuesPriorityMeta(issue.priority)" variant="outline" data-testid="issue-priority" />
+            <UBadge
+              v-bind="issuesPriorityMeta(issue.priority)"
+              variant="outline"
+              :ui="{ leadingIcon: issuesPriorityFlameClass(issue.priority) }"
+              data-testid="issue-priority"
+            />
           </template>
           <UBadge v-if="issue.ready" label="Ready" icon="i-lucide-zap" color="success" variant="outline" />
           <UBadge
@@ -341,7 +358,7 @@ async function copyId() {
             <template v-if="canEdit" #trailing>
               <button
                 type="button"
-                class="-me-0.5 rounded-sm hover:text-highlighted focus-visible:outline-2 focus-visible:outline-primary"
+                class="ms-0.5 -me-0.5 inline-flex items-center justify-center self-center rounded-sm hover:text-highlighted focus-visible:outline-2 focus-visible:outline-primary"
                 :aria-label="`Remove label ${stage}`"
                 :disabled="edit.isSaving('labels')"
                 data-testid="issue-label-remove"
@@ -363,7 +380,7 @@ async function copyId() {
             <template v-if="canEdit" #trailing>
               <button
                 type="button"
-                class="-me-0.5 rounded-sm hover:text-highlighted focus-visible:outline-2 focus-visible:outline-primary"
+                class="ms-0.5 -me-0.5 inline-flex items-center justify-center self-center rounded-sm hover:text-highlighted focus-visible:outline-2 focus-visible:outline-primary"
                 :aria-label="`Remove label ${label}`"
                 :disabled="edit.isSaving('labels')"
                 data-testid="issue-label-remove"

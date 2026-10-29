@@ -110,7 +110,7 @@ export interface RegistryResponse {
   admin: boolean
   /** Modules enabled for the project. */
   modules: ModuleId[]
-  /** One per enabled module with something to show, then standalone capabilities, then the system group last. */
+  /** A standalone project-home capability first, then one per enabled module with something to show, then other standalone capabilities, then the system group last. */
   groups: RegistryNavGroup[]
   /** Every view the actor's rung shows, ready or not. */
   views: RegistryView[]

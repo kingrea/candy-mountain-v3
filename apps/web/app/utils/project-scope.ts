@@ -54,6 +54,16 @@ export function projectPickerItems(groups: readonly ProjectGroup[]): ProjectPick
   })
 }
 
+// System pages live outside /p/[project], so the side menu and picker keep the last opened project while it is still active.
+export function navigationProjectSlug(
+  routeSlug: string | null,
+  lastSlug: string | null,
+  projects: readonly Project[],
+): string | null {
+  if (routeSlug) return routeSlug
+  return projects.some(project => project.slug === lastSlug && !project.archived) ? lastSlug : null
+}
+
 export function projectPath(slug: string, ...segments: string[]): string {
   return [PROJECT_ROUTE_PREFIX, encodeURIComponent(slug), ...segments].join('/')
 }

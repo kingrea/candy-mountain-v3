@@ -86,19 +86,23 @@ export function computeRegistry(input: RegistryInput): RegistryResponse {
   const entriesOf = (a: Assessed): RegistryNavEntry[] =>
     a.cap.views.filter(view => a.rung.views.includes(view.id)).map(view => ({ id: view.id, label: view.label, icon: view.icon, to: projectViewRoute(project.slug, view.path) }))
 
-  const groups: RegistryNavGroup[] = []
+  const moduleGroups: RegistryNavGroup[] = []
   for (const mod of enabled) {
     const members = mod.capabilities.map(member => assessed.get(member.capabilityId)).filter((a): a is Assessed => a !== undefined)
     const entries = members.filter(a => a.granted && visible(a)).flatMap(entriesOf)
     if (!entries.length) continue
-    groups.push({ id: mod.id, label: mod.label, icon: mod.icon, kind: 'module', entries, degraded: admin && members.some(a => !a.ready) })
+    moduleGroups.push({ id: mod.id, label: mod.label, icon: mod.icon, kind: 'module', entries, degraded: admin && members.some(a => !a.ready) })
   }
+  // A standalone capability holding the project home leads the sidebar; the rest follow the modules.
+  const homeGroups: RegistryNavGroup[] = []
+  const standaloneGroups: RegistryNavGroup[] = []
   for (const a of held.filter(a => a.standalone && visible(a))) {
     const entries = entriesOf(a)
     if (!entries.length) continue
-    groups.push({ id: a.cap.id, label: a.cap.label, icon: entries[0]!.icon, kind: 'capability', entries, degraded: admin && !a.ready })
+    const target = a.cap.views.some(view => view.path === '' && a.rung.views.includes(view.id)) ? homeGroups : standaloneGroups
+    target.push({ id: a.cap.id, label: a.cap.label, icon: entries[0]!.icon, kind: 'capability', entries, degraded: admin && !a.ready })
   }
-  groups.push(structuredClone(REGISTRY_SYSTEM_GROUP))
+  const groups = [...homeGroups, ...moduleGroups, ...standaloneGroups, structuredClone(REGISTRY_SYSTEM_GROUP)]
 
   const views: RegistryView[] = held.flatMap(a =>
     a.cap.views.filter(view => a.rung.views.includes(view.id)).map(view => ({ id: view.id, capabilityId: a.cap.id, label: view.label, icon: view.icon, path: view.path, to: projectViewRoute(project.slug, view.path), ready: a.ready })),

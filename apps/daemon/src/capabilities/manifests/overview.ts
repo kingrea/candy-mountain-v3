@@ -13,4 +13,5 @@ export const overviewCapability = defineCapability({
     { name: 'none', label: 'None', description: 'No access to the project home.', views: [], chat: false, tools: {} },
     { name: 'read', label: 'Read', description: 'See the project home.', views: ['overview'], chat: false, tools: {} },
   ],
+  everyoneRung: 'read',
 })

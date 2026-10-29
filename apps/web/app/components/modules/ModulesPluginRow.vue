@@ -21,6 +21,7 @@ const source = computed(() => {
 
 <template>
   <li class="flex flex-wrap items-center gap-x-4 gap-y-2 py-3" :data-testid="`module-plugin-${need.typeId}`">
+    <PluginsIcon :type="need.typeId" />
     <div class="min-w-0 flex-1 basis-48">
       <p class="text-sm font-medium text-highlighted">
         {{ need.name }}

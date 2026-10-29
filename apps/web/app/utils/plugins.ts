@@ -1,4 +1,5 @@
 import {
+  PLUGIN_TYPES_PATH,
   PLUGINS_PATH,
   validatePluginConfig,
   type PluginConfig,
@@ -21,18 +22,16 @@ export const pluginsDataKey = (slug: string | null) => `${PLUGINS_DATA_KEY_PREFI
 export const pluginInstancePath = (id: string, action?: string) =>
   action ? `${PLUGINS_PATH}/${id}/${action}` : `${PLUGINS_PATH}/${id}`
 
+/** A type's own action (GET|POST /plugin-types/:type/<action>), usable before any instance exists. */
+export const pluginTypeActionPath = (typeId: string, action: string) => `${PLUGIN_TYPES_PATH}/${typeId}/${action}`
+
 export const PLUGIN_SCOPE_LABELS: Record<PluginScope, string> = {
   project: 'This project',
   global: 'Platform-wide',
 }
 
 const PLUGIN_TYPE_ICONS: Record<string, string> = {
-  'repository': 'i-lucide-git-branch',
-  'claude-code': 'i-lucide-sparkles',
-  'codex': 'i-lucide-square-terminal',
-  'netlify': 'i-lucide-globe',
-  'heroku': 'i-lucide-cloud',
-  'slack': 'i-lucide-message-square',
+  repository: 'i-lucide-git-branch',
 }
 
 export function pluginTypeIcon(typeId: string): string {

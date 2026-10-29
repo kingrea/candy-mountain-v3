@@ -1,7 +1,8 @@
 import { projectRegistryPath, type RegistryResponse } from '@candy-mountain/shared'
+import type { Ref } from 'vue'
 
-export function useProjectRegistry() {
-  const { slug } = useSelectedProject()
+/** Reads the route's project unless given a slug; the side menu passes its own to follow the last project on system pages. */
+export function useProjectRegistry(slug: Readonly<Ref<string | null>> = useSelectedProject().slug) {
   const { $api } = useNuxtApp()
 
   const request = useAsyncData(

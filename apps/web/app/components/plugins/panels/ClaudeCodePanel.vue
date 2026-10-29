@@ -1,12 +1,5 @@
 <script setup lang="ts">
-import {
-  CLAUDE_CODE_ACTIONS,
-  type ClaudeCodeRevokeResponse,
-  type ClaudeCodeStartLoginResponse,
-  type ClaudeCodeSubmitCodeResponse,
-  type PluginInstance,
-  type PluginTypeInfo,
-} from '@candy-mountain/shared'
+import { CLAUDE_CODE_ACTIONS, type ClaudeCodeRevokeResponse, type PluginInstance, type PluginTypeInfo } from '@candy-mountain/shared'
 import ProjectsConfirmModal from '~/components/projects/ProjectsConfirmModal.vue'
 
 const props = defineProps<{
@@ -14,47 +7,31 @@ const props = defineProps<{
   type: PluginTypeInfo
 }>()
 
-const ATTEMPT_GONE_CODES = ['claude_code_attempt_not_found', 'claude_code_attempt_not_waiting']
-
 const { pluginAction, updatePlugin, testPlugin, refreshPlugins } = usePluginActions()
+const login = useClaudeCodeLogin()
 const confirm = useOverlay().create(ProjectsConfirmModal)
 const toast = useToast()
 
 const tokenMode = computed(() => props.instance.config.authMode === 'token')
 const healthy = computed(() => props.instance.health?.healthy === true)
 
-const attempt = ref<ClaudeCodeStartLoginResponse | null>(null)
-const code = ref('')
-const outcome = ref<{ color: 'success' | 'error' | 'info', title: string, description?: string } | null>(null)
+const { attempt, code, remaining } = login
+const outcome = ref<ClaudeCodeLoginOutcome | null>(null)
 const error = ref<ApiErrorInfo | null>(null)
-const busy = ref<'start' | 'submit' | 'token' | 'revoke' | null>(null)
+const ownBusy = ref<'token' | 'revoke' | null>(null)
+/** One busy flag for the template: the login composable's start/submit, or this panel's token/revoke. */
+const busy = computed(() => ownBusy.value ?? login.busy.value)
 
 const showTokenForm = ref(false)
 const token = ref('')
 
-const now = ref(Date.now())
-let ticker: ReturnType<typeof setInterval> | undefined
-onMounted(() => {
-  ticker = setInterval(() => { now.value = Date.now() }, 1000)
-})
-onBeforeUnmount(() => clearInterval(ticker))
-
-const remainingMs = computed(() => (attempt.value ? Date.parse(attempt.value.expiresAt) - now.value : 0))
-const remaining = computed(() => {
-  const seconds = Math.max(0, Math.floor(remainingMs.value / 1000))
-  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
-})
-
-watch(remainingMs, (ms) => {
-  if (attempt.value && ms <= 0) {
-    attempt.value = null
-    outcome.value = { color: 'info', title: 'The login link expired; start the login again.' }
-  }
-})
+const shownError = computed(() => error.value ?? login.error.value)
+const shownOutcome = computed(() => outcome.value ?? login.outcome.value)
 
 function reset() {
   error.value = null
   outcome.value = null
+  login.reset()
 }
 
 async function copy(text: string, what: string) {
@@ -69,55 +46,30 @@ async function copy(text: string, what: string) {
 
 async function startLogin() {
   reset()
-  busy.value = 'start'
   try {
     if (tokenMode.value) await updatePlugin(props.instance.id, { config: { authMode: 'login' } })
-    attempt.value = await pluginAction<ClaudeCodeStartLoginResponse>(props.instance.id, CLAUDE_CODE_ACTIONS.startLogin, { method: 'POST' })
-    code.value = ''
-    showTokenForm.value = false
   }
   catch (failure) {
     error.value = toApiError(failure)
+    return
   }
-  finally {
-    busy.value = null
-  }
+  if (await login.start(props.instance.id)) showTokenForm.value = false
 }
 
 async function submitCode() {
-  if (!attempt.value || !code.value.trim()) return
   reset()
-  busy.value = 'submit'
-  try {
-    const result = await pluginAction<ClaudeCodeSubmitCodeResponse>(props.instance.id, CLAUDE_CODE_ACTIONS.submitCode, {
-      method: 'POST',
-      body: { attemptId: attempt.value.attemptId, code: code.value.trim() },
-    })
-    attempt.value = null
-    code.value = ''
-    outcome.value = result.status === 'logged_in'
-      ? { color: 'success', title: 'Claude Code is logged in.' }
-      : { color: 'error', title: 'The login failed; start it again.', description: result.reason }
-    await refreshPlugins()
-  }
-  catch (failure) {
-    error.value = toApiError(failure)
-    if (ATTEMPT_GONE_CODES.includes(error.value.code)) attempt.value = null
-  }
-  finally {
-    busy.value = null
-  }
+  await login.submit(props.instance.id)
 }
 
 async function saveToken() {
   if (!token.value.trim()) return
   reset()
-  busy.value = 'token'
+  ownBusy.value = 'token'
   try {
     await updatePlugin(props.instance.id, { config: { authMode: 'token' }, secrets: { oauthToken: token.value.trim() } })
     token.value = ''
     showTokenForm.value = false
-    attempt.value = null
+    login.clear()
     // A config or secret change clears the stored health, so check the new token straight away.
     const { health } = await testPlugin(props.instance.id)
     outcome.value = health?.healthy
@@ -128,7 +80,7 @@ async function saveToken() {
     error.value = toApiError(failure)
   }
   finally {
-    busy.value = null
+    ownBusy.value = null
   }
 }
 
@@ -140,18 +92,17 @@ async function revoke() {
   }).result
   if (!confirmed) return
   reset()
-  busy.value = 'revoke'
+  ownBusy.value = 'revoke'
   try {
     await pluginAction<ClaudeCodeRevokeResponse>(props.instance.id, CLAUDE_CODE_ACTIONS.revoke, { method: 'POST' })
-    attempt.value = null
-    code.value = ''
+    login.clear()
     outcome.value = { color: 'info', title: 'The login was revoked.' }
   }
   catch (failure) {
     error.value = toApiError(failure)
   }
   finally {
-    busy.value = null
+    ownBusy.value = null
     await refreshPlugins()
   }
 }
@@ -294,22 +245,22 @@ async function revoke() {
     </form>
 
     <UAlert
-      v-if="error"
+      v-if="shownError"
       color="error"
       variant="subtle"
       icon="i-lucide-circle-alert"
-      :title="error.message"
-      :description="error.code"
+      :title="shownError.message"
+      :description="shownError.code"
       data-testid="claude-code-error"
     />
     <UAlert
-      v-else-if="outcome"
-      :color="outcome.color"
+      v-else-if="shownOutcome"
+      :color="shownOutcome.color"
       variant="subtle"
-      :icon="outcome.color === 'success' ? 'i-lucide-circle-check' : outcome.color === 'error' ? 'i-lucide-circle-x' : 'i-lucide-info'"
-      :title="outcome.title"
-      :description="outcome.description"
-      :data-outcome="outcome.color"
+      :icon="shownOutcome.color === 'success' ? 'i-lucide-circle-check' : shownOutcome.color === 'error' ? 'i-lucide-circle-x' : 'i-lucide-info'"
+      :title="shownOutcome.title"
+      :description="shownOutcome.description"
+      :data-outcome="shownOutcome.color"
       data-testid="claude-code-outcome"
     />
   </div>

@@ -14,8 +14,8 @@ describe('issue display metadata', () => {
     expect(issuesTypeMeta('spike').label).toBe('Spike')
   })
 
-  it('names priorities P0 to P4', () => {
-    expect(issuesPriorityMeta(0)).toMatchObject({ label: 'P0', color: 'error' })
+  it('names priorities P0 to P4 with a neutral badge, leaving the colour to the flame', () => {
+    expect(issuesPriorityMeta(0)).toMatchObject({ label: 'P0', color: 'neutral', icon: 'i-lucide-flame' })
     expect(issuesPriorityMeta(4)).toMatchObject({ label: 'P4', color: 'neutral' })
   })
 

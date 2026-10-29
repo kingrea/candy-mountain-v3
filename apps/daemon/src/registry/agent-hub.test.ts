@@ -45,12 +45,12 @@ describe('Agent Hub bots and team', () => {
     const project = await setup(['repository', 'claude-code'])
 
     const before = await registry()
-    expect(before.groups[0]).toMatchObject({ id: 'agent-hub', label: 'Agent Hub', entries: [{ id: 'bots', to: '/p/alpha/bots' }, { id: 'team', to: '/p/alpha/team' }] })
+    expect(before.groups.find(g => g.id === 'agent-hub')).toMatchObject({ id: 'agent-hub', label: 'Agent Hub', entries: [{ id: 'bots', to: '/p/alpha/bots' }, { id: 'team', to: '/p/alpha/team' }] })
     expect(before.capabilities).toEqual([
       expect.objectContaining({ id: 'bots', rung: 'manage', ready: true, reasons: [], modules: ['agent-hub'] }),
       expect.objectContaining({ id: 'team', rung: 'manage', ready: false, reasons: [{ kind: 'project-fact', fact: 'hasBots', message: 'The project has no bots yet; add one on the Bots page.' }] }),
     ])
-    expect(before.views.map(v => [v.id, v.path, v.ready])).toEqual([['bots', 'bots', true], ['team', 'team', false]])
+    expect(before.views.map(v => [v.id, v.path, v.ready])).toEqual([['overview', '', true], ['bots', 'bots', true], ['team', 'team', false]])
 
     addBot(project.id)
     const after = await registry()
@@ -78,7 +78,7 @@ describe('Agent Hub bots and team', () => {
 
     const result = await registry(['developer'])
     expect(result.capabilities.map(c => [c.id, c.rung, c.ready])).toEqual([['bots', 'manage', true], ['team', 'manage', false]])
-    expect(result.groups.map(g => [g.id, g.entries.map(e => e.id)])).toEqual([['agent-hub', ['bots']], ['system', ['projects', 'activity', 'settings']]])
+    expect(result.groups.map(g => [g.id, g.entries.map(e => e.id)])).toEqual([['overview', ['overview']], ['agent-hub', ['bots']], ['system', ['projects', 'activity', 'settings']]])
     expect(result.views.find(v => v.id === 'team')).toMatchObject({ ready: false })
   })
 })

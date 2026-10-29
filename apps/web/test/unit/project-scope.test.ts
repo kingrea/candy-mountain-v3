@@ -2,6 +2,7 @@ import type { Organisation, Project } from '@candy-mountain/shared'
 import { describe, expect, it } from 'vitest'
 import {
   groupProjectsByOrganisation,
+  navigationProjectSlug,
   projectPath,
   projectPickerItems,
   projectSwitchPath,
@@ -96,6 +97,25 @@ describe('projectPickerItems', () => {
     const items = projectPickerItems(groupProjectsByOrganisation([project('loose', 'Loose', null)], [acme]))
 
     expect(items).toEqual([[{ type: 'item', label: 'Loose', value: 'loose', color: '#ec4899' }]])
+  })
+})
+
+describe('navigationProjectSlug', () => {
+  const projects = [project('alpha', 'Alpha', null), project('old', 'Old', null, true)]
+
+  it('follows the route on project pages', () => {
+    expect(navigationProjectSlug('beta', 'alpha', projects)).toBe('beta')
+  })
+
+  it('keeps the last opened project on system pages', () => {
+    expect(navigationProjectSlug(null, 'alpha', projects)).toBe('alpha')
+  })
+
+  it('shows no project when the last one is unknown, archived or never chosen', () => {
+    expect(navigationProjectSlug(null, 'gone', projects)).toBeNull()
+    expect(navigationProjectSlug(null, 'old', projects)).toBeNull()
+    expect(navigationProjectSlug(null, null, projects)).toBeNull()
+    expect(navigationProjectSlug(null, 'alpha', [])).toBeNull()
   })
 })
 

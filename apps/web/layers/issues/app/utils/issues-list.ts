@@ -90,15 +90,15 @@ export function issuesTypeColorClass(type: string): string {
   return TYPE_COLOR_CLASSES[type] ?? 'text-muted'
 }
 
-// The flame is a CSS mask, so a background gradient paints it; the others colour it through currentColor.
-const PRIORITY_FLAME_CLASSES = [
-  'bg-linear-to-tr from-red-500 to-yellow-400',
+/** The single source of priority colours: the flame on list rows, the detail panel's priority select and its options all read it. */
+export const ISSUES_PRIORITY_FLAME_CLASSES: readonly string[] = [
   'text-red-500',
+  'text-orange-500',
   'text-yellow-500',
-  'text-sky-300',
-  'text-gray-300 dark:text-gray-500',
+  'text-blue-500',
+  'text-gray-400',
 ]
 
 export function issuesPriorityFlameClass(priority: number): string {
-  return PRIORITY_FLAME_CLASSES[priority] ?? 'text-muted'
+  return ISSUES_PRIORITY_FLAME_CLASSES[priority] ?? 'text-muted'
 }

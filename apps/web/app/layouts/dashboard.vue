@@ -1,10 +1,6 @@
 <template>
   <UDashboardGroup storage-key="cm-dashboard" class="flex-col">
     <AppHeader>
-      <template #project>
-        <ProjectPicker />
-      </template>
-
       <template #actions>
         <UColorModeButton />
         <AppLogout />
@@ -16,8 +12,12 @@
       <UDashboardSidebar
         collapsible
         resizable
-        :ui="{ body: 'px-2', footer: 'hidden lg:flex px-2' }"
+        :ui="{ header: 'px-2', body: 'px-2', footer: 'hidden lg:flex px-2' }"
       >
+        <template #header="{ collapsed }">
+          <ProjectPicker :collapsed="collapsed" />
+        </template>
+
         <template #default="{ collapsed }">
           <AppNav :collapsed="collapsed" />
         </template>

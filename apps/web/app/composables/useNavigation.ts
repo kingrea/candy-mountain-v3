@@ -1,8 +1,8 @@
 import { isAdmin } from '@candy-mountain/shared'
 
 export function useNavigation() {
-  const { slug } = useSelectedProject()
-  const { registry } = useProjectRegistry()
+  const { slug } = useNavigationProject()
+  const { registry } = useProjectRegistry(slug)
   const { user } = useCurrentUser()
 
   const groups = computed(() => {

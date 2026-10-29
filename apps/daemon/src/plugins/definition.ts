@@ -14,7 +14,7 @@ import {
 } from '@candy-mountain/shared'
 import { duplicates } from '../capabilities/manifest'
 import type { DataPaths } from '../data-dir'
-import { pluginActionProblems, type PluginAction } from './actions'
+import { pluginActionProblems, type PluginAction, type PluginTypeAction } from './actions'
 
 export * from './actions'
 
@@ -44,6 +44,8 @@ export interface PluginType<C extends readonly PluginConfigField[] = readonly Pl
   healthCheck(context: PluginHealthContext<PluginConfigOf<C>, S[number]['name']>): PluginHealth | Promise<PluginHealth>
   /** Extra per-instance endpoints, mounted at `/plugins/:id/<name>`. */
   actions?: Readonly<Record<string, PluginAction<PluginConfigOf<C>, S[number]['name']>>>
+  /** Endpoints of the type itself, mounted at `/plugin-types/:id/<name>`, for checks that need no instance. */
+  typeActions?: Readonly<Record<string, PluginTypeAction>>
   /** Runs before an instance or its project is deleted, while the row and secrets still exist; a throw stops the delete. */
   onDelete?(context: PluginDeleteContext<S[number]['name']>): void | Promise<void>
 }
@@ -115,5 +117,7 @@ export function assertPluginType(type: AnyPluginType): void {
   }
   const actionProblems = pluginActionProblems(type.actions)
   if (actionProblems.length) fail(actionProblems[0]!)
+  const typeActionProblems = pluginActionProblems(type.typeActions)
+  if (typeActionProblems.length) fail(`type ${typeActionProblems[0]!}`)
   if (type.onDelete !== undefined && typeof type.onDelete !== 'function') fail('onDelete must be a function.')
 }

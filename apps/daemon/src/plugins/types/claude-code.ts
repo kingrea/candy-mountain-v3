@@ -1,15 +1,18 @@
 import {
   CLAUDE_CODE_ACTIONS,
+  CLAUDE_CODE_TYPE_ACTIONS,
   validatePluginConfig,
   type ClaudeCodeRevokeResponse,
   type ClaudeCodeStartLoginResponse,
   type ClaudeCodeSubmitCodeRequest,
   type ClaudeCodeSubmitCodeResponse,
+  type ClaudeExecutableResponse,
   type PluginConfigOf,
   type PluginHealth,
 } from '@candy-mountain/shared'
 import { PluginActionError } from '../actions'
 import { claudeConfigDir, configDirExists, ensureConfigDir, readClaudeAuthStatus, removeConfigDir, type ClaudeAuthStatus } from '../claude-code/cli'
+import { probeClaudeExecutable } from '../claude-code/executable'
 import { claudeLoginAttempts, LOGIN_FAILURES, type LoginAttemptView } from '../claude-code/login-attempts'
 import { definePluginType } from '../definition'
 
@@ -132,6 +135,17 @@ export const claudeCodePluginType = definePluginType({
         if (tokenCleared) secretsWriter.clear('oauthToken')
         await refreshHealth()
         return { directoryRemoved, tokenCleared }
+      },
+    },
+  },
+  typeActions: {
+    [CLAUDE_CODE_TYPE_ACTIONS.executable]: {
+      method: 'GET',
+      /** `?path=` checks one absolute path; without it the daemon searches PATH and the usual install directories. */
+      async run({ request, signal }): Promise<ClaudeExecutableResponse> {
+        const path = new URL(request.url).searchParams.get('path')?.trim() || undefined
+        if (path !== undefined && !/^\/.+/.test(path)) throw new PluginActionError(400, 'invalid_request', 'path must be an absolute path')
+        return probeClaudeExecutable({ path, signal })
       },
     },
   },

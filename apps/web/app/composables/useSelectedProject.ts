@@ -62,3 +62,17 @@ export function useSelectedProject() {
     select: (target: string) => navigateTo(switchPath(target)),
   }
 }
+
+/**
+ * The project the side menu and picker show: the route's project, or on system pages the last one opened.
+ * Only for navigation; project-scoped data and actions read `useSelectedProject()`, which stays null there.
+ */
+export function useNavigationProject() {
+  const selected = useSelectedProject()
+  const lastSlug = useLastProjectSlug()
+
+  const slug = computed(() => navigationProjectSlug(selected.slug.value, lastSlug.value, selected.projects.value))
+  const project = computed(() => selected.projects.value.find(candidate => candidate.slug === slug.value) ?? null)
+
+  return { ...selected, routeSlug: selected.slug, slug, project }
+}

@@ -52,6 +52,8 @@ describe('definePluginType', () => {
     ['invalid pattern', t => { (t.configFields[1] as { pattern: string }).pattern = '([' }, 'invalid pattern'],
     ['secret without label', t => { t.secretFields[0]!.label = '' }, "secret field 'token' needs a label"],
     ['onDelete not a function', t => { (t as { onDelete?: unknown }).onDelete = 'rm -rf' }, 'onDelete must be a function'],
+    ['type action without a method', t => { (t as { typeActions?: unknown }).typeActions = { probe: { run: () => null } } }, "type action 'probe' needs a method"],
+    ['type action with a bad name', t => { (t as { typeActions?: unknown }).typeActions = { Probe: { method: 'GET', run: () => null } } }, "type action name 'Probe'"],
   ])('rejects %s', (_, mutate, message) => {
     expect(() => createPluginTypeRegistry([broken(mutate)])).toThrow(message)
   })

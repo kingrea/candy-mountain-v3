@@ -7,11 +7,7 @@
       <span class="hidden text-lg font-bold tracking-tight text-highlighted sm:inline">{{ PRODUCT_NAME }}</span>
     </NuxtLink>
 
-    <div class="flex min-w-0 flex-1 items-center">
-      <slot name="project" />
-    </div>
-
-    <div class="flex shrink-0 items-center gap-1">
+    <div class="flex shrink-0 items-center gap-1 ms-auto">
       <slot name="actions" />
     </div>
   </header>

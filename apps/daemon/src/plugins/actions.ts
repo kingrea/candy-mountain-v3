@@ -36,6 +36,20 @@ export interface PluginAction<C = PluginConfig, S extends string = string> {
   run(context: PluginActionContext<C, S>): unknown
 }
 
+/** What a type-level action gets: no instance, config or secrets exist yet. */
+export interface PluginTypeActionContext {
+  request: Request
+  /** Aborted when the client disconnects. */
+  signal: AbortSignal
+  paths: DataPaths
+}
+
+/** An admin-only endpoint of a plugin type itself, mounted at `/plugin-types/:id/<name>`, for checks that precede an instance. */
+export interface PluginTypeAction {
+  method: PluginActionMethod
+  run(context: PluginTypeActionContext): unknown
+}
+
 /** Becomes `{ error: { code, message } }` with this status; anything else thrown by an action is a 500. */
 export class PluginActionError extends Error {
   readonly status: ContentfulStatusCode

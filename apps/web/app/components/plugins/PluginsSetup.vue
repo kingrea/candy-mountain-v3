@@ -54,7 +54,8 @@ function onSaved(instance: PluginInstance, created: boolean) {
   const name = typeById.value.get(instance.type)?.name ?? instance.type
   toast.add({
     title: created ? `Added ${name}` : `Saved ${name}`,
-    description: 'Run Test connection to check it works.',
+    // A setup form that logs in as part of saving hands back an instance that is already tested.
+    description: instance.health?.healthy ? 'It is connected and ready.' : 'Run Test connection to check it works.',
     icon: 'i-lucide-plug',
   })
 }

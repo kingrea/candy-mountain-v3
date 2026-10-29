@@ -57,7 +57,12 @@ export function usePluginActions() {
     return $api<T>(pluginInstancePath(id, action), { method: options.method ?? 'GET', body: options.body, query: options.query })
   }
 
-  return { refreshPlugins, createPlugin, updatePlugin, deletePlugin, testPlugin, pluginAction }
+  /** Calls an action of the type itself (GET|POST /plugin-types/:type/<action>); needs no instance. */
+  function pluginTypeAction<T>(typeId: string, action: string, options: { method?: 'GET' | 'POST', body?: Record<string, unknown>, query?: Record<string, string | number> } = {}): Promise<T> {
+    return $api<T>(pluginTypeActionPath(typeId, action), { method: options.method ?? 'GET', body: options.body, query: options.query })
+  }
+
+  return { refreshPlugins, createPlugin, updatePlugin, deletePlugin, testPlugin, pluginAction, pluginTypeAction }
 }
 
 /** The selected project's own instances and the platform-wide ones; admin only (the daemon refuses anyone else). */

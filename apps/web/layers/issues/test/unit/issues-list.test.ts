@@ -1,6 +1,6 @@
 import type { IssueDependency } from '@candy-mountain/shared'
 import { describe, expect, it } from 'vitest'
-import { issuesBlockedIds, issuesFilterTree, issuesMatchesSearch, issuesShortId, type IssuesListItem } from '../../app/utils/issues-list'
+import { issuesBlockedIds, issuesFilterTree, issuesMatchesSearch, issuesPriorityFlameClass, issuesShortId, type IssuesListItem } from '../../app/utils/issues-list'
 import { issuesGroupTree } from '../../app/utils/issues-tree'
 
 interface Fixture {
@@ -110,5 +110,21 @@ describe('issuesFilterTree', () => {
     const result = issuesFilterTree(tree, { state: 'ready', search: 'billing' }, blocked)
     expect(result.groups.map(node => node.epic.id)).toEqual(['p-e2'])
     expect(result.groups[0]!.issues).toEqual([])
+  })
+})
+
+describe('issuesPriorityFlameClass', () => {
+  it('gives each priority its own flame colour, red through grey', () => {
+    expect([0, 1, 2, 3, 4].map(priority => issuesPriorityFlameClass(priority))).toEqual([
+      'text-red-500',
+      'text-orange-500',
+      'text-yellow-500',
+      'text-blue-500',
+      'text-gray-400',
+    ])
+  })
+
+  it('falls back to a muted flame for an unknown priority', () => {
+    expect(issuesPriorityFlameClass(9)).toBe('text-muted')
   })
 })

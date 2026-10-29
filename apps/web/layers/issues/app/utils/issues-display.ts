@@ -26,8 +26,6 @@ const TYPE_META: Record<string, IssuesBadgeMeta> = {
   chore: { label: 'Chore', color: 'neutral', icon: 'i-lucide-brush-cleaning' },
 }
 
-const PRIORITY_COLORS: IssuesColor[] = ['error', 'error', 'warning', 'info', 'neutral']
-
 export const ISSUES_STAGE_LABEL_PREFIX = 'stage:'
 
 function humanise(value: string): string {
@@ -43,8 +41,9 @@ export function issuesTypeMeta(type: IssueType): IssuesBadgeMeta {
   return TYPE_META[type] ?? { label: humanise(type), color: 'neutral', icon: 'i-lucide-circle' }
 }
 
+/** The badge stays neutral: the priority colour lives on the flame alone, from issuesPriorityFlameClass in issues-list. */
 export function issuesPriorityMeta(priority: number): IssuesBadgeMeta {
-  return { label: `P${priority}`, color: PRIORITY_COLORS[priority] ?? 'neutral', icon: 'i-lucide-flame' }
+  return { label: `P${priority}`, color: 'neutral', icon: 'i-lucide-flame' }
 }
 
 /** Stage labels are pipeline state rather than tags, so they render as their own chips ahead of the rest. */

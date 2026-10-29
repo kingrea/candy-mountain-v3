@@ -31,17 +31,17 @@ async function submit() {
 
 <template>
   <section class="flex flex-col gap-2">
-    <div class="flex items-center justify-between gap-2">
+    <div class="flex items-center gap-1">
       <h2 class="text-sm font-semibold text-highlighted">
         {{ title }}
       </h2>
       <UButton
         v-if="editable && !editing"
-        icon="i-lucide-pencil"
-        label="Edit"
+        icon="i-lucide-square-pen"
         size="xs"
         color="neutral"
         variant="ghost"
+        square
         :aria-label="`Edit ${title.toLowerCase()}`"
         data-testid="issue-section-edit"
         @click="start"

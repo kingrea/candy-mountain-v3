@@ -28,7 +28,7 @@ const entries = computed(() => props.types.map(type => ({
       :data-plugin-type="entry.type.id"
     >
       <div class="flex items-start gap-3">
-        <UIcon :name="pluginTypeIcon(entry.type.id)" class="mt-0.5 size-5 shrink-0 text-muted" />
+        <PluginsIcon :type="entry.type.id" class="mt-0.5" />
         <div class="min-w-0 flex-1">
           <div class="flex flex-wrap items-center gap-2">
             <span class="font-medium text-highlighted">{{ entry.type.name }}</span>

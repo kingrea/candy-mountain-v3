@@ -40,3 +40,34 @@ export const CLAUDE_CODE_ERROR_CODES = [
   'claude_code_invalid_code',
 ] as const
 export type ClaudeCodeErrorCode = (typeof CLAUDE_CODE_ERROR_CODES)[number]
+
+/** Type-level actions of the claude-code plugin type, served at `/plugin-types/claude-code/<action>` before an instance exists. */
+export const CLAUDE_CODE_TYPE_ACTIONS = {
+  executable: 'executable',
+} as const
+
+/** The one-line install for the stock claude executable, shown when none is found. */
+export const CLAUDE_INSTALL_COMMAND = 'curl -fsSL https://claude.ai/install.sh | bash'
+
+/**
+ * Result of `GET /plugin-types/claude-code/executable[?path=...]`: without `path` the daemon looks for `claude`
+ * on its PATH and in the usual install directories; with one it checks that file. A found executable was run
+ * with `--version` to prove it starts.
+ */
+export type ClaudeExecutableResponse =
+  | {
+    found: true
+    /** Absolute path of the executable. */
+    path: string
+    /** True when PATH resolves to it, so the plugin's claudePath may stay blank. */
+    onPath: boolean
+    /** The version `claude --version` printed, when it was recognised. */
+    version?: string
+  }
+  | {
+    found: false
+    /** A fixed sentence on what went wrong; never CLI output. */
+    reason: string
+    /** The directories or file that were checked. */
+    searched: string[]
+  }

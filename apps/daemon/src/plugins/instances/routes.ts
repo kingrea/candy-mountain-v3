@@ -52,10 +52,23 @@ function onError(error: Error, c: Context) {
   throw error
 }
 
-/** Type descriptions hold no secrets, so any signed-in actor may read them. */
+/** Type descriptions hold no secrets, so any signed-in actor may read them; a type's own actions stay admin-only. */
 export function pluginTypeRoutes() {
   const app = new Hono<AppEnv>()
+  app.onError(onError)
   app.get('/', c => c.json<PluginTypeListResponse>({ types: c.var.pluginTypes.list().map(pluginTypeInfo) }))
+
+  app.on(['GET', 'POST'], '/:id/:action', requireAdmin(), async (c) => {
+    const type = c.var.pluginTypes.byId(c.req.param('id'))
+    if (!type) throw new PluginInstanceError('not_found', `No plugin type "${c.req.param('id')}"`)
+    const name = c.req.param('action')
+    const action = Object.hasOwn(type.typeActions ?? {}, name) ? type.typeActions![name] : undefined
+    if (!action || action.method !== c.req.method) {
+      throw new PluginInstanceError('action_not_found', `The ${type.name} plugin type has no ${c.req.method} action "${name}"`)
+    }
+    const result = await action.run({ request: c.req.raw, signal: c.req.raw.signal, paths: c.var.paths })
+    return result instanceof Response ? result : c.json(result ?? null)
+  })
   return app
 }
 

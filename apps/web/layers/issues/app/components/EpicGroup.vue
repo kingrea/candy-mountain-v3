@@ -42,21 +42,27 @@ function selectGroup(value: boolean | 'indeterminate') {
     :data-group-key="groupKey"
     :data-depth="depth ?? 0"
   >
-    <div class="flex min-w-0 items-center gap-2 px-2" :class="nested ? 'py-0.5 text-sm' : 'py-1.5'">
-      <UCheckbox
-        v-if="groupIds.length > 0"
-        :model-value="selectState"
-        :aria-label="`Select all in ${title}`"
-        data-testid="issues-group-select"
-        @update:model-value="selectGroup"
-      />
+    <div
+      class="group/header flex min-w-0 cursor-pointer items-center gap-2 px-2"
+      :class="nested ? 'py-0.5 text-sm' : 'py-1.5'"
+      data-testid="issues-group-header"
+      @click="open = !open"
+    >
+      <span v-if="groupIds.length > 0" class="flex items-center" @click.stop>
+        <UCheckbox
+          :model-value="selectState"
+          :aria-label="`Select all in ${title}`"
+          data-testid="issues-group-select"
+          @update:model-value="selectGroup"
+        />
+      </span>
       <button
         type="button"
-        class="flex min-w-0 items-center gap-2 rounded-md text-left hover:text-highlighted focus-visible:outline-2 focus-visible:outline-primary"
+        class="flex min-w-0 cursor-pointer items-center gap-2 rounded-md text-left group-hover/header:text-highlighted focus-visible:outline-2 focus-visible:outline-primary"
         :aria-expanded="open"
         :aria-controls="contentId"
         data-testid="issues-group-toggle"
-        @click="open = !open"
+        @click.stop="open = !open"
       >
         <UIcon
           name="i-lucide-chevron-right"
@@ -70,7 +76,7 @@ function selectGroup(value: boolean | 'indeterminate') {
           type="button"
           class="shrink-0 font-mono text-xs text-muted underline decoration-dotted underline-offset-2 hover:text-default"
           data-testid="issues-group-id"
-          @click="emit('open', epic.id)"
+          @click.stop="emit('open', epic.id)"
         >
           {{ issuesShortId(epic.id) }}
         </button>

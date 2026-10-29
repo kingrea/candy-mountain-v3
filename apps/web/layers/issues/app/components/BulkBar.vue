@@ -68,6 +68,19 @@ watch(assignDraft, (name) => {
   if (name) void assign(name)
 })
 
+const toast = useToast()
+
+async function copyIds() {
+  const text = ids.value.join(', ')
+  try {
+    await navigator.clipboard.writeText(text)
+    toast.add({ title: `${ids.value.length} issue ids copied`, description: text, icon: 'i-lucide-check' })
+  }
+  catch {
+    toast.add({ title: 'Could not copy the ids', color: 'error' })
+  }
+}
+
 async function createEpic() {
   if (epicTitle.value.trim() === '') return
   done(await bulk.createEpic(epicTitle.value))
@@ -91,8 +104,21 @@ async function createEpic() {
         aria-label="Bulk actions"
         class="flex max-w-full flex-wrap items-center gap-1.5 rounded-lg border border-default bg-default/95 p-1.5 shadow-lg backdrop-blur"
       >
-        <span class="px-2 text-sm font-medium text-highlighted tabular-nums" aria-live="polite" data-testid="issues-bulk-count">
-          {{ count }} selected
+        <span class="flex items-center gap-0.5 pl-2">
+          <span class="text-sm font-medium text-highlighted tabular-nums" aria-live="polite" data-testid="issues-bulk-count">
+            {{ count }} selected
+          </span>
+          <UTooltip text="Copy ids">
+            <UButton
+              icon="i-lucide-copy"
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              aria-label="Copy selected issue ids"
+              data-testid="issues-bulk-copy-ids"
+              @click="copyIds"
+            />
+          </UTooltip>
         </span>
         <span v-if="tooMany" class="px-1 text-xs text-error">Select at most {{ MAX_BULK_ISSUE_IDS }}</span>
 
