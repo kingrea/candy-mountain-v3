@@ -1,4 +1,4 @@
-import { isModuleId, MODULE_IDS, type ModuleDefinition } from '@candy-mountain/shared'
+import { MANIFEST_ID_PATTERN, type ModuleDefinition } from '@candy-mountain/shared'
 import { duplicates, rungIndex, type CapabilityRegistry } from '../capabilities'
 
 /** Thrown while registering modules, so a bad definition stops the daemon at boot. */
@@ -44,8 +44,8 @@ export function assertModules(modules: readonly ModuleDefinition[], capabilities
     const fail = (msg: string): never => {
       throw new ModuleDefinitionError(`Module '${String(mod.id)}': ${msg}`)
     }
-    if (!isModuleId(mod.id)) {
-      throw new ModuleDefinitionError(`Unknown module id '${String(mod.id)}'; module ids are ${MODULE_IDS.map(id => `'${id}'`).join(', ')}.`)
+    if (typeof mod.id !== 'string' || !MANIFEST_ID_PATTERN.test(mod.id)) {
+      throw new ModuleDefinitionError(`Invalid module id '${String(mod.id)}'; ids are lowercase letters and digits joined by '-', '_' or '.'.`)
     }
     for (const field of ['label', 'description', 'icon'] as const) {
       if (typeof mod[field] !== 'string' || mod[field].trim() === '') fail(`${field} must not be empty.`)

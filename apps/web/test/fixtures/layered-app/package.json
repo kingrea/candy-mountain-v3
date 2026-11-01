@@ -1,0 +1,8 @@
+{
+  "name": "layered-app-fixture",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@fixture/delta": "link:../delta-layer"
+  }
+}

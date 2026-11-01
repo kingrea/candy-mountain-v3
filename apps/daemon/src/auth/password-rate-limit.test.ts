@@ -1,6 +1,6 @@
 import { ADMIN_USERNAME, LOGIN_PATH, type ApiErrorBody } from '@candy-mountain/shared'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { createApp } from '../app'
+import { createTestApp } from '../testing/platform'
 import { dataPaths } from '../data-dir'
 import type { PlatformDatabase } from '../db'
 import { openTestDatabase } from '../testing'
@@ -13,13 +13,13 @@ const WINDOW_MS = 60_000
 
 let database: PlatformDatabase
 let now: Date
-let app: ReturnType<typeof createApp>
+let app: ReturnType<typeof createTestApp>
 
 beforeEach(async () => {
   database = openTestDatabase()
   now = new Date('2026-01-01T00:00:00Z')
   await setUserPassword(database.db, findActorByUsername(database.db, ADMIN_USERNAME)!.id, PASSWORD, LOW_COST_SCRYPT_PARAMS)
-  app = createApp({
+  app = createTestApp({
     db: database.db,
     paths: dataPaths('/unused'),
     auth: passwordStrategy({

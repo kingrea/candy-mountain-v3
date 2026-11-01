@@ -1,6 +1,6 @@
 import { CAPABILITY_CATALOG_PATH, type Actor, type CapabilityCatalogResponse } from '@candy-mountain/shared'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { createApp } from '../app'
+import { createTestApp } from '../testing/platform'
 import type { AuthStrategy } from '../auth'
 import type { PlatformDatabase } from '../db'
 import { testAccess } from '../grants/test-access'
@@ -19,7 +19,7 @@ const as = (roles: string[]): AuthStrategy => ({
 
 function request(roles: string[]) {
   const { capabilities, modules } = testAccess(database.db)
-  return createApp({ db: database.db, paths: {} as never, capabilities, modules, auth: as(roles) }).request(CAPABILITY_CATALOG_PATH)
+  return createTestApp({ db: database.db, paths: {} as never, capabilities, modules, auth: as(roles) }).request(CAPABILITY_CATALOG_PATH)
 }
 
 describe('capability catalog route', () => {

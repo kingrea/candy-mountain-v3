@@ -1,9 +1,10 @@
 import { randomUUID } from 'node:crypto'
-import { ACTIVITY_DEFAULT_LIMIT, ACTIVITY_EVENT_TYPES, ACTIVITY_MAX_LIMIT, type ActivityEvent, type ActivityEventType, type ActivityListResponse } from '@candy-mountain/shared'
+import { ACTIVITY_DEFAULT_LIMIT, ACTIVITY_MAX_LIMIT, type ActivityEvent, type ActivityEventType, type ActivityListResponse } from '@candy-mountain/shared'
 import { and, desc, eq, gte, inArray, lt, or, sql } from 'drizzle-orm'
 import type { Db } from '../db'
 import { activityEvents } from '../db/schema'
 import { ActivityError } from './errors'
+import { activityEventTypesFor, ActivityEventTypeError, type ActivityEventTypeRegistry } from './types'
 
 export const ACTIVITY_PAYLOAD_MAX_BYTES = 4096
 
@@ -34,6 +35,7 @@ export function subscribeActivityEvents(db: Db, listener: ActivityAppendListener
 }
 
 export function appendActivityEvent(db: Db, input: AppendActivityEventInput): ActivityEvent {
+  if (!activityEventTypesFor(db).has(input.type)) throw new ActivityEventTypeError(`Activity event type '${input.type}' is not registered.`)
   const payload = input.payload === undefined ? null : input.payload
   if (payload !== null && Buffer.byteLength(JSON.stringify(payload)) > ACTIVITY_PAYLOAD_MAX_BYTES) {
     throw new ActivityError('payload_too_large', `Activity payload exceeds ${ACTIVITY_PAYLOAD_MAX_BYTES} bytes`)
@@ -105,13 +107,13 @@ export function listActivityEvents(db: Db, projectId: string, options: ListActiv
   }
 }
 
-export function parseListQuery(query: { type?: string, since?: string, limit?: string, before?: string }): ListActivityOptions {
+export function parseListQuery(query: { type?: string, since?: string, limit?: string, before?: string }, known: Pick<ActivityEventTypeRegistry, 'has'>): ListActivityOptions {
   const options: ListActivityOptions = {}
   if (query.type !== undefined) {
     const types = query.type.split(',').filter(Boolean)
-    const unknown = types.find(type => !(ACTIVITY_EVENT_TYPES as readonly string[]).includes(type))
+    const unknown = types.find(type => !known.has(type))
     if (unknown !== undefined) throw new ActivityError('invalid_request', `Unknown activity type: ${unknown}`)
-    options.types = types as ActivityEventType[]
+    options.types = types
   }
   if (query.since !== undefined) {
     const time = new Date(query.since)

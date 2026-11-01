@@ -1,4 +1,4 @@
-import { AGENT_SESSION_FAMILIES, CODEX_SESSION_MODES, SESSION_EVENT_NAME, SESSION_PROMPT_MAX_LENGTH, SESSION_STATUS_EVENT_NAME, type AgentSession, type AgentSessionFamily, type AgentSessionPosture, type ApiErrorBody, type CreateSessionRequest, type SessionListResponse, type SessionPromptRequest, type SessionResponse, type SessionStatusEvent } from '@candy-mountain/shared'
+import { CODEX_SESSION_MODES, SESSION_EVENT_NAME, SESSION_PROMPT_MAX_LENGTH, SESSION_STATUS_EVENT_NAME, type AgentSession, type AgentSessionFamily, type AgentSessionPosture, type ApiErrorBody, type CreateSessionRequest, type SessionListResponse, type SessionPromptRequest, type SessionResponse, type SessionStatusEvent } from '@candy-mountain/shared'
 import { Hono, type Context } from 'hono'
 import { streamSSE } from 'hono/streaming'
 import type { AppEnv } from '../app'
@@ -7,6 +7,7 @@ import { getProjectBySlug, sourcePath } from '../projects/projects'
 import type { GateRefusal } from '../registry'
 import { canAccessSession, gateSessionFamily, requireSessionAccess } from './access'
 import { SessionError } from './errors'
+import type { SessionFamilyRegistry } from '../threads/families'
 import type { SessionManager, SessionMessage } from './manager'
 
 // Node fetch (the web proxy) drops a response body that stays silent for 300s.
@@ -59,10 +60,10 @@ function parsePosture(value: unknown): AgentSessionPosture | undefined {
   return posture
 }
 
-export function parseCreateSession(body: Record<string, unknown>): CreateSessionRequest {
-  if (!(AGENT_SESSION_FAMILIES as readonly unknown[]).includes(body.family)) throw new SessionError('invalid_request', `family must be one of ${AGENT_SESSION_FAMILIES.join(', ')}`)
+export function parseCreateSession(body: Record<string, unknown>, families: Pick<SessionFamilyRegistry, 'has' | 'ids'>): CreateSessionRequest {
+  if (typeof body.family !== 'string' || !families.has(body.family)) throw new SessionError('invalid_request', `family must be one of ${families.ids().join(', ')}`)
   const posture = parsePosture(body.posture)
-  return { family: body.family as CreateSessionRequest['family'], ...(posture ? { posture } : {}) }
+  return { family: body.family, ...(posture ? { posture } : {}) }
 }
 
 export function parsePrompt(body: Record<string, unknown>): SessionPromptRequest {
@@ -106,7 +107,7 @@ export function sessionRoutes(sessions: SessionManager, options: SessionRoutesOp
     const visible = sessions.list(project.id).filter(session => canAccessSession(c.var.actor, session))
     const allowed = new Set<AgentSessionFamily>()
     let firstRefusal: GateRefusal | undefined
-    for (const family of AGENT_SESSION_FAMILIES) {
+    for (const family of c.var.families.ids()) {
       const result = gateSessionFamily(c.var, c.var.actor, project, family)
       if (result.allowed) allowed.add(family)
       else firstRefusal ??= result
@@ -117,7 +118,7 @@ export function sessionRoutes(sessions: SessionManager, options: SessionRoutesOp
 
   app.post('/:slug/sessions', async (c) => {
     const project = projectOf(c)
-    const input = parseCreateSession(await readJson(c))
+    const input = parseCreateSession(await readJson(c), c.var.families)
     const result = gateSessionFamily(c.var, c.var.actor, project, input.family)
     if (!result.allowed) return refusal(c, result)
     const session = sessions.create({ projectId: project.id, family: input.family, actorId: c.var.actor.id, cwd: sourcePath(project.source), posture: input.posture })

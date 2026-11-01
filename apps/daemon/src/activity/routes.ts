@@ -5,6 +5,7 @@ import { ProjectError } from '../projects'
 import { getProjectBySlug } from '../projects/projects'
 import { ActivityError } from './errors'
 import { listActivityEvents, parseListQuery } from './events'
+import { activityEventTypesFor } from './types'
 
 export function activityRoutes() {
   const app = new Hono<AppEnv>()
@@ -17,7 +18,7 @@ export function activityRoutes() {
 
   app.get('/:slug/activity', (c) => {
     const project = getProjectBySlug(c.var.db, c.req.param('slug'))
-    return c.json<ActivityListResponse>(listActivityEvents(c.var.db, project.id, parseListQuery(c.req.query())))
+    return c.json<ActivityListResponse>(listActivityEvents(c.var.db, project.id, parseListQuery(c.req.query(), activityEventTypesFor(c.var.db))))
   })
 
   return app

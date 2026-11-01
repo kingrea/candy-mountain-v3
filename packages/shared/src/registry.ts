@@ -1,12 +1,13 @@
 import type { CapabilityId, PlatformFactId, ProjectFactId } from './capabilities'
 import type { ModuleId } from './modules'
+import type { ScopeLabel } from './product'
 import type { BotWriteScope } from './bots'
 import type { AgentSessionFamily } from './sessions'
 
 export const projectRegistryPath = (slug: string) => `/projects/${slug}/registry`
 
-/** The web route of a project view; a manifest path of '' is the project home. */
-export const projectViewRoute = (slug: string, path: string) => (path === '' ? `/p/${slug}` : `/p/${slug}/${path}`)
+/** The web route of a project view under the product's scope URL prefix; a manifest path of '' is the project home. */
+export const projectViewRoute = (prefix: string, slug: string, path: string) => (path === '' ? `/${prefix}/${slug}` : `/${prefix}/${slug}/${path}`)
 
 export interface RegistryNavEntry {
   /** The view id, or a fixed id in the system group. */
@@ -31,18 +32,19 @@ export interface RegistryNavGroup {
   degraded: boolean
 }
 
-export const REGISTRY_SYSTEM_GROUP: RegistryNavGroup = {
+// A function of the label so the daemon's group and the web shell's fallback without a registry title the workspace list alike.
+export const registrySystemGroup = (label: Pick<ScopeLabel, 'pluralTitle'>): RegistryNavGroup => ({
   id: 'system',
   label: 'System',
   icon: 'i-lucide-settings',
   kind: 'system',
   entries: [
-    { id: 'projects', label: 'Projects', icon: 'i-lucide-folder-git-2', to: '/projects' },
+    { id: 'projects', label: label.pluralTitle, icon: 'i-lucide-folder-git-2', to: '/projects' },
     { id: 'activity', label: 'Activity', icon: 'i-lucide-history', to: '/activity' },
     { id: 'settings', label: 'Settings', icon: 'i-lucide-settings', to: '/settings' },
   ],
   degraded: false,
-}
+})
 
 export interface RegistryView {
   id: string

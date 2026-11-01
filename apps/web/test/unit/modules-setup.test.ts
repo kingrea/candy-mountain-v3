@@ -1,4 +1,4 @@
-import { MODULE_IDS, type ModuleInfo, type PluginInstance, type PluginTypeInfo } from '@candy-mountain/shared'
+import type { ModuleInfo, PluginInstance, PluginTypeInfo } from '@candy-mountain/shared'
 import { describe, expect, it } from 'vitest'
 import { modulePluginNeeds, pluginHealth, toggledModules } from '../../app/utils/modules-setup'
 
@@ -51,8 +51,14 @@ describe('pluginHealth', () => {
 })
 
 describe('toggledModules', () => {
+  const order = ['issues', 'agent-hub', 'operations']
+
   it('keeps module order when enabling and disabling', () => {
-    expect(toggledModules(MODULE_IDS, ['operations'], 'issues', true)).toEqual(['issues', 'operations'])
-    expect(toggledModules(MODULE_IDS, ['issues', 'operations'], 'issues', false)).toEqual(['operations'])
+    expect(toggledModules(order, ['operations'], 'issues', true)).toEqual(['issues', 'operations'])
+    expect(toggledModules(order, ['issues', 'operations'], 'issues', false)).toEqual(['operations'])
+  })
+
+  it('takes any module ids the daemon lists and drops ones it no longer does', () => {
+    expect(toggledModules(['crm', 'operations'], ['retired', 'operations'], 'crm', true)).toEqual(['crm', 'operations'])
   })
 })

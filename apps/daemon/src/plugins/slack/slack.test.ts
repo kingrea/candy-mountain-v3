@@ -1,6 +1,6 @@
 import { pluginTypeInfo, PLUGIN_SCOPES } from '@candy-mountain/shared'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { startPlatform } from '../../platform'
+import { startTestPlatform } from '../../testing/platform'
 import { createTempDataDir } from '../../testing'
 import { checkPluginHealth } from '../health'
 import { createPluginTypeRegistry } from '../registry'
@@ -61,8 +61,9 @@ afterEach(() => {
 
 describe('slack plugin type', () => {
   it('is registered as a single-instance, global-only type', () => {
-    expect(PLUGIN_TYPES).toContain(slackPluginType)
-    expect(createPluginTypeRegistry(PLUGIN_TYPES).get('slack')).toBe(slackPluginType)
+    // The slack capability definition brings it, so the product's own list leaves it out.
+    expect(PLUGIN_TYPES).not.toContain(slackPluginType)
+    expect(createPluginTypeRegistry([...PLUGIN_TYPES, slackPluginType]).get('slack')).toBe(slackPluginType)
     const info = pluginTypeInfo(slackPluginType)
     expect(info.singleInstance).toBe(true)
     expect(info.configFields.map(f => f.name)).toEqual(['defaultChannelId'])
@@ -85,7 +86,7 @@ describe('slack plugin type', () => {
   it('boots the daemon with it registered', () => {
     const temp = createTempDataDir()
     try {
-      const platform = startPlatform(temp.root)
+      const platform = startTestPlatform(temp.root)
       expect(platform.pluginTypes.ids()).toContain('slack')
       platform.close()
     }

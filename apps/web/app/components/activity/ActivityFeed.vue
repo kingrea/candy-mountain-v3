@@ -67,7 +67,7 @@ watch(data, () => {
 const events = computed(() => [...(data.value?.events ?? []), ...older.value])
 const cursor = computed(() => (olderCursor.value === undefined ? data.value?.nextCursor ?? null : olderCursor.value))
 
-const kind = (event: CrossProjectActivityEvent) => ACTIVITY_EVENT_KINDS[event.type] ?? { label: event.type, icon: 'i-lucide-circle-dot' }
+const kind = (event: CrossProjectActivityEvent) => activityEventKind(event.type)
 
 async function loadOlder() {
   if (!cursor.value) return

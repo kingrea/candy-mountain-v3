@@ -10,7 +10,7 @@ import {
   type MeResponse,
 } from '@candy-mountain/shared'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { createApp } from '../app'
+import { createTestApp } from '../testing/platform'
 import { dataPaths } from '../data-dir'
 import type { PlatformDatabase } from '../db'
 import { users } from '../db/schema'
@@ -32,7 +32,7 @@ function addUser(username: string) {
 
 describe('development strategy', () => {
   function app() {
-    return createApp({ db: database.db, paths: dataPaths('/unused'), auth: createAuthStrategy({ strategy: 'development' }) })
+    return createTestApp({ db: database.db, paths: dataPaths('/unused'), auth: createAuthStrategy({ strategy: 'development' }) })
   }
 
   it('resolves every request as the admin, whatever it sends', async () => {
@@ -52,14 +52,14 @@ describe('development strategy', () => {
   })
 
   it('is the default when no strategy is given', async () => {
-    const res = await createApp({ db: database.db, paths: dataPaths('/unused') }).request(ME_PATH)
+    const res = await createTestApp({ db: database.db, paths: dataPaths('/unused') }).request(ME_PATH)
     expect((await res.json() as MeResponse).actor.username).toBe(ADMIN_USERNAME)
   })
 
   it('yields 401 when the admin user does not exist', async () => {
     const unseeded = openTestDatabase({ seed: false })
     try {
-      const res = await createApp({ db: unseeded.db, paths: dataPaths('/unused') }).request(ME_PATH)
+      const res = await createTestApp({ db: unseeded.db, paths: dataPaths('/unused') }).request(ME_PATH)
       expect(res.status).toBe(401)
     }
     finally {
@@ -70,7 +70,7 @@ describe('development strategy', () => {
 
 describe('trusted-header strategy', () => {
   function app() {
-    return createApp({
+    return createTestApp({
       db: database.db,
       paths: dataPaths('/unused'),
       auth: createAuthStrategy({ strategy: 'trusted-header', header: 'x-forwarded-user' }),

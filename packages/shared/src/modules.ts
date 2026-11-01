@@ -1,12 +1,7 @@
 import type { CapabilityId, ProjectFactId } from './capabilities'
 import type { PluginTypeId } from './plugins'
 
-export const MODULE_IDS = ['issues', 'agent-hub', 'operations'] as const
-export type ModuleId = (typeof MODULE_IDS)[number]
-
-export function isModuleId(value: unknown): value is ModuleId {
-  return typeof value === 'string' && (MODULE_IDS as readonly string[]).includes(value)
-}
+export type ModuleId = string
 
 export interface ModuleMember {
   capabilityId: CapabilityId

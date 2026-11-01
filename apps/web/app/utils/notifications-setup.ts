@@ -6,6 +6,7 @@ import {
   type NotificationRule,
   type PluginInstance,
 } from '@candy-mountain/shared'
+import { SCOPE } from './scope-label'
 
 export type DestinationType = 'channel' | 'member'
 
@@ -57,7 +58,7 @@ export function slackIdentity(bots: readonly Bot[] | null, instances: readonly P
   const bot = [...(bots ?? [])]
     .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()) || a.createdAt.localeCompare(b.createdAt))
     .find(candidate => candidate.secrets.slackBotToken === 'set')
-  if (bot) return { source: 'bot', label: `Project bot ${bot.name}` }
+  if (bot) return { source: 'bot', label: `${SCOPE.singularTitle} bot ${bot.name}` }
   const plugin = instances.find(instance => instance.type === 'slack' && instance.secrets.botToken === 'set')
   if (plugin) return { source: 'plugin', label: 'Platform Slack plugin' }
   return { source: 'none', label: 'No Slack identity' }

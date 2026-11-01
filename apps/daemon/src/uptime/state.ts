@@ -32,15 +32,15 @@ export function monitorStatus(db: Db, monitor: Monitor, recent: number): Monitor
 }
 
 /** Compares with the stored incident rather than a remembered previous state, so a restart never opens a second one. */
-export function reconcileMonitorIncident(db: Db, monitor: Monitor): MonitorState {
+export function reconcileMonitorIncident(db: Db, monitor: Monitor, scopeUrlPrefix: string): MonitorState {
   const checks = listMonitorChecks(db, monitor.id, MONITOR_DOWN_THRESHOLD)
   const state = deriveMonitorState(checks)
   const newest = checks[0]
   if (!newest || (state !== 'down' && state !== 'up')) return state
   const open = findOpenIncident(db, monitor.id)
   if (state === 'down' && !open) {
-    openIncident(db, monitor, { reason: newest.detail ?? `The last ${MONITOR_DOWN_THRESHOLD} checks failed.`, openedAt: newest.checkedAt })
+    openIncident(db, monitor, { reason: newest.detail ?? `The last ${MONITOR_DOWN_THRESHOLD} checks failed.`, openedAt: newest.checkedAt }, scopeUrlPrefix)
   }
-  if (state === 'up' && open) closeIncident(db, monitor, open.id, newest.checkedAt)
+  if (state === 'up' && open) closeIncident(db, monitor, open.id, newest.checkedAt, scopeUrlPrefix)
   return state
 }

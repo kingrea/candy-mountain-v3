@@ -6,12 +6,16 @@ import { instanceHarness, type InstanceHarness } from '../plugins/instances/test
 import { GOOD_TOKEN, json, stubHosts } from '../plugins/repository/fake-hosts'
 import { repositoryPluginType } from '../plugins/types/repository'
 import { getBot } from './bots'
+import { botsRoutes } from './definition'
 import { BotError } from './errors'
 import { assertBotPersonaBeforeSession, BotPersonaMissingError } from './persona'
 
 const KEYS = { slackBotToken: 'xoxb-bot-1', slackAppToken: 'xapp-app-1' }
 
 let h: InstanceHarness
+/** The harness app with the bot routes, as the bots definition mounts them. */
+const app = (roles?: string[]) => h.app(roles, botsRoutes({ db: h.database.db, secrets: h.store }))
+
 afterEach(() => {
   h?.close()
   vi.unstubAllGlobals()
@@ -37,7 +41,7 @@ function call(method: string, path: string, body?: unknown, roles?: string[]) {
     init.headers = { 'content-type': 'application/json' }
     init.body = JSON.stringify(body)
   }
-  return h.app(roles).request(`${projectBotsPath('alpha')}${path}`, init)
+  return app(roles).request(`${projectBotsPath('alpha')}${path}`, init)
 }
 
 async function created(body: unknown): Promise<Bot> {
@@ -139,7 +143,7 @@ describe('persona check', () => {
     await setup()
     const bot = await created({ name: 'Ana', family: 'claude-code', personaName: 'ana' })
     await h.createProject('beta')
-    expect((await h.app().request(`${projectBotsPath('beta')}/${bot.id}/check-persona`, { method: 'POST' })).status).toBe(404)
+    expect((await app().request(`${projectBotsPath('beta')}/${bot.id}/check-persona`, { method: 'POST' })).status).toBe(404)
     expect(await errorOf(await call('POST', `/${bot.id}/check-persona`, undefined, ['member']))).toMatchObject({ status: 403, code: 'forbidden' })
     expect(await errorOf(await call('POST', '/check-persona', { personaName: 'ana' }, ['member']))).toMatchObject({ status: 403, code: 'forbidden' })
   })

@@ -1,27 +1,14 @@
 import type { PluginTypeId } from './plugins'
 import type { AgentSessionFamily } from './sessions'
 
-export const CAPABILITY_IDS = [
-  'overview',
-  'issues',
-  'chat-claude-code',
-  'chat-codex',
-  'bots',
-  'team',
-  'uptime',
-  'deployments',
-  'platform-agent',
-] as const
-export type CapabilityId = (typeof CAPABILITY_IDS)[number]
-
-export function isCapabilityId(value: unknown): value is CapabilityId {
-  return typeof value === 'string' && (CAPABILITY_IDS as readonly string[]).includes(value)
-}
+// Capability, module, plugin type, session family and activity event ids are open strings: the daemon checks
+// them against what it registers at boot, so adding a capability never edits this package.
+export type CapabilityId = string
 
 /** Every ladder starts with this rung, and it grants nothing. */
 export const NONE_RUNG = 'none'
 
-/** Ids of views, agents, jobs, tools, rungs and plugin types. */
+/** Ids of capabilities, modules, views, agents, jobs, tools, rungs, plugin types, session families and activity event types. */
 export const MANIFEST_ID_PATTERN = /^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$/
 
 /** Lowercase segments joined by '/', no leading or trailing slash; '' is the project home. */

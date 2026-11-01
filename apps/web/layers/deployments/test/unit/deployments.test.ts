@@ -18,8 +18,8 @@ const ENDPOINT_FIELDS: LiveVersionSourceField[] = [
   { kind: 'string', name: 'branchPath', label: 'Branch path' },
 ]
 const custom: LiveVersionSourceInfo = { id: 'custom-endpoint', label: 'Version endpoint', description: 'Reads JSON.', fields: ENDPOINT_FIELDS }
-const netlify: LiveVersionSourceInfo = { id: 'netlify', label: 'Netlify', description: 'Netlify deploys.', fields: [] }
-const heroku: LiveVersionSourceInfo = { id: 'heroku', label: 'Heroku', description: 'Heroku releases.', fields: [] }
+const netlify: LiveVersionSourceInfo = { id: 'netlify', label: 'Netlify', description: 'Netlify deploys.', fields: [], plugin: 'netlify' }
+const heroku: LiveVersionSourceInfo = { id: 'heroku', label: 'Heroku', description: 'Heroku releases.', fields: [], plugin: 'heroku' }
 const SOURCES = [custom, netlify, heroku]
 
 function instance(type: string, health: PluginInstance['health'], scope: PluginInstance['scope'] = 'project'): PluginInstance {
@@ -65,6 +65,12 @@ describe('source choices', () => {
     const choices = deploymentsSourceChoices(SOURCES, [instance('netlify', healthy), instance('heroku', unhealthy)])
     expect(choices.available.map(s => s.id)).toEqual(['custom-endpoint', 'netlify'])
     expect(choices.hidden.map(s => s.id)).toEqual(['heroku'])
+  })
+
+  it('reads the plugin the source names, not its id', () => {
+    const vercel: LiveVersionSourceInfo = { id: 'vercel-prod', label: 'Vercel', description: 'Vercel deploys.', fields: [], plugin: 'vercel' }
+    expect(deploymentsSourcePluginReason(vercel, [instance('vercel-prod', healthy)])).toMatch(/not set up/)
+    expect(deploymentsSourcePluginReason(vercel, [instance('vercel', healthy)])).toBeNull()
   })
 
   it('resolves the project instance before the platform-wide one', () => {

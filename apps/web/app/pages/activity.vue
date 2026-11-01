@@ -17,7 +17,7 @@
 </template>
 
 <script setup lang="ts">
-import { ACTIVITY_EVENT_TYPES, type ActivityEventType } from '@candy-mountain/shared'
+import type { ActivityEventType } from '@candy-mountain/shared'
 
 definePageMeta({ layout: 'dashboard' })
 useHead({ title: 'Activity' })
@@ -25,10 +25,7 @@ useHead({ title: 'Activity' })
 const type = ref<ActivityEventType | 'all'>('all')
 const range = ref<(typeof ACTIVITY_SINCE_OPTIONS)[number]['value']>('all')
 
-const typeItems = [
-  { label: 'All types', value: 'all' },
-  ...ACTIVITY_EVENT_TYPES.map(value => ({ label: ACTIVITY_EVENT_KINDS[value].label, value })),
-]
+const typeItems = [{ label: 'All types', value: 'all' }, ...ACTIVITY_TYPE_ITEMS]
 const rangeItems = ACTIVITY_SINCE_OPTIONS.map(({ label, value }) => ({ label, value }))
 
 // Computed when the range changes, not per render, so the fetch key stays stable between filter edits.

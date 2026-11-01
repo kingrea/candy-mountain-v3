@@ -51,7 +51,7 @@ export function findGrant(db: Db, role: string, target: GrantTarget): RoleGrant 
 export function normaliseGrant({ capabilities, modules }: Omit<AccessDeps, 'db'>, request: SetGrantRequest): CapabilityRungs {
   const { target, rungs } = request
   const named = Object.entries(rungs)
-  const checkRung = (capabilityId: string, rung: unknown) => {
+  const checkRung: (capabilityId: string, rung: unknown) => asserts rung is string = (capabilityId, rung) => {
     const cap = capabilities.byId(capabilityId)
     if (typeof rung !== 'string' || !cap || rungIndex(cap, rung) < 0) {
       const ladder = cap ? ` (${cap.ladder.map(r => r.name).join(', ')})` : ''
@@ -75,8 +75,9 @@ export function normaliseGrant({ capabilities, modules }: Omit<AccessDeps, 'db'>
   if (extra.length || !named.length) {
     throw new GrantError('invalid_rung', `A grant on capability '${target.id}' sets a rung for '${target.id}' only`)
   }
-  checkRung(target.id, rungs[target.id])
-  return { [target.id]: rungs[target.id] }
+  const rung = rungs[target.id]
+  checkRung(target.id, rung)
+  return { [target.id]: rung }
 }
 
 /** Creates or replaces the role's grant on the target. */

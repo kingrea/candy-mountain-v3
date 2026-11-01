@@ -5,20 +5,20 @@ import { eq } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { FAKE_ACP_AGENT, fakeBins, fakeClaude } from '../acp/test-support'
 import { listActivityEvents } from '../activity'
-import { createApp } from '../app'
+import { createTestApp } from '../testing/platform'
 import type { AuthStrategy } from '../auth'
 import { pluginInstances } from '../db/schema'
 import { addRole } from '../grants/test-access'
 import { createPluginInstance } from '../plugins/instances/instances'
 import { setEnabledModules } from '../project-modules/enablement'
 import { createProject, sourcePath } from '../projects/projects'
-import { startPlatform, type Platform } from '../platform'
+import { startAcpPlatform, type AcpPlatform } from '../chat-claude-code/test-support'
 import type { SessionManager, SessionMessage } from '../sessions'
 import { createTempDataDir, type TempDataDir } from '../testing'
 import { threadTitle } from './service'
 
 let temp: TempDataDir | undefined
-let platform: Platform | undefined
+let platform: AcpPlatform | undefined
 
 afterEach(async () => {
   await platform?.sessions.close()
@@ -31,16 +31,16 @@ afterEach(async () => {
 const ADMIN: Actor = { id: 'admin-actor', username: 'admin', displayName: 'Admin', roles: ['admin'] }
 const DEVELOPER: Actor = { id: 'dev-actor', username: 'dev', displayName: 'Dev', roles: ['developer'] }
 
-function boot(bins = fakeBins): Platform {
+function boot(bins = fakeBins): AcpPlatform {
   temp ??= createTempDataDir()
-  platform = startPlatform(temp.root, { acp: { bins, killTimeoutMs: 1000 } })
+  platform = startAcpPlatform(temp.root, { acp: { bins, killTimeoutMs: 1000 } })
   return platform
 }
 
 const as = (actor: Actor): AuthStrategy => ({ name: 'development', resolve: () => actor })
 
-function call(p: Platform, method: string, path: string, body?: unknown, actor: Actor = ADMIN) {
-  const app = createApp({ db: p.db, paths: p.paths, auth: as(actor), pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly, secretsReader: p.secrets, sessions: p.sessions })
+function call(p: AcpPlatform, method: string, path: string, body?: unknown, actor: Actor = ADMIN) {
+  const app = createTestApp({ db: p.db, paths: p.paths, auth: as(actor), pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly, secretsReader: p.secrets, families: p.families, runtime: p.runtime })
   const init: RequestInit = { method }
   if (body !== undefined) {
     init.headers = { 'content-type': 'application/json' }
@@ -58,7 +58,7 @@ async function errorOf(res: Response) {
   return { status: res.status, code: ((await res.json()) as ApiErrorBody).error.code }
 }
 
-async function project(p: Platform, slug = 'alpha'): Promise<Project> {
+async function project(p: AcpPlatform, slug = 'alpha'): Promise<Project> {
   const path = join(temp!.root, '..', 'repos', slug)
   mkdirSync(path, { recursive: true })
   const created = await createProject(p.db, { name: slug, slug, source: { kind: 'local-path', path } })
@@ -67,16 +67,16 @@ async function project(p: Platform, slug = 'alpha'): Promise<Project> {
 }
 
 /** Stands in for a passing connection test: readiness only reads the stored result. */
-function healthyPlugin(p: Platform, projectId: string, type: PluginTypeId, config: Record<string, unknown> = {}): void {
+function healthyPlugin(p: AcpPlatform, projectId: string, type: PluginTypeId, config: Record<string, unknown> = {}): void {
   const instance = createPluginInstance({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly }, { type, scope: 'project', projectId, config, secrets: {} })
   p.db.update(pluginInstances).set({ health: { healthy: true }, healthCheckedAt: new Date().toISOString() }).where(eq(pluginInstances.id, instance.id)).run()
 }
 
-async function createThread(p: Platform, body: unknown, actor: Actor = ADMIN): Promise<ChatThreadResponse> {
+async function createThread(p: AcpPlatform, body: unknown, actor: Actor = ADMIN): Promise<ChatThreadResponse> {
   return json<ChatThreadResponse>(await call(p, 'POST', projectThreadsPath('alpha'), body, actor), 201)
 }
 
-async function getThread(p: Platform, id: string, actor: Actor = ADMIN): Promise<ChatThreadResponse> {
+async function getThread(p: AcpPlatform, id: string, actor: Actor = ADMIN): Promise<ChatThreadResponse> {
   return json<ChatThreadResponse>(await call(p, 'GET', projectThreadPath('alpha', id), undefined, actor), 200)
 }
 
@@ -100,7 +100,7 @@ function waitFor(sessions: SessionManager, id: string, kind: AgentSessionEventKi
   })
 }
 
-async function grantDeveloper(p: Platform, rungs: Record<string, string>): Promise<void> {
+async function grantDeveloper(p: AcpPlatform, rungs: Record<string, string>): Promise<void> {
   addRole(p.db, 'developer')
   await json(await call(p, 'PUT', '/grants', { role: 'developer', target: { kind: 'module', id: 'agent-hub' }, rungs }), 200)
 }
@@ -306,9 +306,9 @@ describe('chat threads', () => {
 })
 
 describe('Codex models and reasoning effort', () => {
-  const optionsOf = async (p: Platform) => (await json<ChatAgentOptionsResponse>(await call(p, 'GET', chatAgentOptionsPath('alpha', 'codex')), 200)).options
-  const patch = (p: Platform, id: string, body: unknown) => call(p, 'PATCH', projectThreadPath('alpha', id), body)
-  async function turn(p: Platform, thread: ChatThreadResponse, text: string): Promise<string[]> {
+  const optionsOf = async (p: AcpPlatform) => (await json<ChatAgentOptionsResponse>(await call(p, 'GET', chatAgentOptionsPath('alpha', 'codex')), 200)).options
+  const patch = (p: AcpPlatform, id: string, body: unknown) => call(p, 'PATCH', projectThreadPath('alpha', id), body)
+  async function turn(p: AcpPlatform, thread: ChatThreadResponse, text: string): Promise<string[]> {
     const ended = waitFor(p.sessions, thread.session.id, 'turn_end')
     await json(await call(p, 'POST', threadPromptPath('alpha', thread.thread.id), { text }), 202)
     await ended

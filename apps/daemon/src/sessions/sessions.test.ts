@@ -4,20 +4,20 @@ import { projectSessionsPath, sessionCancelPath, sessionDecisionPath, sessionDec
 import { eq } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { FAKE_ACP_AGENT, fakeBins } from '../acp/test-support'
-import { createApp } from '../app'
+import { createTestApp } from '../testing/platform'
 import type { AuthStrategy } from '../auth'
 import { addRole } from '../grants/test-access'
 import { createPluginInstance } from '../plugins/instances/instances'
 import { pluginInstances } from '../db/schema'
 import { setEnabledModules } from '../project-modules/enablement'
 import { createProject } from '../projects/projects'
-import { startPlatform, type Platform, type PlatformOptions } from '../platform'
+import { startAcpPlatform, type AcpPlatform, type AcpPlatformOptions } from '../chat-claude-code/test-support'
 import { createTempDataDir, type TempDataDir } from '../testing'
 import { resolveSessionSettings } from './config'
 import type { SessionManager, SessionMessage } from './manager'
 
 let temp: TempDataDir | undefined
-let platform: Platform | undefined
+let platform: AcpPlatform | undefined
 
 afterEach(async () => {
   await platform?.sessions.close()
@@ -27,13 +27,13 @@ afterEach(async () => {
   temp = undefined
 })
 
-function boot(options: PlatformOptions = {}): Platform {
+function boot(options: AcpPlatformOptions = {}): AcpPlatform {
   temp ??= createTempDataDir()
-  platform = startPlatform(temp.root, { acp: { bins: fakeBins, killTimeoutMs: 1000 }, ...options })
+  platform = startAcpPlatform(temp.root, { acp: { bins: fakeBins, killTimeoutMs: 1000 }, ...options })
   return platform
 }
 
-async function projectWithCodex(p: Platform, slug = 'alpha'): Promise<Project> {
+async function projectWithCodex(p: AcpPlatform, slug = 'alpha'): Promise<Project> {
   const path = join(temp!.root, '..', 'repos', slug)
   mkdirSync(path, { recursive: true })
   const project = await createProject(p.db, { name: slug, slug, source: { kind: 'local-path', path } })
@@ -44,7 +44,7 @@ async function projectWithCodex(p: Platform, slug = 'alpha'): Promise<Project> {
 }
 
 /** Stands in for a passing connection test: the chat gate only reads the stored result. */
-function markHealthy(p: Platform, instanceId: string): void {
+function markHealthy(p: AcpPlatform, instanceId: string): void {
   p.db.update(pluginInstances).set({ health: { healthy: true }, healthCheckedAt: new Date().toISOString() }).where(eq(pluginInstances.id, instanceId)).run()
 }
 
@@ -54,22 +54,22 @@ const OTHER: Actor = { id: 'other-actor', username: 'other', displayName: 'Other
 
 const as = (actor: Actor): AuthStrategy => ({ name: 'development', resolve: () => actor })
 
-const appOf = (p: Platform, actor?: Actor) => createApp({ db: p.db, paths: p.paths, ...(actor ? { auth: as(actor) } : {}), pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly, secretsReader: p.secrets, sessions: p.sessions, decisions: p.decisions })
+const appOf = (p: AcpPlatform, actor?: Actor) => createTestApp({ db: p.db, paths: p.paths, ...(actor ? { auth: as(actor) } : {}), pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly, secretsReader: p.secrets, families: p.families, runtime: p.runtime })
 
-function call(p: Platform, method: string, path: string, body?: unknown, actor?: Actor) {
+function call(p: AcpPlatform, method: string, path: string, body?: unknown, actor?: Actor) {
   const init: RequestInit = { method }
   if (body !== undefined) init.headers = { 'content-type': 'application/json' }
   if (body !== undefined) init.body = typeof body === 'string' ? body : JSON.stringify(body)
   return appOf(p, actor).request(path, init)
 }
 
-async function createSession(p: Platform, slug = 'alpha', body: unknown = { family: 'codex' }): Promise<AgentSession> {
+async function createSession(p: AcpPlatform, slug = 'alpha', body: unknown = { family: 'codex' }): Promise<AgentSession> {
   const res = await call(p, 'POST', projectSessionsPath(slug), body)
   expect(res.status, await res.clone().text()).toBe(201)
   return ((await res.json()) as SessionResponse).session
 }
 
-async function prompt(p: Platform, slug: string, id: string, text: string): Promise<Response> {
+async function prompt(p: AcpPlatform, slug: string, id: string, text: string): Promise<Response> {
   return call(p, 'POST', sessionPromptPath(slug, id), { text })
 }
 
@@ -142,7 +142,7 @@ class SseReader {
 const sessionFrames = (frames: Frame[]) => frames.filter(frame => frame.event === 'session').map(frame => JSON.parse(frame.data) as AgentSessionEvent)
 const statusFrames = (frames: Frame[]) => frames.filter(frame => frame.event === 'status').map(frame => (JSON.parse(frame.data) as { status: string }).status)
 
-async function openStream(p: Platform, slug: string, id: string, after?: number): Promise<SseReader> {
+async function openStream(p: AcpPlatform, slug: string, id: string, after?: number): Promise<SseReader> {
   const res = await appOf(p).request(sessionEventsPath(slug, id, after))
   expect(res.status).toBe(200)
   expect(res.headers.get('content-type')).toBe('text/event-stream')
@@ -396,7 +396,7 @@ describe('agent sessions', () => {
 })
 
 describe('session access', () => {
-  async function grantDeveloper(p: Platform, rungs: Record<string, string>): Promise<void> {
+  async function grantDeveloper(p: AcpPlatform, rungs: Record<string, string>): Promise<void> {
     addRole(p.db, 'developer')
     const res = await call(p, 'PUT', '/grants', { role: 'developer', target: { kind: 'module', id: 'agent-hub' }, rungs }, ADMIN)
     expect(res.status, await res.clone().text()).toBe(200)
@@ -411,7 +411,7 @@ describe('session access', () => {
     ['POST', sessionDecisionPath('alpha', id, 'some-decision'), { optionKind: 'allow_once' }],
   ]
 
-  const listed = async (p: Platform, actor: Actor) => {
+  const listed = async (p: AcpPlatform, actor: Actor) => {
     const res = await call(p, 'GET', projectSessionsPath('alpha'), undefined, actor)
     expect(res.status, await res.clone().text()).toBe(200)
     return ((await res.json()) as SessionListResponse).sessions.map(session => session.id)

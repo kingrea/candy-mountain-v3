@@ -9,8 +9,10 @@ import { fixturePluginType } from '../plugins/fixtures'
 import { createPluginInstance } from '../plugins/instances/instances'
 import { instanceHarness, type InstanceHarness } from '../plugins/instances/test-support'
 import { createSlackClient, createSlackOperations, slackPluginType, type SlackClientOptions } from '../plugins/slack'
-import { startPlatform } from '../platform'
+import type { NotificationChannel, NotificationDelivery } from '../capabilities/definition'
+import { startTestPlatform } from '../testing/platform'
 import { MasterKey } from '../secrets'
+import { slackNotificationChannel } from '../slack/notifications'
 import { createTempDataDir } from '../testing'
 import { absoluteLink, notificationKindOf, startNotificationDispatcher, type NotificationDispatcher, type NotificationDispatcherOptions } from './dispatcher'
 import { claimNotificationEvent, DELIVERED_RING_SIZE, notificationDeliveredKey, notificationRulesKey, readNotificationRules } from './rules'
@@ -50,14 +52,15 @@ function setup() {
   return h.createProject('alpha')
 }
 
-function start(options: NotificationDispatcherOptions = {}) {
+/** The dispatcher over the Slack channel the slack definition offers, after any channels given, the way the platform wires it. */
+function start(options: NotificationDispatcherOptions = {}, channels: NotificationChannel[] = [], scopeUrlPrefix = 'p') {
   const slack = {
     web(botId: string, clientOptions?: SlackClientOptions) {
       const token = h.store.get(botSecretOwner(botId), 'slackBotToken')
       return token ? { client: createSlackClient(token, clientOptions), operations: createSlackOperations({}, { get: () => token }, clientOptions) } : null
     },
   }
-  dispatcher = startNotificationDispatcher({ ...h.deps, slack }, { webUrl: WEB_URL, fetch: fakeFetch, log: { error: () => {} }, ...options })
+  dispatcher = startNotificationDispatcher({ db: h.database.db, channels: [...channels, slackNotificationChannel({ ...h.deps, slack }, { fetch: fakeFetch })], scopeUrlPrefix }, { webUrl: WEB_URL, log: { error: () => {} }, ...options })
   return dispatcher
 }
 
@@ -164,6 +167,38 @@ describe('notification dispatcher', () => {
     expect(h.store.get(botSecretOwner(botId), 'slackBotToken')).toBe('xoxb-bot')
   })
 
+  it('tries the channels the definitions offer in order and falls back to Slack only when none accepts', async () => {
+    const project = await setup()
+    addPlugin()
+    await enable('incident.opened', { channelId: 'C777' })
+    await enable('incident.closed', { channelId: 'C777' })
+    const seen: string[] = []
+    const declines = {
+      id: 'pager',
+      async deliver(d: NotificationDelivery) {
+        seen.push(`pager ${d.kind}`)
+        return false
+      },
+    }
+    const accepts = {
+      id: 'mail',
+      async deliver(d: NotificationDelivery) {
+        seen.push(`mail ${d.kind} ${d.url}`)
+        return d.kind === 'incident.opened'
+      },
+    }
+    start({}, [declines, accepts])
+
+    await emit(project, { type: 'incident.opened', title: 'API down', link: '/p/alpha/uptime' })
+    await emit(project, { type: 'incident.closed', title: 'API back' })
+
+    expect(seen).toEqual(['pager incident.opened', `mail incident.opened ${WEB_URL}/p/alpha/uptime`, 'pager incident.closed', `mail incident.closed ${WEB_URL}/p/alpha`])
+    expect(calls).toEqual([{ method: 'chat.postMessage', token: PLUGIN_TOKEN, body: { channel: 'C777', text: `API back\n<${WEB_URL}/p/alpha|Open in Candy Mountain>` } }])
+    const rules = (await get()).rules
+    expect(rules['incident.opened'].lastDeliveredAt).toEqual(expect.any(String))
+    expect(rules['incident.closed'].lastDeliveredAt).toEqual(expect.any(String))
+  })
+
   it('posts an opened incident to the configured channel through the platform plugin when no bot has keys', async () => {
     const project = await setup()
     addBot(project, 'keyless', null)
@@ -192,7 +227,18 @@ describe('notification dispatcher', () => {
     expect(posts()).toEqual([{ method: 'chat.postMessage', token: 'xoxb-bea', body: { channel: 'C100', text: 'Deploy failed\n<http://web.test:4300/p/alpha|Open in Candy Mountain>' } }])
   })
 
-  it('records a delivery failure on the rule when there is no Slack identity, and keeps going', async () => {
+  it('falls back to the project page under the product\'s scope prefix', async () => {
+    const project = await setup()
+    await enable('incident.closed', { channelId: 'C777' })
+    const urls: string[] = []
+    start({}, [{ id: 'mail', deliver: async (d: NotificationDelivery) => Boolean(urls.push(d.url)) }], 'w')
+
+    await emit(project, { type: 'incident.closed', title: 'API back' })
+
+    expect(urls).toEqual([`${WEB_URL}/w/alpha`])
+  })
+
+  it('records a delivery failure on the rule when no channel has an identity, and keeps going', async () => {
     const project = await setup()
     addBot(project, 'keyless', null)
     await enable('incident.opened', { channelId: 'C100' })
@@ -201,12 +247,12 @@ describe('notification dispatcher', () => {
 
     await emit(project, { type: 'incident.opened', title: 'down' })
     const after = (await get()).rules
-    expect(after['incident.opened']).toMatchObject({ lastFailureAt: expect.any(String), lastFailureReason: expect.stringMatching(/No Slack identity/), lastDeliveredAt: null })
+    expect(after['incident.opened']).toMatchObject({ lastFailureAt: expect.any(String), lastFailureReason: 'No delivery channel: slack has no identity for this project.', lastDeliveredAt: null })
     expect(after['incident.closed'].lastFailureAt).toBeNull()
     expect(calls).toEqual([])
 
     await emit(project, { type: 'incident.closed', title: 'up' })
-    expect((await get()).rules['incident.closed'].lastFailureReason).toMatch(/No Slack identity/)
+    expect((await get()).rules['incident.closed'].lastFailureReason).toMatch(/No delivery channel/)
 
     addPlugin()
     await emit(project, { type: 'incident.closed', title: 'up again' })
@@ -305,7 +351,7 @@ describe('notification dispatcher', () => {
 describe('platform wiring', () => {
   it('starts the dispatcher with the platform and stops it on close', async () => {
     const dir = createTempDataDir()
-    const platform = startPlatform(dir.root, { secretsKey: MasterKey.generate(), notifications: { webUrl: WEB_URL, log: { error: () => {} } } })
+    const platform = startTestPlatform(dir.root, { secretsKey: MasterKey.generate(), notifications: { webUrl: WEB_URL, log: { error: () => {} } } })
     try {
       expect(platform.notifications).toBeDefined()
       await platform.notifications.idle()

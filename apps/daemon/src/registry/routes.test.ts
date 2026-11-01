@@ -4,6 +4,7 @@ import { projectRegistryPath, type Actor, type AnyCapabilityManifest, type Modul
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createApp } from '../app'
 import type { AuthStrategy } from '../auth'
+import { CANDY_MOUNTAIN } from '../candy-mountain'
 import { createCapabilityRegistry } from '../capabilities'
 import { fixtureCapability } from '../capabilities/fixtures'
 import type { DataPaths } from '../data-dir'
@@ -13,6 +14,7 @@ import { createModuleRegistry } from '../modules'
 import { createPluginInstance, testPluginInstance } from '../plugins/instances/instances'
 import { instanceHarness, multiPluginType, type InstanceHarness } from '../plugins/instances/test-support'
 import { reverifyProject } from '../projects/projects'
+import type { Product } from '../product'
 import { setEnabledModules } from '../project-modules/enablement'
 
 const chatCodex = fixtureCapability('chat-codex', ['codex'])
@@ -32,11 +34,11 @@ beforeEach(() => {
 })
 afterEach(() => harness.close())
 
-function app(roles = ['admin']) {
+function app(roles = ['admin'], product: Product = CANDY_MOUNTAIN) {
   const capabilities = createCapabilityRegistry([chatCodex, issues])
   const modules = createModuleRegistry(MODULES, capabilities)
   const auth: AuthStrategy = { name: 'development', resolve: (): Actor => ({ id: 'u1', username: 'jack', displayName: 'Jack', roles }) }
-  return createApp({ db: harness.database.db, paths: { root: harness.secretsDir } as DataPaths, auth, capabilities, modules, pluginTypes: harness.deps.pluginTypes, secrets: harness.store.writeOnly, secretsReader: harness.store })
+  return createApp({ db: harness.database.db, paths: { root: harness.secretsDir } as DataPaths, auth, product, capabilities, modules, pluginTypes: harness.deps.pluginTypes, secrets: harness.store.writeOnly, secretsReader: harness.store })
 }
 
 async function registry(slug: string, roles?: string[]): Promise<RegistryResponse> {
@@ -59,6 +61,16 @@ describe('GET /projects/:slug/registry', () => {
     expect(before.groups.map(g => [g.id, g.degraded])).toEqual([['agent-hub', true], ['system', false]])
     expect(before.groups[0]!.entries.map(e => e.to)).toEqual(['/p/alpha/chat-codex', '/p/alpha/chat-codex/admin'])
     expect(before.degraded).toEqual([{ id: 'agent-hub', label: 'Agent Hub', reasons: [{ kind: 'plugin', plugin: 'codex', capabilityId: 'chat-codex', message: 'No Multi plugin is configured for this project or the platform.' }] }])
+  })
+
+  it('links views under the product\'s scope prefix', async () => {
+    const alpha = await harness.createProject('alpha')
+    setEnabledModules(harness.database.db, alpha.id, ['agent-hub'])
+    const config = CANDY_MOUNTAIN.config
+    const res = await app(['admin'], { ...CANDY_MOUNTAIN, config: { ...config, scope: { ...config.scope, urlPrefix: 'w' } } }).request(projectRegistryPath('alpha'))
+    const body = await res.json() as RegistryResponse
+    expect(body.groups[0]!.entries.map(e => e.to)).toEqual(['/w/alpha/chat-codex', '/w/alpha/chat-codex/admin'])
+    expect(body.views.map(v => v.to)).toEqual(['/w/alpha/chat-codex', '/w/alpha/chat-codex/admin'])
   })
 
   it('is satisfied by a healthy global instance, and only after it is tested', async () => {

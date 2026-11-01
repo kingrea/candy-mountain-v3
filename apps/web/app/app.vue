@@ -8,6 +8,9 @@
 </template>
 
 <script setup lang="ts">
+// Here rather than nuxt.config app.head, which is JSON-serialised and drops functions.
+useHead({ titleTemplate: title => (title ? `${title} · ${PRODUCT.name}` : PRODUCT.name) })
+
 const { status, check } = useDaemonStatus()
 
 // Polling runs even while healthy so a daemon that stops between API calls is noticed.

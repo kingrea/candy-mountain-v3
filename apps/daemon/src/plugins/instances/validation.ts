@@ -1,4 +1,5 @@
-import { isPluginTypeId, PLUGIN_SCOPES, type CreatePluginInstanceRequest, type PluginScope, type PluginSecretValues, type UpdatePluginInstanceRequest } from '@candy-mountain/shared'
+import { PLUGIN_SCOPES, type CreatePluginInstanceRequest, type PluginScope, type PluginSecretValues, type UpdatePluginInstanceRequest } from '@candy-mountain/shared'
+import type { PluginTypeRegistry } from '../registry'
 import { PluginInstanceError } from './errors'
 
 const isObject = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -22,12 +23,12 @@ function parseConfig(value: unknown): Record<string, unknown> | undefined {
   return value
 }
 
-export function parseCreatePluginInstance(body: unknown): CreatePluginInstanceRequest {
+export function parseCreatePluginInstance(body: unknown, pluginTypes: Pick<PluginTypeRegistry, 'has'>): CreatePluginInstanceRequest {
   if (!isObject(body)) invalid('Request body must be an object')
   if (typeof body.type !== 'string' || !body.type) invalid('type is required')
   if (!(PLUGIN_SCOPES as readonly unknown[]).includes(body.scope)) invalid(`scope must be one of ${PLUGIN_SCOPES.join(', ')}`)
   if (body.project !== undefined && body.project !== null && typeof body.project !== 'string') invalid('project must be a project slug')
-  if (!isPluginTypeId(body.type)) throw new PluginInstanceError('type_not_found', `Plugin type "${body.type}" is not registered`)
+  if (!pluginTypes.has(body.type)) throw new PluginInstanceError('type_not_found', `Plugin type "${body.type}" is not registered`)
   return {
     type: body.type,
     scope: body.scope as PluginScope,

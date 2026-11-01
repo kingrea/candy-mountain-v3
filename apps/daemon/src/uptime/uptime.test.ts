@@ -3,9 +3,10 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { Actor, ApiErrorBody, ModuleId, Monitor, MonitorSourceListResponse, Project } from '@candy-mountain/shared'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { createApp } from '../app'
+import { createTestApp } from '../testing/platform'
 import type { AuthStrategy } from '../auth'
-import { CAPABILITIES, createCapabilityRegistry } from '../capabilities'
+import { CANDY_MOUNTAIN } from '../candy-mountain'
+import { productCapabilityRegistry } from '../product'
 import { dataPaths } from '../data-dir'
 import type { PlatformDatabase } from '../db'
 import { setGrant } from '../grants/grants'
@@ -16,6 +17,7 @@ import { createProject, deleteProject } from '../projects/projects'
 import { openTestDatabase } from '../testing'
 import { HTTP_SOURCE, MONITOR_SOURCE_REGISTRY } from './builtin-sources'
 import { MonitorError } from './errors'
+import { uptimeRoutes } from './definition'
 import { createMonitor, listEnabledMonitors, listMonitors, updateMonitor } from './service'
 import { createMonitorSourceRegistry, defineMonitorSource, MonitorSourceError, type MonitorSource } from './sources'
 
@@ -38,13 +40,13 @@ async function project(name: string, modules: ModuleId[] = ['operations']): Prom
 }
 
 function grant(role: string, rung: string) {
-  const capabilities = createCapabilityRegistry(CAPABILITIES)
+  const capabilities = productCapabilityRegistry(CANDY_MOUNTAIN)
   setGrant({ db: database.db, capabilities, modules: createModuleRegistry(MODULES, capabilities) }, { role, target: { kind: 'capability', id: 'uptime' }, rungs: { uptime: rung } })
 }
 
 function app(roles = ['admin']) {
   const auth: AuthStrategy = { name: 'development', resolve: (): Actor => ({ id: 'u1', username: 'jack', displayName: 'Jack', roles }) }
-  return createApp({ db: database.db, paths: dataPaths('/unused'), auth })
+  return createTestApp({ db: database.db, paths: dataPaths('/unused'), auth, runtime: uptimeRoutes() })
 }
 const call = (method: string, path: string, body?: unknown, roles?: string[]) =>
   app(roles).request(path, { method, headers: { 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) })

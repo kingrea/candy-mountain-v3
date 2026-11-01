@@ -1,6 +1,6 @@
 import { pluginTypeInfo, type RepositoryHost } from '@candy-mountain/shared'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { startPlatform } from '../../platform'
+import { startTestPlatform } from '../../testing/platform'
 import { createTempDataDir, type TempDataDir } from '../../testing'
 import { checkPluginHealth } from '../health'
 import { createPluginTypeRegistry } from '../registry'
@@ -42,7 +42,7 @@ describe('repository plugin type', () => {
   it('boots the daemon with it registered', () => {
     const temp: TempDataDir = createTempDataDir()
     try {
-      const platform = startPlatform(temp.root)
+      const platform = startTestPlatform(temp.root)
       expect(platform.pluginTypes.ids()).toContain('repository')
       platform.close()
     }

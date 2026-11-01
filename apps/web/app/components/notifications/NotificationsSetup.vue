@@ -23,7 +23,7 @@ const pluginsTo = computed(() => projectPluginsPagePath(props.registry.project.s
       :data-source="identity.source"
       :title="identity.label"
       :description="identity.source === 'none'
-        ? 'Add a Slack bot token to a project bot, or configure the Slack plugin, or deliveries will fail.'
+        ? `Add a Slack bot token to ${SCOPE.aSingular} bot, or configure the Slack plugin, or deliveries will fail.`
         : 'Messages are sent as this identity.'"
       :actions="identity.source === 'none' ? [{ label: 'Set up Slack', to: pluginsTo, color: 'neutral', variant: 'outline' }] : undefined"
     />

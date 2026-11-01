@@ -4,11 +4,12 @@ import { join } from 'node:path'
 import type { Actor, ApiErrorBody, Environment, LiveVersionSourceListResponse, LiveVersionsResponse, Project } from '@candy-mountain/shared'
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { createApp } from '../app'
+import { createTestApp } from '../testing/platform'
 import type { AuthStrategy } from '../auth'
 import { dataPaths } from '../data-dir'
 import type { PlatformDatabase } from '../db'
 import { environments } from '../db/schema'
+import { deploymentsRoutes } from '../deployments/definition'
 import { createPluginTypeRegistry, PLUGIN_TYPES } from '../plugins'
 import { createProject, deleteProject } from '../projects/projects'
 import { lockedSecretsStore } from '../secrets'
@@ -43,7 +44,7 @@ const project = (name: string): Promise<Project> => createProject(database.db, {
 
 function app(roles = ['admin']) {
   const auth: AuthStrategy = { name: 'development', resolve: (): Actor => ({ id: 'u1', username: 'jack', displayName: 'Jack', roles }) }
-  return createApp({ db: database.db, paths: dataPaths('/unused'), auth })
+  return createTestApp({ db: database.db, paths: dataPaths('/unused'), auth, runtime: deploymentsRoutes(lockedSecretsStore()) })
 }
 const call = (method: string, path: string, body?: unknown, roles?: string[]) =>
   app(roles).request(path, { method, headers: { 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) })
@@ -62,6 +63,7 @@ describe('live-version sources', () => {
       ['url', true], ['versionPath', false], ['branchPath', false], ['deployedAtPath', false], ['linkPath', false],
     ])
     expect(sources[0]).not.toHaveProperty('read')
+    expect(sources.map(s => s.plugin ?? null)).toEqual([null, 'netlify', 'heroku'])
   })
 
   it('refuses a bad definition or a duplicate id at registration', () => {

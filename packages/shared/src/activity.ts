@@ -1,12 +1,4 @@
-export const ACTIVITY_EVENT_TYPES = [
-  'session.started',
-  'run.started',
-  'bot.handoff',
-  'incident.opened',
-  'incident.closed',
-  'deploy.attempted',
-] as const
-export type ActivityEventType = (typeof ACTIVITY_EVENT_TYPES)[number]
+export type ActivityEventType = string
 
 export const ACTIVITY_DEFAULT_LIMIT = 50
 export const ACTIVITY_MAX_LIMIT = 200

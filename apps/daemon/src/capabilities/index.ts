@@ -1,4 +1,5 @@
+export * from './definition'
 export * from './manifest'
 export * from './registry'
+export * from './start'
 export { capabilityRoutes } from './routes'
-export { CAPABILITIES } from './manifests'

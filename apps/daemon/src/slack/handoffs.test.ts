@@ -10,7 +10,7 @@ import { createPluginInstance } from '../plugins/instances/instances'
 import { GOOD_TOKEN, stubHosts } from '../plugins/repository/fake-hosts'
 import { createSlackClient, createSlackOperations } from '../plugins/slack'
 import { createProject } from '../projects/projects'
-import { startPlatform, type Platform } from '../platform'
+import { startAcpPlatform, type AcpPlatform } from '../chat-claude-code/test-support'
 import { MasterKey } from '../secrets'
 import { addTeamMember } from '../team'
 import { createTempDataDir, type TempDataDir } from '../testing'
@@ -27,7 +27,7 @@ const BOT_USER = 'U0BOT'
 const HANDOFF = 'Fixed the login redirect.\n\n```handoff\noutcome: done\nsummary: Fixed the login redirect loop\npull_request: https://github.com/jack/candy/pull/42\nissues: candy-mountain-v3-x8m.7.6, cm-abc\nfollow_ups: add a test for SSO; tidy the docs\n```'
 
 let temp: TempDataDir | undefined
-let platform: Platform | undefined
+let platform: AcpPlatform | undefined
 let repo: TempGitRepo | undefined
 let router: SlackRouter | undefined
 let handoffs: SlackHandoffs | undefined
@@ -72,7 +72,7 @@ child.stdin.end()
 
 interface SlackCall { method: string, body: Record<string, unknown> }
 
-function fakeTransport() {
+function fakeTransport(permalinks = true) {
   const bus: SlackEventBus = createSlackEventBus({ error: () => {} })
   const calls: SlackCall[] = []
   let posted = 0
@@ -83,7 +83,7 @@ function fakeTransport() {
     const reply = method === 'chat.postMessage' || method === 'chat.startStream'
       ? { ok: true, channel: body.channel, ts: `9.${++posted}` }
       : method === 'chat.getPermalink'
-        ? { ok: true, channel: body.channel, permalink: `https://candy.slack.com/archives/${String(body.channel)}/p${String(body.message_ts).replace('.', '')}` }
+        ? permalinks ? { ok: true, channel: body.channel, permalink: `https://candy.slack.com/archives/${String(body.channel)}/p${String(body.message_ts).replace('.', '')}` } : { ok: false, error: 'message_not_found' }
         : { ok: true }
     return new Response(JSON.stringify(reply), { status: 200, headers: { 'content-type': 'application/json' } })
   }
@@ -125,20 +125,20 @@ function commitFile(path: string, text: string): void {
   repo!.git(repo!.clone, 'push', '--quiet', 'origin', 'main')
 }
 
-function setHealth(p: Platform, projectId: string, type: 'repository' | 'claude-code', config: Record<string, unknown> = {}, secrets: Record<string, string> = {}): void {
+function setHealth(p: AcpPlatform, projectId: string, type: 'repository' | 'claude-code', config: Record<string, unknown> = {}, secrets: Record<string, string> = {}): void {
   const existing = p.db.select().from(pluginInstances).where(eq(pluginInstances.projectId, projectId)).all().find(row => row.typeId === type)
   const id = existing?.id ?? createPluginInstance({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly }, { type, scope: 'project', projectId, config, secrets }).id
   p.db.update(pluginInstances).set({ health: { healthy: true }, healthCheckedAt: new Date().toISOString() }).where(eq(pluginInstances.id, id)).run()
 }
 
-const readDeps = (p: Platform): BotReadDeps => ({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly, secretsReader: p.secrets })
+const readDeps = (p: AcpPlatform): BotReadDeps => ({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly, secretsReader: p.secrets })
 
-async function setup() {
+async function setup({ scopeUrlPrefix = 'p', permalinks = true } = {}) {
   repo = createTempGitRepo()
   commitFile('.claude/agents/ana.md', CLAUDE_PERSONA)
   stubHosts()
   temp = createTempDataDir()
-  const p = platform = startPlatform(temp.root, { secretsKey: MasterKey.generate(), acp: { bins: fakeBins, killTimeoutMs: 1000 } })
+  const p = platform = startAcpPlatform(temp.root, { secretsKey: MasterKey.generate(), acp: { bins: fakeBins, killTimeoutMs: 1000 } })
   const project = await createProject(p.db, { name: 'alpha', slug: 'alpha', source: { kind: 'local-path', path: repo.clone } })
   setHealth(p, project.id, 'repository', { host: 'github', owner: 'jack', repo: 'candy' }, { token: GOOD_TOKEN })
   setHealth(p, project.id, 'claude-code', { claudePath: slackClaude(temp.root) })
@@ -146,9 +146,9 @@ async function setup() {
   expect(recordBotPersonaCheck(p.db, bot.id, bot.updatedAt, { status: 'verified' })).toBe(true)
   addTeamMember(p.db, project.id, { displayName: 'Jack', email: null, slackMemberId: JACK, botScope: { all: true } })
 
-  const transport = fakeTransport()
+  const transport = fakeTransport(permalinks)
   const ends: SlackTurnEnd[] = []
-  handoffs = startSlackHandoffs({ db: p.db, slack: transport.slack, botSessions: p.botSessions, sessions: p.sessions }, { log: { error: () => {} } })
+  handoffs = startSlackHandoffs({ db: p.db, slack: transport.slack, botSessions: p.botSessions, sessions: p.sessions, scopeUrlPrefix }, { log: { error: () => {} } })
   const hook = handoffs.onTurnEnd
   router = startSlackRouter({ db: p.db, slack: transport.slack, botSessions: p.botSessions, sessions: p.sessions }, { log: { error: () => {} }, streamIntervalMs: 50, onTurnEnd: async (end) => {
     ends.push(end)
@@ -237,6 +237,14 @@ describe('Slack handoffs', () => {
       ['Ana Bot: Looked, unsure.', null, 'https://candy.slack.com/archives/C01LISTED/p92'],
       ['Ana Bot: All good, nothing to change.', null, 'https://candy.slack.com/archives/C01LISTED/p91'],
     ])
+  }, 60_000)
+
+  it('links the bots page under the product\'s scope prefix when Slack gives no permalink', async () => {
+    const t = await setup({ scopeUrlPrefix: 'w', permalinks: false })
+    t.bus.emit(mention(t.bot.id, t.project.id, 'All good, nothing to change.'))
+    await t.router.idle()
+
+    expect(t.handoffEvents().map(event => event.link)).toEqual(['/w/alpha/bots'])
   }, 60_000)
 
   it('mark done closes the session like the done verb, releases the worktree and shows who pressed it', async () => {

@@ -1,8 +1,9 @@
-import { REGISTRY_SYSTEM_GROUP, type RegistryCapability, type RegistryResponse } from '@candy-mountain/shared'
+import { CANDY_MOUNTAIN_PRODUCT, registrySystemGroup, type RegistryCapability, type RegistryResponse } from '@candy-mountain/shared'
 import { describe, expect, it } from 'vitest'
 import { registryNavGroups } from '../../app/utils/navigation'
 import { lockoutActions, projectRegistryKey, resolveViewAccess } from '../../app/utils/registry'
 
+const SYSTEM_GROUP = registrySystemGroup(CANDY_MOUNTAIN_PRODUCT.scope.label)
 const PLUGIN_REASON = { kind: 'plugin', plugin: 'repository', message: 'No Repository plugin is configured for this project or the platform.' } as const
 
 function capability(id: RegistryCapability['id'], ready: boolean, admin = true): RegistryCapability {
@@ -26,7 +27,7 @@ function registry(overrides: Partial<RegistryResponse> = {}): RegistryResponse {
           { id: 'team', label: 'Team', icon: 'i-lucide-users', to: '/p/acme/team' },
         ],
       },
-      REGISTRY_SYSTEM_GROUP,
+      SYSTEM_GROUP,
     ],
     views: [
       { id: 'bots', capabilityId: 'bots', label: 'Bots', icon: 'i-lucide-bot', path: 'bots', to: '/p/acme/bots', ready: true },
@@ -75,7 +76,7 @@ describe('registryNavGroups', () => {
       groups: [{ id: 'issues', label: 'Issues', icon: 'i-lucide-list-todo', kind: 'module', degraded: false, entries: [
         { id: 'overview', label: 'Overview', icon: 'i-lucide-house', to: '/p/acme' },
         { id: 'issues', label: 'Issues', icon: 'i-lucide-list-todo', to: '/p/acme/issues' },
-      ] }, REGISTRY_SYSTEM_GROUP],
+      ] }, SYSTEM_GROUP],
       views: [
         { id: 'overview', capabilityId: 'overview', label: 'Overview', icon: 'i-lucide-house', path: '', to: '/p/acme', ready: true },
         { id: 'issues', capabilityId: 'issues', label: 'Issues', icon: 'i-lucide-list-todo', path: 'issues', to: '/p/acme/issues', ready: true },
@@ -85,8 +86,13 @@ describe('registryNavGroups', () => {
     expect(registryNavGroups(home, 'acme', true).capabilityGroups[0]?.entries.map(entry => [entry.id, entry.exact])).toEqual([['overview', true], ['issues', false]])
   })
 
+  it('shows the system group as the daemon labels it', () => {
+    const apps = registry({ groups: [registrySystemGroup({ pluralTitle: 'Apps' })] })
+    expect(registryNavGroups(apps, 'acme', false).systemGroup.entries.map(entry => entry.label)).toEqual(['Apps', 'Activity', 'Settings'])
+  })
+
   it('shows only the system group when the project has no modules enabled', () => {
-    const empty = registry({ modules: [], groups: [REGISTRY_SYSTEM_GROUP], views: [], capabilities: [], degraded: [] })
+    const empty = registry({ modules: [], groups: [SYSTEM_GROUP], views: [], capabilities: [], degraded: [] })
     expect(registryNavGroups(empty, 'acme', true).capabilityGroups).toEqual([])
   })
 })

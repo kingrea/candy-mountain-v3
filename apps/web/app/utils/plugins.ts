@@ -13,6 +13,7 @@ import {
   type PluginTypeInfo,
   type RegistryResponse,
 } from '@candy-mountain/shared'
+import { SCOPE } from './scope-label'
 
 export const PLUGIN_TYPES_DATA_KEY = 'plugin-types'
 export const PLUGINS_DATA_KEY_PREFIX = 'plugins:'
@@ -26,16 +27,8 @@ export const pluginInstancePath = (id: string, action?: string) =>
 export const pluginTypeActionPath = (typeId: string, action: string) => `${PLUGIN_TYPES_PATH}/${typeId}/${action}`
 
 export const PLUGIN_SCOPE_LABELS: Record<PluginScope, string> = {
-  project: 'This project',
+  project: `This ${SCOPE.singular}`,
   global: 'Platform-wide',
-}
-
-const PLUGIN_TYPE_ICONS: Record<string, string> = {
-  repository: 'i-lucide-git-branch',
-}
-
-export function pluginTypeIcon(typeId: string): string {
-  return PLUGIN_TYPE_ICONS[typeId] ?? 'i-lucide-plug'
 }
 
 /** Scopes a new instance of the type can still take, given the project's and the platform's instances. */

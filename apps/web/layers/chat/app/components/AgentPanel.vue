@@ -42,7 +42,7 @@
     </header>
 
     <template v-if="inThread">
-      <ChatBotWorktree v-if="current.bot.value && threadId" :bot="current.bot.value" :thread-id="threadId" @closed="current.refresh()" />
+      <component :is="piece" v-for="(piece, index) in aboveTranscript" :key="index" :thread="familyThread" />
       <ChatTranscript
         :events="session.events.value"
         :working="working"
@@ -59,14 +59,8 @@
         @send="send"
         @cancel="cancel"
       >
-        <template v-if="agentOptions.options.value && agentOptions.available.value" #options>
-          <ChatModelEffort
-            :options="agentOptions.options.value"
-            :model="choice.model"
-            :effort="choice.effort"
-            :disabled="working || changing"
-            @change="changeModelEffort"
-          />
+        <template v-if="promptBar.length" #options>
+          <component :is="piece" v-for="(piece, index) in promptBar" :key="index" :thread="familyThread" />
         </template>
       </ChatPromptBar>
     </template>
@@ -83,13 +77,17 @@
 </template>
 
 <script setup lang="ts">
+import type { UpdateChatThreadRequest } from '@candy-mountain/shared'
+
 const props = defineProps<{ entry: ChatRailEntry }>()
 
 const { slug } = useSelectedProject()
+const { registry } = useProjectRegistry()
 const { state, showThread, showList, startThread, close } = useChatPanel()
 const toast = useToast()
 
 const agentId = computed(() => props.entry.agentId ?? props.entry.id)
+const agent = computed(() => registry.value?.agents.find(candidate => candidate.id === agentId.value) ?? null)
 const threadId = computed(() => state.value.threadId)
 const inThread = computed(() => state.value.draft || threadId.value !== null)
 
@@ -99,7 +97,6 @@ const current = useChatThread(slug, threadId)
 const session = useChatSession(slug, () => current.session.value?.id)
 const actions = useChatClientActions(() => current.thread.value?.agentId, current.session, session.events)
 
-const agentOptions = useChatAgentOptions(slug, agentId)
 const earlier = computed(() => current.sessions.value.filter(entry => entry.sessionId !== current.session.value?.id))
 const sessionHistory = useChatSessionHistory(slug, () => earlier.value.map(entry => entry.sessionId))
 
@@ -109,51 +106,52 @@ const threadTitle = computed(() => listed.value?.title ?? current.thread.value?.
 const working = computed(() => session.status.value ? session.working.value : (listed.value?.working ?? false))
 const error = ref<string | null>(null)
 
-const draftChoice = ref<ChatModelEffortChoice>({ model: null, effort: null })
-const changing = ref(false)
-const choice = computed<ChatModelEffortChoice>(() => {
-  const thread = listed.value ?? current.thread.value
-  return threadId.value && thread ? { model: thread.model, effort: thread.effort } : draftChoice.value
-})
-const dividers = computed(() => chatSessionDividers(current.sessions.value, agentOptions.options.value))
-const currentDivider = computed(() => (current.session.value ? dividers.value[current.session.value.id] ?? null : null))
+// The family's pieces own what a thread of theirs is created with and what a change of session means.
+const aboveTranscript = computed(() => chatFamilyComponents(agent.value?.family, 'aboveTranscript'))
+const promptBar = computed(() => chatFamilyComponents(agent.value?.family, 'promptBar'))
+const draft = ref<ChatFamilyDraft>({})
+const sessionDividers = ref<Record<string, string>>({})
+const familyThread: ChatFamilyThread = {
+  slug,
+  agentId,
+  agent,
+  threadId,
+  thread: computed(() => listed.value ?? current.thread.value),
+  sessions: current.sessions,
+  working,
+  draft,
+  setDraft: (fields) => {
+    draft.value = fields
+  },
+  setSessionDividers: (labels) => {
+    sessionDividers.value = labels
+  },
+  update,
+  refresh: async () => {
+    await Promise.all([current.refresh(), list.refresh()])
+  },
+}
+
+const currentDivider = computed(() => (current.session.value ? sessionDividers.value[current.session.value.id] ?? null : null))
 const history = computed<ChatTranscriptSession[]>(() => earlier.value.map(entry => ({
   id: entry.sessionId,
-  divider: dividers.value[entry.sessionId] ?? null,
+  divider: sessionDividers.value[entry.sessionId] ?? null,
   events: sessionHistory.logs.value[entry.sessionId] ?? [],
 })))
 
-watch(threadId, () => {
-  draftChoice.value = { model: null, effort: null }
+watch([threadId, agentId], () => {
+  draft.value = {}
+  sessionDividers.value = {}
 })
 
-async function changeModelEffort(next: ChatModelEffortChoice) {
+async function update(body: UpdateChatThreadRequest) {
   const id = threadId.value
-  if (!id) {
-    draftChoice.value = next
-    return
-  }
+  if (!id) throw new Error('The thread is still a draft')
   const replaced = current.session.value?.id
-  changing.value = true
-  try {
-    await list.update(id, next)
-    // The stream resets on the new session id; keep the log already on screen instead of fetching it again.
-    if (replaced) sessionHistory.remember(replaced, session.events.value)
-    await current.refresh()
-  }
-  catch (cause) {
-    const failure = toApiError(cause)
-    const busy = failure.code === 'thread_busy'
-    toast.add({
-      title: busy ? 'The agent is still working' : 'Model or effort not changed',
-      description: busy ? 'Wait for the turn to end or stop it, then change the model or effort.' : failure.message,
-      color: busy ? 'warning' : 'error',
-      icon: 'i-lucide-circle-alert',
-    })
-  }
-  finally {
-    changing.value = false
-  }
+  await list.update(id, body)
+  // The stream resets on the new session id; keep the log already on screen instead of fetching it again.
+  if (replaced) sessionHistory.remember(replaced, session.events.value)
+  await current.refresh()
 }
 
 async function send(text: string) {
@@ -161,13 +159,13 @@ async function send(text: string) {
   try {
     let id = threadId.value
     if (!id) {
-      const created = await list.create({ agentId: agentId.value, ...draftChoice.value })
+      const created = await list.create({ agentId: agentId.value, ...draft.value })
       id = created.thread.id
       actions.follow(created.session)
       showThread(props.entry.id, id)
     }
     const sent = await list.prompt(id, text)
-    // A closed bot thread restarts on a fresh session and worktree; follow it like a model change.
+    // A prompt may restart the thread on a fresh session; follow it like a session change.
     const replaced = current.session.value?.id
     if (replaced && sent.session.id !== replaced) {
       sessionHistory.remember(replaced, session.events.value)

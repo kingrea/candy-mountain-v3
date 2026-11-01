@@ -11,7 +11,7 @@ import {
 import { chatSegmentTranscript, chatTranscriptRows } from '../../app/utils/chatTranscript'
 
 const navigate: PlatformClientAction = { kind: 'navigate', to: '/p/alpha/uptime', projectSlug: 'alpha', viewId: 'uptime', capabilityId: 'uptime' }
-const openThread: PlatformClientAction = { kind: 'open_thread', agentId: 'claude-code' }
+const openThread: PlatformClientAction = { kind: 'open_thread', agentId: 'scribe' }
 
 const at = (second: number) => `2026-10-28T10:00:${String(second).padStart(2, '0')}.000Z`
 
@@ -22,7 +22,7 @@ function row(seq: number, toolCallId: string, action: PlatformClientAction): Age
 const registry = {
   project: { id: 'p1', slug: 'alpha', name: 'Alpha' },
   views: [{ id: 'uptime', capabilityId: 'uptime', label: 'Uptime', icon: 'i-lucide-activity', path: 'uptime', to: '/p/alpha/uptime/checks', ready: true }],
-  agents: [{ id: 'claude-code', capabilityId: 'chat-claude-code', label: 'Claude Code', description: '' }],
+  agents: [{ id: 'scribe', capabilityId: 'chat-scribe', label: 'Scribe', description: '' }],
 } as unknown as RegistryResponse
 
 describe('client action transcript items', () => {
@@ -70,7 +70,7 @@ describe('chatActionsToApply', () => {
 
   it('never applies actions in another agent\'s thread or before the session is followed', () => {
     const rows = [row(3, 'c1', navigate)]
-    expect(chatActionsToApply(rows, ledger(0), 'claude-code')).toEqual([])
+    expect(chatActionsToApply(rows, ledger(0), 'scribe')).toEqual([])
     expect(chatActionsToApply(rows, ledger(0), null)).toEqual([])
     expect(chatActionsToApply(rows, undefined, 'platform')).toEqual([])
   })
@@ -98,7 +98,7 @@ describe('chatNavigatePath and chatActionLabel', () => {
     expect(chatActionLabel(navigate, 'applied', registry)).toBe('Opened Uptime for Alpha')
     expect(chatActionLabel(navigate, 'ignored', registry)).toBe('Did not open Uptime for Alpha')
     expect(chatActionLabel({ ...navigate, projectSlug: 'beta' }, 'earlier', registry)).toBe('Opened uptime for beta')
-    expect(chatActionLabel(openThread, 'applied', registry)).toBe('Started a chat with Claude Code')
-    expect(chatActionLabel({ kind: 'open_thread', agentId: 'codex' }, 'failed', registry)).toBe('Could not start a chat with codex')
+    expect(chatActionLabel(openThread, 'applied', registry)).toBe('Started a chat with Scribe')
+    expect(chatActionLabel({ kind: 'open_thread', agentId: 'oracle' }, 'failed', registry)).toBe('Could not start a chat with oracle')
   })
 })

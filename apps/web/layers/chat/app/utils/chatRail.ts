@@ -4,7 +4,7 @@ import type { Component, MaybeRefOrGetter } from 'vue'
 export const CHAT_DEFAULT_AVATAR = 'i-lucide-bot'
 
 export interface ChatRailEntry {
-  /** Unique across sources: agent entries use the registry agent id, other sources namespace theirs (`bot:<id>`). */
+  /** Unique across sources: agent entries use the registry agent id, other sources namespace theirs (`<source>:<id>`). */
   id: string
   label: string
   description?: string

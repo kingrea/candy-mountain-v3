@@ -1,7 +1,9 @@
+import { PRODUCT } from '../shared/utils/product'
+
 export default defineAppConfig({
   ui: {
     colors: {
-      primary: 'pink',
+      primary: PRODUCT.theme.primary,
       neutral: 'slate',
     },
     dashboardNavbar: {

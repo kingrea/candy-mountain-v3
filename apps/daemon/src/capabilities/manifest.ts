@@ -1,6 +1,4 @@
 import {
-  isCapabilityId,
-  isPluginTypeId,
   MANIFEST_ID_PATTERN,
   NONE_RUNG,
   PLATFORM_FACT_IDS,
@@ -67,8 +65,8 @@ export function assertCapability(cap: AnyCapabilityManifest): void {
   const fail = (msg: string): never => {
     throw new CapabilityManifestError(`Capability '${String(cap.id)}': ${msg}`)
   }
-  if (!isCapabilityId(cap.id)) {
-    throw new CapabilityManifestError(`Unknown capability id '${String(cap.id)}'; add it to CAPABILITY_IDS in @candy-mountain/shared first.`)
+  if (typeof cap.id !== 'string' || !MANIFEST_ID_PATTERN.test(cap.id)) {
+    throw new CapabilityManifestError(`Invalid capability id '${String(cap.id)}'; ids are lowercase letters and digits joined by '-', '_' or '.'.`)
   }
   if (isBlank(cap.label) || isBlank(cap.description)) fail('label and description must not be empty.')
 
@@ -79,6 +77,8 @@ export function assertCapability(cap: AnyCapabilityManifest): void {
     ['tool', cap.tools.map(t => t.id)],
     ['rung', cap.ladder.map(r => r.name)],
     ['required plugin', cap.requiresPlugins],
+    ['any-of plugin', [...new Set((cap.requiresAnyPlugins ?? []).flat())]],
+    ['session family', [...new Set(cap.agents.flatMap(a => (a.family === undefined ? [] : [a.family])))]],
   ] as const) {
     const bad = ids.filter(id => typeof id !== 'string' || !MANIFEST_ID_PATTERN.test(id))
     if (bad.length) fail(`invalid ${what} id(s) ${quoted(bad)}; ids are lowercase letters and digits joined by '-', '_' or '.'.`)
@@ -87,8 +87,6 @@ export function assertCapability(cap: AnyCapabilityManifest): void {
   }
 
   for (const group of cap.requiresAnyPlugins ?? []) {
-    const unknown = group.filter(id => !isPluginTypeId(id))
-    if (unknown.length) fail(`has unknown plugin type(s) ${quoted(unknown)} in an any-of group.`)
     if (duplicates(group).length) fail(`repeats plugin type(s) ${quoted(duplicates(group))} in an any-of group.`)
     if (group.length < 2) fail('an any-of plugin group needs at least two plugin types; put a single one in requiresPlugins.')
     const required = group.filter(id => cap.requiresPlugins.includes(id))

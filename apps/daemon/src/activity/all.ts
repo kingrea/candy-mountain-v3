@@ -6,6 +6,7 @@ import type { Db } from '../db'
 import { activityEvents, projects } from '../db/schema'
 import { ActivityError } from './errors'
 import { decodeCursor, encodeCursor, parseListQuery, type ListActivityOptions } from './events'
+import { activityEventTypesFor } from './types'
 
 // Every signed-in actor sees every non-archived project today; filter here once per-project visibility exists.
 export function listAllActivityEvents(db: Db, options: ListActivityOptions = {}): CrossProjectActivityResponse {
@@ -48,6 +49,6 @@ export function allActivityRoutes() {
     }
     throw error
   })
-  app.get('/', c => c.json(listAllActivityEvents(c.var.db, parseListQuery(c.req.query()))))
+  app.get('/', c => c.json(listAllActivityEvents(c.var.db, parseListQuery(c.req.query(), activityEventTypesFor(c.var.db)))))
   return app
 }

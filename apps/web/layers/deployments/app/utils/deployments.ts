@@ -1,5 +1,4 @@
 import {
-  isPluginTypeId,
   validateLiveVersionSettings,
   type CreateEnvironmentRequest,
   type Environment,
@@ -46,8 +45,8 @@ export function deploymentsSourceLabel(sources: readonly LiveVersionSourceInfo[]
  * before the platform-wide ones, the order in which the daemon resolves them.
  */
 export function deploymentsSourcePluginReason(source: LiveVersionSourceInfo, instances: readonly PluginInstance[]): string | null {
-  if (!isPluginTypeId(source.id)) return null
-  const instance = instances.find(candidate => candidate.type === source.id)
+  if (source.plugin === undefined) return null
+  const instance = instances.find(candidate => candidate.type === source.plugin)
   if (!instance) return `The ${source.label} plugin is not set up for this project.`
   if (!instance.health) return `The ${source.label} plugin has not been tested since it last changed.`
   if (!instance.health.healthy) return `The ${source.label} plugin is unhealthy: ${instance.health.reason}`

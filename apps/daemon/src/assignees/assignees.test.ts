@@ -3,10 +3,11 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { Actor, ApiErrorBody, Project, ProjectAssigneesResponse } from '@candy-mountain/shared'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { createApp } from '../app'
+import { createTestApp } from '../testing/platform'
 import type { AuthStrategy } from '../auth'
 import { dataPaths } from '../data-dir'
 import type { PlatformDatabase } from '../db'
+import { issuesRoutes } from '../issues/definition'
 import { setEnabledModules } from '../project-modules'
 import { createProject, deleteProject } from '../projects/projects'
 import { openTestDatabase } from '../testing'
@@ -32,7 +33,7 @@ async function project(name: string, enable = true): Promise<Project> {
 
 function app(roles = ['admin']) {
   const auth: AuthStrategy = { name: 'development', resolve: (): Actor => ({ id: 'u1', username: 'jack', displayName: 'Jack', roles }) }
-  return createApp({ db: database.db, paths: dataPaths('/unused'), auth })
+  return createTestApp({ db: database.db, paths: dataPaths('/unused'), auth, runtime: issuesRoutes() })
 }
 const post = (slug: string, body: unknown, roles?: string[]) =>
   app(roles).request(`/projects/${slug}/assignees`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: typeof body === 'string' ? body : JSON.stringify(body) })

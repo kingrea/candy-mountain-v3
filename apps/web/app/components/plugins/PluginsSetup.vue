@@ -20,15 +20,15 @@ const loadError = computed(() => error.value ?? typesError.value)
 const groups = computed(() => [
   {
     id: 'project',
-    title: project.value ? `${project.value.name} plugins` : 'Project plugins',
-    description: 'Used by this project only, ahead of any platform-wide plugin of the same type.',
-    empty: 'This project has no plugins of its own yet.',
+    title: project.value ? `${project.value.name} plugins` : `${SCOPE.singularTitle} plugins`,
+    description: `Used by this ${SCOPE.singular} only, ahead of any platform-wide plugin of the same type.`,
+    empty: `This ${SCOPE.singular} has no plugins of its own yet.`,
     instances: projectInstances.value,
   },
   {
     id: 'global',
     title: 'Platform-wide plugins',
-    description: 'Shared by every project that has no plugin of its own of that type.',
+    description: `Shared by every ${SCOPE.singular} that has no plugin of its own of that type.`,
     empty: 'No platform-wide plugins.',
     instances: globalInstances.value,
   },
@@ -104,7 +104,7 @@ function onSaved(instance: PluginInstance, created: boolean) {
           Add a plugin
         </h2>
         <p class="mb-3 text-sm text-muted">
-          Each plugin says what Candy Mountain can do with it before you add it.
+          Each plugin says what {{ PRODUCT.name }} can do with it before you add it.
         </p>
         <PluginsCatalog :types="types" :instances="instances" :needed-by="neededBy" @add="openCreate" />
       </section>

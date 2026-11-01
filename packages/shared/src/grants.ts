@@ -11,7 +11,7 @@ export type GrantTarget =
   | { kind: 'capability', id: CapabilityId }
 
 /** Rung name per capability id. */
-export type CapabilityRungs = Partial<Record<CapabilityId, string>>
+export type CapabilityRungs = Record<CapabilityId, string>
 
 export interface RoleGrant {
   /** Role slug. */

@@ -3,24 +3,20 @@ import { join } from 'node:path'
 import { BOTS_CAPABILITY_ID, PLATFORM_AGENT_ID, PLATFORM_SETTINGS_PATH, projectRegistryPath, projectThreadsPath, threadPromptPath, type Actor, type AgentSessionEvent, type ApiErrorBody, type ChatThreadResponse, type Project, type RegistryResponse } from '@candy-mountain/shared'
 import { eq } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
-import { createApp } from '../app'
+import { createTestApp } from '../testing/platform'
 import type { AuthStrategy } from '../auth'
 import { assertCapability, CapabilityManifestError } from '../capabilities'
-import { platformAgentCapability } from '../capabilities/manifests/platform-agent'
 import { pluginInstances } from '../db/schema'
 import { resolveActorRungs } from '../grants/resolve'
-import { createMastra, type PlatformMastra } from '../mastra'
 import { createPluginInstance } from '../plugins/instances/instances'
 import { setEnabledModules } from '../project-modules/enablement'
 import { createProject } from '../projects/projects'
-import { startPlatform, type Platform } from '../platform'
+import { startAcpPlatform, type AcpPlatform } from '../chat-claude-code/test-support'
 import { resolveCapabilityAccess } from '../registry'
 import { MasterKey } from '../secrets'
 import { createTempDataDir, type TempDataDir } from '../testing'
-import type { NativeFamilyRunners } from '../threads'
-import { createPlatformAgent } from './agent'
 import type { PlatformTurnContext } from './context'
-import { createPlatformAgentRunner } from './runner'
+import { platformAgentCapability } from './manifest'
 import { scriptedReply, startStubGateway, type StubGateway } from './test-support'
 import { describePlatform, openView, startChat } from './tools'
 
@@ -28,27 +24,19 @@ const ADMIN: Actor = { id: 'admin-actor', username: 'admin', displayName: 'Admin
 const DEVELOPER: Actor = { id: 'dev-actor', username: 'dev', displayName: 'Dev', roles: ['developer'] }
 
 let temp: TempDataDir | undefined
-let platform: Platform | undefined
-let mastra: PlatformMastra | undefined
+let platform: AcpPlatform | undefined
 let gateway: StubGateway | undefined
-let native: NativeFamilyRunners = {}
 
 afterEach(async () => {
   await gateway?.close()
-  await platform?.sessions.close()
-  await mastra?.close()
-  platform?.close()
+  await platform?.close()
   temp?.cleanup()
-  gateway = platform = mastra = temp = undefined
-  native = {}
+  gateway = platform = temp = undefined
 })
 
-async function boot(): Promise<Platform> {
+async function boot(): Promise<AcpPlatform> {
   temp = createTempDataDir()
-  platform = startPlatform(temp.root, { secretsKey: MasterKey.generate() })
-  mastra = await createMastra(platform.paths, { agents: storage => ({ [PLATFORM_AGENT_ID]: createPlatformAgent({ storage }) }) })
-  const p = platform
-  native = { platform: createPlatformAgentRunner({ db: p.db, capabilities: p.capabilities, modules: p.modules, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly, secretsReader: p.secrets, mastra: mastra.mastra }) }
+  platform = startAcpPlatform(temp.root, { secretsKey: MasterKey.generate() })
   return platform
 }
 
@@ -56,7 +44,7 @@ const as = (actor: Actor): AuthStrategy => ({ name: 'development', resolve: () =
 
 function call(method: string, path: string, body?: unknown, actor: Actor = ADMIN) {
   const p = platform!
-  const app = createApp({ db: p.db, paths: p.paths, auth: as(actor), capabilities: p.capabilities, modules: p.modules, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly, secretsReader: p.secrets, sessions: p.sessions, nativeFamilies: native })
+  const app = createTestApp({ db: p.db, paths: p.paths, auth: as(actor), capabilities: p.capabilities, modules: p.modules, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly, secretsReader: p.secrets, families: p.families, runtime: p.runtime })
   const init: RequestInit = { method }
   if (body !== undefined) init.headers = { 'content-type': 'application/json' }
   if (body !== undefined) init.body = JSON.stringify(body)
@@ -153,9 +141,9 @@ describe('platform agent in the registry', () => {
 
 describe('platform agent tools', () => {
   function turnFor(actor: Actor, project: Project): PlatformTurnContext {
-    const p = platform!
+    const p = { ...platform!, scopeLabel: platform!.product.config.scope.label }
     const registry = { project: { id: project.id, slug: project.slug, name: project.name }, admin: actor.roles.includes('admin'), modules: [], groups: [], views: [], agents: [], capabilities: [], degraded: [] }
-    return { actor, project, capabilities: p.capabilities, registry, access: id => resolveCapabilityAccess(p, actor, project, id), model: { baseUrl: 'http://stub', modelId: 'm', apiKey: 'k' } }
+    return { actor, project, capabilities: p.capabilities, registry, scopeUrlPrefix: p.product.config.scope.urlPrefix, access: id => resolveCapabilityAccess(p, actor, project, id), model: { baseUrl: 'http://stub', modelId: 'm', apiKey: 'k' } }
   }
 
   it('returns typed actions for the admin and refusals as values for everyone else', async () => {
@@ -187,10 +175,10 @@ describe('start_chat with bots', () => {
     const alpha = await project()
     healthyClaude(alpha.id)
     await configureGateway()
-    const p = platform!
+    const p = { ...platform!, scopeLabel: platform!.product.config.scope.label }
     const registry = { project: { id: alpha.id, slug: 'alpha', name: 'Alpha' }, admin: actor.roles.includes('admin'), modules: [], groups: [], views: [], agents, capabilities: [], degraded: [] } as unknown as RegistryResponse
     const usable = (id: string) => ({ ...resolveCapabilityAccess(p, actor, alpha, id), enabled: true, reasons: [], rung: { name: 'chat', chat: true } as never })
-    return { actor, project: alpha, capabilities: p.capabilities, registry, access: id => (botsUsable && id === BOTS_CAPABILITY_ID ? usable(id) : resolveCapabilityAccess(p, actor, alpha, id)), model: { baseUrl: 'http://stub', modelId: 'm', apiKey: 'k' } }
+    return { actor, project: alpha, capabilities: p.capabilities, registry, scopeUrlPrefix: p.product.config.scope.urlPrefix, access: id => (botsUsable && id === BOTS_CAPABILITY_ID ? usable(id) : resolveCapabilityAccess(p, actor, alpha, id)), model: { baseUrl: 'http://stub', modelId: 'm', apiKey: 'k' } }
   }
 
   it('opens a bot thread by agent id or case-insensitive name, with the id unchanged', async () => {

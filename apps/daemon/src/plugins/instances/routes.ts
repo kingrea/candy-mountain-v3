@@ -84,7 +84,7 @@ export function pluginInstanceRoutes(secretsReader: SecretsReader) {
   })
 
   app.post('/', async (c) => {
-    const { project, ...request } = parseCreatePluginInstance(await readJson(c))
+    const { project, ...request } = parseCreatePluginInstance(await readJson(c), c.var.pluginTypes)
     const instance = createPluginInstance(c.var, { ...request, projectId: project ? projectIdOf(c, project) : null })
     return c.json<PluginInstanceResponse>({ instance }, 201)
   })

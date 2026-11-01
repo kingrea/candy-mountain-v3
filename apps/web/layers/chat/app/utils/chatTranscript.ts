@@ -288,7 +288,7 @@ export function chatSegmentTranscript(rows: readonly ChatTranscriptRow[]): ChatT
   return items
 }
 
-/** The decision's own copy of the tool call it gates, read defensively since ACP objects are carried verbatim. */
+/** The decision's own copy of the tool call it gates, read defensively since the agent's own objects are carried verbatim. */
 export function chatDecisionTool(decision: Decision): { title: string, kind: string | null, input: unknown, notes: string[], locations: string[] } {
   const call = decision.toolCall ?? {}
   return {

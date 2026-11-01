@@ -1,9 +1,4 @@
-export const PLUGIN_TYPE_IDS = ['repository', 'claude-code', 'codex', 'netlify', 'heroku', 'slack'] as const
-export type PluginTypeId = (typeof PLUGIN_TYPE_IDS)[number]
-
-export function isPluginTypeId(value: unknown): value is PluginTypeId {
-  return typeof value === 'string' && (PLUGIN_TYPE_IDS as readonly string[]).includes(value)
-}
+export type PluginTypeId = string
 
 /** 'project' instances belong to one project; 'global' instances belong to the platform. */
 export const PLUGIN_SCOPES = ['project', 'global'] as const

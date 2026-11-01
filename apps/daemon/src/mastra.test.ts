@@ -1,7 +1,8 @@
 import Database from 'better-sqlite3'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { createMastra } from './mastra'
-import { startPlatform, type Platform } from './platform'
+import { startTestPlatform } from './testing/platform'
+import type { Platform } from './platform'
 import { createTempDataDir, type TempDataDir } from './testing'
 
 let dir: TempDataDir
@@ -9,7 +10,7 @@ let platform: Platform
 
 beforeEach(() => {
   dir = createTempDataDir()
-  platform = startPlatform(dir.root)
+  platform = startTestPlatform(dir.root)
 })
 
 afterEach(() => {

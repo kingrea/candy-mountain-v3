@@ -2,13 +2,16 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
+import { hasNuxtConfig, packageLayers } from '../layer-list.mjs'
+import { SCOPE_PAGES_DIR } from '../scope-routes.mjs'
 
 export const SHARED_LAYER = 'chat'
 
 // The one capability whose manifest view path is '' owns the project home, app/pages/p/[project]/index.vue.
 export const PROJECT_HOME_LAYER = 'overview'
 
-// A layer may always use its own files; packages such as @candy-mountain/shared are never restricted.
+// A layer may always use its own files; packages such as @candy-mountain/shared are never restricted unless they are layer packages.
+// A plugin-type layer (no manifest, no pages) is a capability layer here.
 export const ALLOWED = {
   core: ['shared'],
   shared: ['core'],
@@ -19,7 +22,7 @@ const DIRECTIONS = 'Allowed: capability -> core, capability -> chat, chat -> cor
 const DOCS = 'apps/web/layers/README.md'
 const DEFAULT_ROOT = fileURLToPath(new URL('..', import.meta.url))
 const LAYER_ID = /^[a-z][a-z\d]*(?:-[a-z\d]+)*$/
-const PROJECT_PAGES = ['p', '[project]']
+const PROJECT_PAGES = [SCOPE_PAGES_DIR, '[project]']
 
 // Tests point the rules at a fixture app instead of apps/web.
 function webRoot(context) {
@@ -27,8 +30,31 @@ function webRoot(context) {
   return root ? resolve(root) : DEFAULT_ROOT
 }
 
-/** `core`, a layer name, or null for files outside the web app. */
+function inside(dir, file) {
+  const rel = relative(dir, file)
+  return !rel.startsWith('..') && !isAbsolute(rel)
+}
+
+// A short lifetime keeps long-lived editor ESLint servers current as layers change.
+function cached(store, root, compute) {
+  const now = Date.now()
+  const hit = store.get(root)
+  if (hit && now - hit.at < 2000) return hit.value
+  const value = compute(root)
+  store.set(root, { at: now, value })
+  return value
+}
+
+const packageScans = new Map()
+const layerPackages = root => cached(packageScans, root, packageLayers)
+
+function layerRoot(root, layer) {
+  return layerPackages(root).get(layer)?.dir ?? join(root, 'layers', layer)
+}
+
+/** `core`, a layer name, or null for files outside the web app and its layer packages. */
 function ownerOfPath(root, file) {
+  for (const [id, { dir }] of layerPackages(root)) if (inside(dir, file)) return id
   const rel = relative(root, file)
   if (!rel || rel.startsWith('..') || isAbsolute(rel)) return null
   const parts = rel.split(sep)
@@ -192,9 +218,8 @@ function autoImportFiles(dir) {
 }
 
 function isAutoImportFile(root, layer, file) {
-  const layerRoot = join(root, 'layers', layer)
   return AUTO_IMPORT_DIRS.some((dir) => {
-    const rel = relative(join(layerRoot, dir), file)
+    const rel = relative(join(layerRoot(root, layer), dir), file)
     if (!rel || rel.startsWith('..') || isAbsolute(rel)) return false
     const parts = rel.split(sep)
     if (parts.length === 1) return SCRIPT_FILE.test(rel) && !rel.endsWith('.d.ts')
@@ -240,12 +265,14 @@ function addOwner(map, key, owner) {
   map.get(key).add(owner)
 }
 
-/** Nuxt skips a layers/* directory that has no nuxt.config. */
+/** Nuxt skips a layer that has no nuxt.config. */
 function registeredLayers(root) {
   const layersDir = join(root, 'layers')
-  return entries(layersDir)
-    .filter(entry => entry.isDirectory() && ['ts', 'js', 'mjs', 'mts'].some(ext => existsSync(join(layersDir, entry.name, `nuxt.config.${ext}`))))
+  const packages = layerPackages(root)
+  const local = entries(layersDir)
+    .filter(entry => entry.isDirectory() && !packages.has(entry.name) && hasNuxtConfig(join(layersDir, entry.name)))
     .map(entry => entry.name)
+  return [...local, ...[...packages].filter(([, { dir }]) => hasNuxtConfig(dir)).map(([id]) => id)]
 }
 
 function scanLayers(root) {
@@ -253,13 +280,13 @@ function scanLayers(root) {
   const components = new Map()
   const componentCount = new Map()
   for (const layer of registeredLayers(root)) {
-    const layerRoot = join(root, 'layers', layer)
+    const base = layerRoot(root, layer)
     for (const dir of AUTO_IMPORT_DIRS) {
-      for (const file of autoImportFiles(join(layerRoot, dir))) {
+      for (const file of autoImportFiles(join(base, dir))) {
         for (const name of exportedNames(file)) addOwner(exports, name, layer)
       }
     }
-    const componentsDir = join(layerRoot, 'app/components')
+    const componentsDir = join(base, 'app/components')
     const files = walk(componentsDir).filter(file => COMPONENT_FILE.test(file) && !NOT_A_COMPONENT.test(file))
     for (const file of files) addOwner(components, componentKey(componentName(componentsDir, file, layerPrefix(layer))), layer)
     componentCount.set(layer, files.length)
@@ -267,16 +294,8 @@ function scanLayers(root) {
   return { exports, components, componentCount }
 }
 
-// A short lifetime keeps long-lived editor ESLint servers current as layers change.
 const scans = new Map()
-function layerIndex(root) {
-  const now = Date.now()
-  const cached = scans.get(root)
-  if (cached && now - cached.at < 2000) return cached.index
-  const index = scanLayers(root)
-  scans.set(root, { at: now, index })
-  return index
-}
+const layerIndex = root => cached(scans, root, scanLayers)
 
 function staticString(node) {
   if (!node) return undefined
@@ -289,15 +308,18 @@ function staticString(node) {
   return undefined
 }
 
-/** Absolute target of an import source, or undefined for packages and virtual modules. */
+/** Absolute target of an import source, or undefined for non-layer packages and virtual modules. */
 function resolveSource(root, source, filename) {
   if (source.startsWith('.')) return resolve(dirname(filename), source)
   const layer = /^#layers\/([^/]+)(\/.*)?$/.exec(source)
-  if (layer) return join(root, 'layers', layer[1], layer[2] ?? '')
+  if (layer) return join(layerRoot(root, layer[1]), layer[2] ?? '')
   // Nuxt's localLayerAliases can point ~/ at the layer's own app/ at build time, but typecheck always means the core app.
   if (/^[~@]\//.test(source)) return join(root, 'app', source.slice(2))
   if (/^(?:~~|@@)\//.test(source)) return join(root, source.slice(3))
   if (isAbsolute(source)) return source
+  for (const { name, dir } of layerPackages(root).values()) {
+    if (source === name || source.startsWith(`${name}/`)) return join(dir, source.slice(name.length))
+  }
   return undefined
 }
 
@@ -462,13 +484,13 @@ const layerPrefixRule = {
       unprefixed: '\'{{name}}\' is auto-imported from the `{{layer}}` layer and must carry its prefix ({{examples}}). See ' + DOCS + '.',
       exportAll: '`export *` hides which names the `{{layer}}` layer auto-imports; export each name explicitly with the layer prefix.',
       componentsPrefix: 'Layer `{{layer}}` must register its components with `components: [{ path: \'./components\', prefix: \'{{prefix}}\' }]`. See ' + DOCS + '.',
-      layerId: 'Layer directory `{{layer}}` must be a lowercase kebab-case capability id (or `' + SHARED_LAYER + '`).',
+      layerId: 'Layer directory `{{layer}}` must be a lowercase kebab-case capability or plugin type id (or `' + SHARED_LAYER + '`).',
     },
   },
   create(context) {
     const { root, layer } = layerOf(context)
     if (!layer) return {}
-    const rel = relative(join(root, 'layers', layer), context.filename)
+    const rel = relative(layerRoot(root, layer), context.filename)
 
     if (/^nuxt\.config\.[cm]?[jt]s$/.test(rel)) {
       const prefix = layerPrefix(layer)
@@ -526,13 +548,14 @@ const layerPages = {
     docs: { description: 'Keep a capability layer\'s pages under its project-scoped route', url: DOCS },
     schema: [],
     messages: {
-      outside: 'Pages of the `{{layer}}` capability layer must live under app/pages/p/[project]/{{layer}}/ (route /p/:project/{{layer}}/…). See ' + DOCS + '.',
+      // The URL prefix comes from the product configuration, which plain Node cannot load, so the message names it generically.
+      outside: `Pages of the \`{{layer}}\` capability layer must live under app/pages/${PROJECT_PAGES.join('/')}/{{layer}}/ (route /<scope prefix>/:project/{{layer}}/…). See ${DOCS}.`,
     },
   },
   create(context) {
     const { root, layer } = layerOf(context)
     if (!layer || kindOf(layer) !== 'capability') return {}
-    const rel = relative(join(root, 'layers', layer, 'app/pages'), context.filename)
+    const rel = relative(join(layerRoot(root, layer), 'app/pages'), context.filename)
     if (!rel || rel.startsWith('..') || isAbsolute(rel)) return {}
     const parts = rel.split(sep)
     const inProject = parts[0] === PROJECT_PAGES[0] && parts[1] === PROJECT_PAGES[1]

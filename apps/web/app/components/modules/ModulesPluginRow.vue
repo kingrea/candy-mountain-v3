@@ -13,7 +13,7 @@ const BADGES: Record<PluginHealthState, BadgeProps> = {
 
 const badge = computed(() => BADGES[props.health.state])
 const source = computed(() => {
-  if (props.health.scope === 'project') return 'Project instance'
+  if (props.health.scope === 'project') return `${SCOPE.singularTitle} instance`
   if (props.health.scope === 'global') return 'Platform instance'
   return null
 })

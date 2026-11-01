@@ -3,8 +3,11 @@ import { join } from 'node:path'
 import type { Project } from '@candy-mountain/shared'
 import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { BOT_WORKTREE_RECLAIMER, BOT_WORKTREES } from '../bots/definition'
 import { schema, type PlatformDatabase } from '../db'
-import { startPlatform } from '../platform'
+import { capabilityDefinitions } from '../definitions'
+import type { Platform } from '../platform'
+import { startTestPlatform } from '../testing/platform'
 import { createProject } from '../projects/projects'
 import { createTempDataDir, openTestDatabase, type TempDataDir } from '../testing'
 import { resolveWorktreeSettings } from './config'
@@ -234,29 +237,31 @@ describe('settings and platform', () => {
   })
 
   it('closes missing-path leases at startup and reclaims idle ones on the interval', async () => {
+    const worktreesOf = (platform: Platform) => platform.runtime.services('bots').get(BOT_WORKTREES)
+    const reclaimerOf = (platform: Platform) => platform.runtime.services('bots').get(BOT_WORKTREE_RECLAIMER)
     repo = createTempGitRepo()
-    let platform = startPlatform(data.root)
+    let platform = startTestPlatform(data.root)
     const created = await createProject(platform.db, { name: 'beta', source: { kind: 'local-path', path: repo.clone } })
-    const gone = await platform.worktrees.acquire({ projectId: created.id, holder: holder('gone'), baseBranch: 'main' })
-    const idle = await platform.worktrees.acquire({ projectId: created.id, holder: holder('idle'), baseBranch: 'main' })
-    await platform.worktreeReclaimer.ready
-    platform.close()
+    const gone = await worktreesOf(platform).acquire({ projectId: created.id, holder: holder('gone'), baseBranch: 'main' })
+    const idle = await worktreesOf(platform).acquire({ projectId: created.id, holder: holder('idle'), baseBranch: 'main' })
+    await reclaimerOf(platform).ready
+    await platform.close()
     rmSync(gone.path, { recursive: true, force: true })
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined)
 
-    platform = startPlatform(data.root, { worktrees: { idleTimeoutMs: HOUR, reclaimIntervalMs: 50 } })
+    platform = startTestPlatform(data.root, { capabilities: capabilityDefinitions({ bots: { worktrees: { idleTimeoutMs: HOUR, reclaimIntervalMs: 50 } } }) })
     try {
-      const report = await platform.worktreeReclaimer.ready
+      const report = await reclaimerOf(platform).ready
       expect(report?.closedLeases.map(lease => lease.id)).toEqual([gone.id])
-      expect(platform.worktrees.get(gone.id)).toMatchObject({ state: 'released' })
+      expect(worktreesOf(platform).get(gone.id)).toMatchObject({ state: 'released' })
       expect(logSpy).toHaveBeenCalledWith('Closed 1 worktree lease(s) whose directory was missing')
 
       platform.db.update(schema.worktreeLeases).set({ lastUsedAt: new Date(Date.now() - 2 * HOUR).toISOString() }).where(eq(schema.worktreeLeases.id, idle.id)).run()
-      await vi.waitFor(() => expect(platform.worktrees.get(idle.id)).toMatchObject({ state: 'released' }), { timeout: 10_000, interval: 50 })
+      await vi.waitFor(() => expect(worktreesOf(platform).get(idle.id)).toMatchObject({ state: 'released' }), { timeout: 10_000, interval: 50 })
       expect(existsSync(idle.path)).toBe(false)
     }
     finally {
-      platform.close()
+      await platform.close()
       logSpy.mockRestore()
     }
   }, 30_000)

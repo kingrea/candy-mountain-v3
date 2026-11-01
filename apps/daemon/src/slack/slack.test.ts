@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { botSlackConnectionPath, type Actor, type BotSlackConnectionResponse, type BotPersonaStatus, type Project } from '@candy-mountain/shared'
 import { eq } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
-import { createApp } from '../app'
+import { createTestApp } from '../testing/platform'
 import { botSecretOwner } from '../bots'
 import { bots, projects } from '../db/schema'
 import { fixturePluginType } from '../plugins/fixtures'
@@ -11,6 +11,7 @@ import { instanceHarness, type InstanceHarness } from '../plugins/instances/test
 import type { SlackBotEvent } from './events'
 import { nextEnvelopeId, startFakeSocketMode, type FakeSocketMode } from './fake-socket-mode'
 import { startSlackConnections, type SlackConnections, type SlackConnectionsOptions } from './manager'
+import { slackRoutes } from './routes'
 
 const APP_TOKEN = 'xapp-1-valid'
 const BOT_TOKEN = 'xoxb-valid'
@@ -208,8 +209,8 @@ describe('Slack Socket Mode connections', () => {
     const foreign = addBot(other)
     const slack = start()
     await until(() => slack.status(id).state === 'connected', 'connected')
-    const app = (roles: string[]) => createApp({
-      db: h.database.db, paths: h.deps.paths, pluginTypes: h.deps.pluginTypes, secrets: h.store.writeOnly, secretsReader: h.store, slack,
+    const app = (roles: string[]) => createTestApp({
+      db: h.database.db, paths: h.deps.paths, pluginTypes: h.deps.pluginTypes, secrets: h.store.writeOnly, secretsReader: h.store, runtime: { workspaceRoutes: [slackRoutes(slack)] },
       auth: { name: 'development', resolve: (): Actor => ({ id: 'u1', username: 'jack', displayName: 'Jack', roles }) },
     })
 

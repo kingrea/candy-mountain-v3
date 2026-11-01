@@ -10,7 +10,7 @@ import { createPluginInstance } from '../plugins/instances/instances'
 import { GOOD_TOKEN, stubHosts } from '../plugins/repository/fake-hosts'
 import { createSlackClient, createSlackOperations } from '../plugins/slack'
 import { createProject } from '../projects/projects'
-import { startPlatform, type Platform } from '../platform'
+import { startAcpPlatform, type AcpPlatform } from '../chat-claude-code/test-support'
 import { MasterKey } from '../secrets'
 import { addTeamMember, listTeamMembers, removeTeamMember } from '../team'
 import { createTempDataDir, type TempDataDir } from '../testing'
@@ -25,7 +25,7 @@ const JACK = 'U0JACK'
 const BOT_USER = 'U0BOT'
 
 let temp: TempDataDir | undefined
-let platform: Platform | undefined
+let platform: AcpPlatform | undefined
 let repo: TempGitRepo | undefined
 let router: SlackRouter | undefined
 
@@ -48,19 +48,31 @@ interface SlackCall { method: string, body: Record<string, unknown> }
 function fakeTransport() {
   const bus: SlackEventBus = createSlackEventBus({ error: () => {} })
   const calls: SlackCall[] = []
+  // A message in its final state: a turn that flushed early is edited in place, and a stream is refused so every turn is one message.
+  const messages = new Map<string, { channel: unknown, threadTs: unknown, text: string }>()
   let posted = 0
   const fetch: typeof globalThis.fetch = async (input, init) => {
     const method = String(input).replace('https://slack.com/api/', '')
     const body = JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>
     calls.push({ method, body })
-    const reply = method === 'chat.postMessage' ? { ok: true, channel: body.channel, ts: `9.${++posted}` } : { ok: true }
+    let reply: Record<string, unknown> = { ok: true }
+    if (method === 'chat.postMessage') {
+      const ts = `9.${++posted}`
+      messages.set(ts, { channel: body.channel, threadTs: body.thread_ts, text: String(body.text) })
+      reply = { ok: true, channel: body.channel, ts }
+    }
+    else if (method === 'chat.update') {
+      const message = messages.get(String(body.ts))
+      if (message) message.text = String(body.text)
+    }
+    else if (method === 'chat.startStream') reply = { ok: false, error: 'not_allowed_token_type' }
     return new Response(JSON.stringify(reply), { status: 200, headers: { 'content-type': 'application/json' } })
   }
   const slack = {
     subscribe: bus.subscribe,
     web: () => ({ client: createSlackClient('xoxb-test', { fetch }), operations: createSlackOperations({}, { get: () => 'xoxb-test' }, { fetch }) }),
   }
-  const posts = () => calls.filter(call => call.method === 'chat.postMessage').map(call => ({ channel: call.body.channel, threadTs: call.body.thread_ts, text: String(call.body.text) }))
+  const posts = () => [...messages.values()]
   const reactions = () => calls.filter(call => call.method === 'reactions.add').map(call => ({ channel: call.body.channel, ts: call.body.timestamp, name: call.body.name }))
   return { bus, slack, calls, posts, reactions }
 }
@@ -82,20 +94,20 @@ function commitFile(path: string, text: string): void {
   repo!.git(repo!.clone, 'push', '--quiet', 'origin', 'main')
 }
 
-function setHealth(p: Platform, projectId: string, type: 'repository' | 'claude-code', config: Record<string, unknown> = {}, secrets: Record<string, string> = {}): void {
+function setHealth(p: AcpPlatform, projectId: string, type: 'repository' | 'claude-code', config: Record<string, unknown> = {}, secrets: Record<string, string> = {}): void {
   const existing = p.db.select().from(pluginInstances).where(eq(pluginInstances.projectId, projectId)).all().find(row => row.typeId === type)
   const id = existing?.id ?? createPluginInstance({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly }, { type, scope: 'project', projectId, config, secrets }).id
   p.db.update(pluginInstances).set({ health: { healthy: true }, healthCheckedAt: new Date().toISOString() }).where(eq(pluginInstances.id, id)).run()
 }
 
-const readDeps = (p: Platform): BotReadDeps => ({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly, secretsReader: p.secrets })
+const readDeps = (p: AcpPlatform): BotReadDeps => ({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly, secretsReader: p.secrets })
 
-function boot(dataDir: string, key: MasterKey): Platform {
-  platform = startPlatform(dataDir, { secretsKey: key, acp: { bins: fakeBins, killTimeoutMs: 1000 } })
+function boot(dataDir: string, key: MasterKey): AcpPlatform {
+  platform = startAcpPlatform(dataDir, { secretsKey: key, acp: { bins: fakeBins, killTimeoutMs: 1000 } })
   return platform
 }
 
-function route(p: Platform) {
+function route(p: AcpPlatform) {
   const transport = fakeTransport()
   router = startSlackRouter({ db: p.db, slack: transport.slack, botSessions: p.botSessions, sessions: p.sessions }, { log: { error: () => {} } })
   return { ...transport, router }
@@ -118,7 +130,7 @@ async function setup(answersIn: BotAnswersIn = { channels: ['C01LISTED'] }) {
   return { p, project, bot, member, key }
 }
 
-async function send(p: Platform, bus: SlackEventBus, r: SlackRouter, event: SlackMessageBotEvent): Promise<void> {
+async function send(p: AcpPlatform, bus: SlackEventBus, r: SlackRouter, event: SlackMessageBotEvent): Promise<void> {
   bus.emit(event)
   await r.idle()
 }

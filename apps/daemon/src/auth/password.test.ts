@@ -14,7 +14,7 @@ import {
 } from '@candy-mountain/shared'
 import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { createApp } from '../app'
+import { createTestApp } from '../testing/platform'
 import { dataPaths } from '../data-dir'
 import type { PlatformDatabase } from '../db'
 import { authSessions, users } from '../db/schema'
@@ -41,7 +41,7 @@ function adminId() {
 }
 
 function app({ secureCookie = false } = {}) {
-  return createApp({
+  return createTestApp({
     db: database.db,
     paths: dataPaths('/unused'),
     auth: passwordStrategy({ sessionTtlMs: TTL_MS, secureCookie, clock: { now: () => now }, hashing: LOW_COST_SCRYPT_PARAMS }),
@@ -189,20 +189,20 @@ describe('password strategy', () => {
 describe('strategy discovery', () => {
   it('reports the active strategy without authentication', async () => {
     expect(await (await app().request(AUTH_STRATEGY_PATH)).json()).toEqual<AuthStrategyResponse>({ strategy: 'password' })
-    const header = createApp({
+    const header = createTestApp({
       db: database.db,
       paths: dataPaths('/unused'),
       auth: createAuthStrategy({ strategy: 'trusted-header', header: 'x-user' }),
     })
     expect(await (await header.request(AUTH_STRATEGY_PATH)).json()).toEqual({ strategy: 'trusted-header' })
-    const development = createApp({ db: database.db, paths: dataPaths('/unused') })
+    const development = createTestApp({ db: database.db, paths: dataPaths('/unused') })
     expect(await (await development.request(AUTH_STRATEGY_PATH)).json()).toEqual({ strategy: 'development' })
   })
 
   it('only offers login under the password strategy', async () => {
-    const development = createApp({ db: database.db, paths: dataPaths('/unused') })
+    const development = createTestApp({ db: database.db, paths: dataPaths('/unused') })
     expect((await login({ username: ADMIN_USERNAME, password: PASSWORD }, development)).status).toBe(404)
-    const header = createApp({
+    const header = createTestApp({
       db: database.db,
       paths: dataPaths('/unused'),
       auth: createAuthStrategy({ strategy: 'trusted-header', header: 'x-user' }),

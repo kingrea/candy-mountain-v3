@@ -4,9 +4,9 @@ import { projectSessionsPath, sessionDecisionPath, sessionDecisionsPath, session
 import { eq } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { fakeBins } from '../acp/test-support'
-import { createApp } from '../app'
+import { createTestApp } from '../testing/platform'
 import { pluginInstances } from '../db/schema'
-import { startPlatform, type Platform, type PlatformOptions } from '../platform'
+import { startAcpPlatform, type AcpPlatform, type AcpPlatformOptions } from '../chat-claude-code/test-support'
 import { createPluginInstance } from '../plugins/instances/instances'
 import { setEnabledModules } from '../project-modules/enablement'
 import { createProject } from '../projects/projects'
@@ -16,7 +16,7 @@ import { resolveDecisionSettings } from './config'
 import { DecisionError } from './errors'
 
 let temp: TempDataDir | undefined
-let platform: Platform | undefined
+let platform: AcpPlatform | undefined
 
 afterEach(async () => {
   await platform?.sessions.close()
@@ -26,9 +26,9 @@ afterEach(async () => {
   temp = undefined
 })
 
-async function boot(options: PlatformOptions = {}): Promise<{ p: Platform, session: AgentSession }> {
+async function boot(options: AcpPlatformOptions = {}): Promise<{ p: AcpPlatform, session: AgentSession }> {
   temp = createTempDataDir()
-  const p = startPlatform(temp.root, { acp: { bins: fakeBins, killTimeoutMs: 1000 }, ...options })
+  const p = startAcpPlatform(temp.root, { acp: { bins: fakeBins, killTimeoutMs: 1000 }, ...options })
   platform = p
   const path = join(temp.root, '..', 'repos', 'alpha')
   mkdirSync(path, { recursive: true })
@@ -41,14 +41,14 @@ async function boot(options: PlatformOptions = {}): Promise<{ p: Platform, sessi
 }
 
 /** Stands in for a passing connection test: the chat gate only reads the stored result. */
-function healthyPlugin(p: Platform, projectId: string, type: PluginTypeId): void {
+function healthyPlugin(p: AcpPlatform, projectId: string, type: PluginTypeId): void {
   const instance = createPluginInstance({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly }, { type, scope: 'project', projectId, config: {}, secrets: {} })
   p.db.update(pluginInstances).set({ health: { healthy: true }, healthCheckedAt: new Date().toISOString() }).where(eq(pluginInstances.id, instance.id)).run()
 }
 
-const appOf = (p: Platform) => createApp({ db: p.db, paths: p.paths, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly, secretsReader: p.secrets, sessions: p.sessions, decisions: p.decisions })
+const appOf = (p: AcpPlatform) => createTestApp({ db: p.db, paths: p.paths, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly, secretsReader: p.secrets, families: p.families, runtime: p.runtime })
 
-function call(p: Platform, method: string, path: string, body?: unknown) {
+function call(p: AcpPlatform, method: string, path: string, body?: unknown) {
   return appOf(p).request(path, body === undefined ? { method } : { method, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
 }
 
@@ -68,7 +68,7 @@ function waitFor(sessions: SessionManager, id: string, kind: AgentSessionEventKi
   })
 }
 
-async function promptForDecision(p: Platform, session: AgentSession, text: string): Promise<Decision> {
+async function promptForDecision(p: AcpPlatform, session: AgentSession, text: string): Promise<Decision> {
   const opened = waitFor(p.sessions, session.id, 'decision_opened')
   expect((await call(p, 'POST', sessionPromptPath('alpha', session.id), { text })).status).toBe(202)
   const event = await opened
@@ -76,11 +76,11 @@ async function promptForDecision(p: Platform, session: AgentSession, text: strin
   return event.decision
 }
 
-function answer(p: Platform, session: AgentSession, decision: Decision, body: unknown) {
+function answer(p: AcpPlatform, session: AgentSession, decision: Decision, body: unknown) {
   return call(p, 'POST', sessionDecisionPath('alpha', session.id, decision.id), body)
 }
 
-async function finish(p: Platform, session: AgentSession, act: () => unknown): Promise<AgentSessionEvent[]> {
+async function finish(p: AcpPlatform, session: AgentSession, act: () => unknown): Promise<AgentSessionEvent[]> {
   const done = waitFor(p.sessions, session.id, 'turn_end')
   await act()
   await done
@@ -227,7 +227,7 @@ describe('pending decisions', () => {
     await finish(p, session, () => answer(p, session, decision, { optionKind: 'allow_once' }))
     await p.sessions.close()
     p.close()
-    const again = startPlatform(temp!.root, { acp: { bins: fakeBins, killTimeoutMs: 1000 } })
+    const again = startAcpPlatform(temp!.root, { acp: { bins: fakeBins, killTimeoutMs: 1000 } })
     platform = again
     const listed = (await (await call(again, 'GET', sessionDecisionsPath('alpha', session.id))).json()) as DecisionListResponse
     expect(listed.decisions).toMatchObject([{ id: decision.id, state: 'answered', answer: { optionKind: 'allow_once', surface: 'web' } }])

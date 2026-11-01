@@ -1,4 +1,7 @@
 export * from './errors'
+export * from './families'
 export * from './options'
 export { chatAgents, createThreadService, findChatAgent, findThreadAgent, projectBotAgents, threadServiceFor, threadTitle, type ChatAgent, type NativeFamilyRunner, type NativeFamilyRunners, type NativeFamilyTurn, type ThreadService } from './service'
 export { threadRoutes } from './routes'
+export { THREAD_BOTS, type ThreadBots } from './bots'
+export { THREAD_SESSIONS, type ThreadSessions } from './sessions'

@@ -33,12 +33,14 @@ const secretFields = computed(() => props.type?.secretFields ?? [])
 /** A type-specific setup form takes over the right-hand column, including its own submit actions. */
 const customForm = computed(() => (props.type ? pluginFormFor(props.type.id) : undefined))
 
+const thisScope = `this ${SCOPE.singular}`
+
 const scopeItems = computed(() => props.scopes.map(scope => ({
   value: scope,
   label: PLUGIN_SCOPE_LABELS[scope],
-  description: scope === 'project' ? `Used by ${project.value?.name ?? 'this project'} only.` : 'Shared by every project that has no plugin of its own.',
+  description: scope === 'project' ? `Used by ${project.value?.name ?? thisScope} only.` : `Shared by every ${SCOPE.singular} that has no plugin of its own.`,
 })))
-const scopeText = computed(() => (state.scope === 'project' ? `Used by ${project.value?.name ?? 'this project'} only.` : 'Platform-wide: shared by every project that has no plugin of its own.'))
+const scopeText = computed(() => (state.scope === 'project' ? `Used by ${project.value?.name ?? thisScope} only.` : `Platform-wide: shared by every ${SCOPE.singular} that has no plugin of its own.`))
 
 function reset() {
   const type = props.type

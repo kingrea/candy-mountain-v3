@@ -3,15 +3,7 @@ import type { DecisionEventPayload } from './decisions'
 import type { PlatformClientAction } from './platform-agent'
 import { PROJECTS_PATH } from './projects'
 
-/** `platform` runs in-process on Mastra; the other two are ACP processes. */
-export const AGENT_SESSION_FAMILIES = ['claude-code', 'codex', 'platform'] as const
-export type AgentSessionFamily = (typeof AGENT_SESSION_FAMILIES)[number]
-
-export const AGENT_SESSION_FAMILY_NAMES: Record<AgentSessionFamily, string> = {
-  'claude-code': 'Claude Code',
-  'codex': 'Codex',
-  'platform': 'Platform agent',
-}
+export type AgentSessionFamily = string
 
 /**
  * `idle`: no live process (never started, reaped or exited); the next prompt resumes it.

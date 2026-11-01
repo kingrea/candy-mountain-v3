@@ -3,11 +3,13 @@ import { promisify } from 'node:util'
 import { ISSUE_CHANGED_EVENT, PROJECTS_PATH, projectIssueEventsPath, projectIssuePath, type ApiErrorBody } from '@candy-mountain/shared'
 import { Hono } from 'hono'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { createApp, type AppEnv } from '../app'
+import { createTestApp } from '../testing/platform'
+import type { AppEnv } from '../app'
 import { dataPaths } from '../data-dir'
 import type { PlatformDatabase } from '../db'
 import { createProject } from '../projects'
 import { openTestDatabase } from '../testing'
+import { issuesRoutes } from './definition'
 import { issueEventRoutes } from './events-routes'
 import { createTempBeadsWorkspace, hasBd, type TempBeadsWorkspace } from './test-workspace'
 import { startIssueWatcher, type IssueChangeListener, type IssueWatcher } from './watcher'
@@ -143,9 +145,9 @@ describe('issue event stream', () => {
     expect((await res.json() as ApiErrorBody).error.code).toBe('not_found')
   })
 
-  it('is mounted by createApp ahead of the issue detail route', async () => {
+  it('is mounted by createTestApp ahead of the issue detail route', async () => {
     const { watcher } = fakeWatcher()
-    const app = createApp({ db: database.db, paths: dataPaths('/unused'), issueWatcher: watcher })
+    const app = createTestApp({ db: database.db, paths: dataPaths('/unused'), runtime: issuesRoutes(watcher) })
     const res = await app.request(projectIssuePath('events', 'events'))
     expect(res.headers.get('content-type')).toBe('text/event-stream')
     await res.body!.cancel()
@@ -171,7 +173,7 @@ describe.skipIf(!hasBd)('issue event stream against a real workspace', () => {
   })
 
   it('emits changed on the stream when bd create runs in the checkout', async () => {
-    const app = createApp({ db: database.db, paths: dataPaths('/unused'), issueWatcher: watcher })
+    const app = createTestApp({ db: database.db, paths: dataPaths('/unused'), runtime: issuesRoutes(watcher) })
     const stream = new StreamReader((await app.request(projectIssueEventsPath('live'))).body!)
     await stream.until(': connected')
     await new Promise(resolve => setTimeout(resolve, 200))

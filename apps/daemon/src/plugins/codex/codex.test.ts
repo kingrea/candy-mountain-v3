@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PLUGINS_PATH, PROJECTS_PATH, type Actor, type CodexLoginAttempt, type CodexLoginStatusResponse, type CodexRevokeResponse, type PluginInstance, type PluginInstanceResponse, type Project } from '@candy-mountain/shared'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createApp } from '../../app'
+import { createTestApp } from '../../testing/platform'
 import { ensureDataDir, type DataPaths } from '../../data-dir'
 import type { PlatformDatabase } from '../../db'
 import { createProject } from '../../projects/projects'
@@ -51,7 +51,7 @@ function harness(options: CodexLoginAttemptsOptions = {}, config: Record<string,
   const pluginTypes = createPluginTypeRegistry([createCodexPluginType(attempts)])
   const deps = { db: database.db, pluginTypes, secrets: store.writeOnly, secretsReader: store, paths }
   const admin: Actor = { id: 'u1', username: 'jack', displayName: 'Jack', roles: ['admin'] }
-  const app = createApp({ db: database.db, paths, auth: { name: 'development', resolve: () => admin }, pluginTypes, secrets: store.writeOnly, secretsReader: store })
+  const app = createTestApp({ db: database.db, paths, auth: { name: 'development', resolve: () => admin }, pluginTypes, secrets: store.writeOnly, secretsReader: store })
   return {
     root,
     paths,

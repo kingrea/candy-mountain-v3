@@ -18,7 +18,7 @@ async function readJson(c: Context): Promise<unknown> {
 }
 
 /** Admin only: the roster decides who may drive a project's bots. */
-export function teamRoutes() {
+export function teamMemberRoutes() {
   const app = new Hono<AppEnv>()
   const admin = requireAdmin()
   app.onError((error, c) => {

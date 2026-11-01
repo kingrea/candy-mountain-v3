@@ -1,6 +1,6 @@
 import { pluginTypeInfo } from '@candy-mountain/shared'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { startPlatform } from '../../platform'
+import { startTestPlatform } from '../../testing/platform'
 import { createTempDataDir } from '../../testing'
 import { checkPluginHealth } from '../health'
 import { createPluginTypeRegistry } from '../registry'
@@ -72,8 +72,9 @@ afterEach(() => {
 
 describe('netlify plugin type', () => {
   it('is registered as a single-instance, project-scoped type', () => {
-    expect(PLUGIN_TYPES).toContain(netlifyPluginType)
-    expect(createPluginTypeRegistry(PLUGIN_TYPES).get('netlify')).toBe(netlifyPluginType)
+    // The deployments definition brings it, so the product's own list leaves it out.
+    expect(PLUGIN_TYPES).not.toContain(netlifyPluginType)
+    expect(createPluginTypeRegistry([...PLUGIN_TYPES, netlifyPluginType]).get('netlify')).toBe(netlifyPluginType)
     const info = pluginTypeInfo(netlifyPluginType)
     expect(info.scopes).toEqual(['project'])
     expect(info.singleInstance).toBe(true)
@@ -91,7 +92,7 @@ describe('netlify plugin type', () => {
   it('boots the daemon with it registered', () => {
     const temp = createTempDataDir()
     try {
-      const platform = startPlatform(temp.root)
+      const platform = startTestPlatform(temp.root)
       expect(platform.pluginTypes.ids()).toContain('netlify')
       platform.close()
     }

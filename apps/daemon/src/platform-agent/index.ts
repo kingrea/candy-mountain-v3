@@ -1,5 +1,7 @@
 export { createPlatformAgent } from './agent'
 export { PLATFORM_TURN_KEY, turnOf, type PlatformRequestContext, type PlatformTurnContext } from './context'
+export { PLATFORM_AGENT, PLATFORM_FAMILY, platformAgentDefinition, startPlatformAgent, type PlatformAgentService, type PlatformAgentServiceDeps } from './definition'
 export { platformInstructions } from './instructions'
+export { platformAgentCapability } from './manifest'
 export { createPlatformAgentRunner, type PlatformAgentDeps, type PlatformAgentOptions } from './runner'
 export { describePlatform, openView, platformTools, startChat } from './tools'

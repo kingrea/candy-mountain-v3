@@ -1,5 +1,4 @@
 import {
-  MODULE_IDS,
   MODULES_PATH,
   PLUGIN_TYPES_PATH,
   PLUGINS_PATH,
@@ -45,7 +44,8 @@ export function useModulesSetup() {
     const label = definitions.data.value?.modules.find(mod => mod.id === id)?.label ?? id
     saving.value = id
     try {
-      const body: SetProjectModulesRequest = { modules: toggledModules(MODULE_IDS, enabled.value, id, on) }
+      const order = definitions.data.value?.modules.map(mod => mod.id) ?? []
+      const body: SetProjectModulesRequest = { modules: toggledModules(order, enabled.value, id, on) }
       enablement.data.value = await $api<ProjectModulesResponse>(projectModulesPath(slug.value), { method: 'PUT', body })
       await refreshProjectRegistry(slug.value)
       toast.add({ title: `${label} ${on ? 'enabled' : 'disabled'}`, color: 'success' })

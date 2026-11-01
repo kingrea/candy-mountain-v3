@@ -35,7 +35,7 @@ const modulesAction = computed<ButtonProps[]>(() =>
       <UEmpty
         v-if="lockout"
         icon="i-lucide-lock"
-        :title="`${lockout.label} needs setup for this project`"
+        :title="`${lockout.label} needs setup for this ${SCOPE.singular}`"
         :actions="lockout.actions"
         data-testid="view-lockout"
       >
@@ -53,7 +53,7 @@ const modulesAction = computed<ButtonProps[]>(() =>
       <UEmpty
         v-else-if="access?.state === 'not-enabled'"
         icon="i-lucide-blocks"
-        title="Not enabled for this project"
+        :title="`Not enabled for this ${SCOPE.singular}`"
         description="Enable the module that includes this page to use it here."
         :actions="modulesAction"
         data-testid="view-not-enabled"
@@ -62,14 +62,14 @@ const modulesAction = computed<ButtonProps[]>(() =>
         v-else-if="access?.state === 'not-granted'"
         icon="i-lucide-shield-off"
         title="Not available to you"
-        description="Your role does not include this page for this project."
+        :description="`Your role does not include this page for this ${SCOPE.singular}.`"
         data-testid="view-not-granted"
       />
       <UEmpty
         v-else-if="status === 'error'"
         icon="i-lucide-circle-x"
         title="Couldn't check access"
-        description="The daemon did not answer with this project's capabilities. Try again in a moment."
+        :description="`The daemon did not answer with this ${SCOPE.singular}'s capabilities. Try again in a moment.`"
         :actions="[{ label: 'Try again', icon: 'i-lucide-refresh-cw', onClick: () => refresh() }]"
       />
       <UEmpty v-else loading title="Checking access" />

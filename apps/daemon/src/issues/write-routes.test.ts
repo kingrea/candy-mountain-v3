@@ -17,12 +17,13 @@ import {
   type IssueResponse,
 } from '@candy-mountain/shared'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { createApp } from '../app'
+import { createTestApp } from '../testing/platform'
 import { dataPaths } from '../data-dir'
 import type { PlatformDatabase } from '../db'
 import { setEnabledModules } from '../project-modules/enablement'
 import { createProject } from '../projects'
 import { openTestDatabase } from '../testing'
+import { issuesRoutes } from './definition'
 import { createTempBeadsWorkspace, hasBd, type TempBeadsWorkspace } from './test-workspace'
 
 type Row = Record<string, unknown>
@@ -30,7 +31,7 @@ type Row = Record<string, unknown>
 describe.skipIf(!hasBd)('issue write routes against a real workspace', () => {
   let workspace: TempBeadsWorkspace
   let database: PlatformDatabase
-  let app: ReturnType<typeof createApp>
+  let app: ReturnType<typeof createTestApp>
   const ids = { epic: '', first: '', second: '' }
 
   beforeAll(async () => {
@@ -39,7 +40,7 @@ describe.skipIf(!hasBd)('issue write routes against a real workspace', () => {
     ids.first = workspace.create('First')
     ids.second = workspace.create('Second')
     database = openTestDatabase()
-    app = createApp({ db: database.db, paths: dataPaths('/unused') })
+    app = createTestApp({ db: database.db, paths: dataPaths('/unused'), runtime: issuesRoutes() })
     const project = await createProject(database.db, { name: 'Tracked', slug: 'tracked', source: { kind: 'local-path', path: workspace.path } })
     setEnabledModules(database.db, project.id, ['issues'])
   }, 60_000)

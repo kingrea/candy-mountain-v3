@@ -83,7 +83,7 @@ export interface CreateChatThreadRequest {
   issueIds?: string[]
 }
 
-export const chatThreadLink = (slug: string, threadId: string) => `/p/${slug}?thread=${encodeURIComponent(threadId)}`
+export const chatThreadLink = (prefix: string, slug: string, threadId: string) => `/${prefix}/${slug}?thread=${encodeURIComponent(threadId)}`
 
 /** A model or effort change starts a fresh session on the same thread. */
 export interface UpdateChatThreadRequest {

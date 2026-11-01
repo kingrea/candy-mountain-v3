@@ -1,6 +1,6 @@
 import { pluginTypeInfo } from '@candy-mountain/shared'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { startPlatform } from '../../platform'
+import { startTestPlatform } from '../../testing/platform'
 import { createTempDataDir } from '../../testing'
 import { checkPluginHealth } from '../health'
 import { createPluginTypeRegistry } from '../registry'
@@ -73,8 +73,9 @@ afterEach(() => {
 
 describe('heroku plugin type', () => {
   it('is registered as a single-instance, project-only type', () => {
-    expect(PLUGIN_TYPES).toContain(herokuPluginType)
-    expect(createPluginTypeRegistry(PLUGIN_TYPES).get('heroku')).toBe(herokuPluginType)
+    // The deployments definition brings it, so the product's own list leaves it out.
+    expect(PLUGIN_TYPES).not.toContain(herokuPluginType)
+    expect(createPluginTypeRegistry([...PLUGIN_TYPES, herokuPluginType]).get('heroku')).toBe(herokuPluginType)
     const info = pluginTypeInfo(herokuPluginType)
     expect(info.scopes).toEqual(['project'])
     expect(info.singleInstance).toBe(true)
@@ -91,7 +92,7 @@ describe('heroku plugin type', () => {
   it('boots the daemon with it registered', () => {
     const temp = createTempDataDir()
     try {
-      const platform = startPlatform(temp.root)
+      const platform = startTestPlatform(temp.root)
       expect(platform.pluginTypes.ids()).toContain('heroku')
       platform.close()
     }

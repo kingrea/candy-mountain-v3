@@ -1,26 +1,22 @@
-import { DEPLOY_OUTCOMES, type ActivityEvent, type NotificationKind } from '@candy-mountain/shared'
-import { eq, sql } from 'drizzle-orm'
+import { DEPLOY_OUTCOMES, projectViewRoute, type ActivityEvent, type NotificationKind } from '@candy-mountain/shared'
 import { subscribeActivityEvents } from '../activity/events'
-import { botSecretOwner } from '../bots/bots'
-import { bots } from '../db/schema'
-import { resolvePluginInstance, type PluginInstanceDeps, type SecretsReader } from '../plugins/instances/instances'
-import { createPluginSecrets } from '../plugins/secrets'
-import { createSlackOperations, slackConfig, slackPluginType, type SlackOperations } from '../plugins/slack'
+import type { NotificationChannel, NotificationDelivery } from '../capabilities/definition'
+import type { Db } from '../db'
 import { findProjectById } from '../projects/projects'
-import type { SlackConnections } from '../slack/manager'
 import { DEFAULT_WEB_URL } from './config'
 import { claimNotificationEvent, readNotificationRules, recordNotificationOutcome } from './rules'
 
-export interface NotificationDispatcherDeps extends PluginInstanceDeps {
-  secretsReader: SecretsReader
-  slack: Pick<SlackConnections, 'web'>
+export interface NotificationDispatcherDeps {
+  db: Db
+  /** Tried in order; the first to accept wins, and a delivery none accepts is recorded as a failure. */
+  channels: readonly NotificationChannel[]
+  scopeUrlPrefix: string
 }
 
 export interface NotificationDispatcherOptions {
   webUrl?: string
-  /** Per delivery, covering the DM open and the post together. */
+  /** Per delivery, covering everything a channel does for it. */
   timeoutMs?: number
-  fetch?: typeof fetch
   log?: Pick<Console, 'error'>
 }
 
@@ -49,45 +45,33 @@ export function notificationKindOf(event: Pick<ActivityEvent, 'type' | 'payload'
   }
 }
 
-const escapeMrkdwn = (text: string) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-
 export function absoluteLink(webUrl: string, path: string): string {
   return `${webUrl.replace(/\/+$/, '')}${path.startsWith('/') ? path : `/${path}`}`
 }
 
-interface Sender {
-  operations: SlackOperations
-  via: string
+export function noDeliveryChannel(channels: readonly NotificationChannel[]): string {
+  if (!channels.length) return 'No delivery channel: no capability offers one.'
+  return `No delivery channel: ${channels.map(c => c.id).join(', ')} ${channels.length > 1 ? 'have' : 'has'} no identity for this project.`
 }
 
-const NO_IDENTITY = 'No Slack identity: the project has no bot with a Slack bot token and there is no platform Slack plugin instance.'
-
-export function startNotificationDispatcher(deps: NotificationDispatcherDeps, { webUrl = DEFAULT_WEB_URL, timeoutMs = NOTIFICATION_TIMEOUT_MS, fetch, log = console }: NotificationDispatcherOptions = {}): NotificationDispatcher {
+export function startNotificationDispatcher(deps: NotificationDispatcherDeps, { webUrl = DEFAULT_WEB_URL, timeoutMs = NOTIFICATION_TIMEOUT_MS, log = console }: NotificationDispatcherOptions = {}): NotificationDispatcher {
   const inFlight = new Set<Promise<void>>()
   let closed = false
 
-  function resolveSender(projectId: string, signal: AbortSignal): Sender | null {
-    const rows = deps.db.select({ id: bots.id }).from(bots).where(eq(bots.projectId, projectId)).orderBy(sql`lower(${bots.name})`, bots.createdAt).all()
-    for (const { id } of rows) {
-      if (!deps.secrets.isSet(botSecretOwner(id), 'slackBotToken')) continue
-      const web = deps.slack.web(id, { fetch, signal })
-      if (web) return { operations: web.operations, via: `bot ${id}` }
+  async function send(event: ActivityEvent, kind: NotificationKind, destination: { channelId: string } | { memberId: string }, signal: AbortSignal) {
+    const slug = findProjectById(deps.db, event.projectId)?.slug
+    const url = absoluteLink(webUrl, event.link ?? (slug ? projectViewRoute(deps.scopeUrlPrefix, slug, '') : '/'))
+    const delivery: NotificationDelivery = { workspaceId: event.projectId, kind, destination, title: event.title, url }
+    for (const channel of deps.channels) {
+      if (await channel.deliver(delivery, signal)) return
     }
-    const instance = resolvePluginInstance(deps, projectId, 'slack')
-    if (!instance) return null
-    const secrets = createPluginSecrets(deps.secretsReader, instance.id, slackPluginType)
-    return { operations: createSlackOperations(slackConfig(instance.config), secrets, { fetch, signal }), via: 'the platform Slack plugin' }
+    throw new Error(noDeliveryChannel(deps.channels))
   }
 
   async function deliver(event: ActivityEvent, kind: NotificationKind, destination: { channelId: string } | { memberId: string }) {
     const signal = AbortSignal.timeout(timeoutMs)
     try {
-      const sender = resolveSender(event.projectId, signal)
-      if (!sender) throw new Error(NO_IDENTITY)
-      const slug = findProjectById(deps.db, event.projectId)?.slug
-      const url = absoluteLink(webUrl, event.link ?? (slug ? `/p/${slug}` : '/'))
-      const target = 'channelId' in destination ? { channel: destination.channelId } : { memberId: destination.memberId }
-      await sender.operations.postMessage({ ...target, text: `${escapeMrkdwn(event.title)}\n<${url}|Open in Candy Mountain>` })
+      await send(event, kind, destination, signal)
       recordNotificationOutcome(deps.db, event.projectId, kind, { ok: true, at: new Date().toISOString() })
     }
     catch (error) {

@@ -49,8 +49,8 @@ async function remove() {
   const confirmed = await confirm.open({
     title: `Delete the ${name.value} plugin?`,
     description: global
-      ? 'It is shared by every project. Its saved secrets are deleted, and projects without their own plugin lose what it provides.'
-      : 'Its saved secrets are deleted, and capabilities that need it stop working for this project.',
+      ? `It is shared by every ${SCOPE.singular}. Its saved secrets are deleted, and ${SCOPE.plural} without their own plugin lose what it provides.`
+      : `Its saved secrets are deleted, and capabilities that need it stop working for this ${SCOPE.singular}.`,
     confirmLabel: 'Delete plugin',
   }).result
   if (!confirmed) return

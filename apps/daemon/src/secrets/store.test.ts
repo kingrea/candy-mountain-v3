@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { inspect } from 'node:util'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { loadConfig } from '../config'
-import { startPlatform } from '../platform'
+import { startTestPlatform } from '../testing/platform'
 import { createTempDataDir, type TempDataDir } from '../testing'
 import { createSecretsStore, InvalidSecretIdError, MasterKey, SecretDecryptError, SecretsLockedError, type SecretsStore } from '.'
 
@@ -187,7 +187,7 @@ describe('master key', () => {
 describe('platform secrets', () => {
   it('lives under the data directory', () => {
     const temp = createTempDataDir()
-    const platform = startPlatform(temp.root, { secretsKey: MasterKey.generate() })
+    const platform = startTestPlatform(temp.root, { secretsKey: MasterKey.generate() })
     try {
       platform.secrets.set('bot', 'token', VALUE)
       expect(existsSync(join(temp.root, 'secrets', 'bot', 'token.json'))).toBe(true)
@@ -201,7 +201,7 @@ describe('platform secrets', () => {
 
   it('is locked when started without a key', () => {
     const temp = createTempDataDir()
-    const platform = startPlatform(temp.root)
+    const platform = startTestPlatform(temp.root)
     try {
       expect(platform.secrets.unlocked).toBe(false)
     }

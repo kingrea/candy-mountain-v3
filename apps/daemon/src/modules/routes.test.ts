@@ -1,6 +1,6 @@
 import { MODULES_PATH, type Actor, type ModuleListResponse } from '@candy-mountain/shared'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { createApp } from '../app'
+import { createTestApp } from '../testing/platform'
 import type { AuthStrategy } from '../auth'
 import { createCapabilityRegistry } from '../capabilities'
 import { fixtureCapability } from '../capabilities/fixtures'
@@ -28,7 +28,7 @@ function app(roles: string[]) {
     { id: 'agent-hub', label: 'Agent Hub', description: 'Agents.', icon: 'i-lucide-bot', capabilities: [{ capabilityId: 'bots', defaultRung: 'full' }] },
     { id: 'operations', label: 'Operations', description: 'Ops.', icon: 'i-lucide-activity', capabilities: [] },
   ], capabilities)
-  return createApp({ db: database.db, paths: {} as never, capabilities, modules, auth: as(roles) })
+  return createTestApp({ db: database.db, paths: {} as never, capabilities, modules, auth: as(roles) })
 }
 
 describe('module routes', () => {

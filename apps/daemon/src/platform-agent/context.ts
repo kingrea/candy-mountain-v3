@@ -9,6 +9,7 @@ export interface PlatformTurnContext {
   project: Project
   capabilities: CapabilityRegistry
   registry: RegistryResponse
+  scopeUrlPrefix: string
   access(capabilityId: string): CapabilityAccess
   model: { baseUrl: string, modelId: string, apiKey: string }
 }

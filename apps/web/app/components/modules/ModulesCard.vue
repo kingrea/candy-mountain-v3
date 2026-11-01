@@ -65,7 +65,7 @@ function readiness(capabilityId: string) {
         color="warning"
         variant="subtle"
         icon="i-lucide-triangle-alert"
-        title="Needs setup for this project"
+        :title="`Needs setup for this ${SCOPE.singular}`"
         :actions="actions"
         data-testid="module-degraded"
       >

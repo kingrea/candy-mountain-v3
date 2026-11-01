@@ -1,0 +1,6 @@
+{
+  "name": "@fixture/delta",
+  "private": true,
+  "type": "module",
+  "webLayer": "delta"
+}

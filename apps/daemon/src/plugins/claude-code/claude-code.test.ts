@@ -15,7 +15,7 @@ import {
 } from '@candy-mountain/shared'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { dataPaths } from '../../data-dir'
-import { startPlatform } from '../../platform'
+import { startTestPlatform } from '../../testing/platform'
 import { createTempDataDir } from '../../testing'
 import { instanceHarness, type InstanceHarness } from '../instances/test-support'
 import { claudeCodePluginType } from '../types/claude-code'
@@ -311,9 +311,9 @@ describe('claude-code login attempt registry', () => {
     try {
       const attempt = await claudeLoginAttempts.start({ instanceId: 'i3', configDir })
       expect(attempt.status).toBe('waiting')
-      const platform = startPlatform(temp.root)
+      const platform = startTestPlatform(temp.root)
       expect(platform.pluginTypes.has('claude-code')).toBe(true)
-      platform.close()
+      await platform.close()
       expect(claudeLoginAttempts.get(attempt.id)).toBeUndefined()
       await expectGone(fakeEnv(configDir).pid)
     }

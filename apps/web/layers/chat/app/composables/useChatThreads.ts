@@ -2,11 +2,9 @@ import {
   projectThreadPath,
   projectThreadsPath,
   threadCancelPath,
-  threadClosePath,
   threadPromptPath,
   threadReadPath,
   type ChatThread,
-  type ChatThreadCloseResponse,
   type ChatThreadListResponse,
   type ChatThreadPromptResponse,
   type ChatThreadResponse,
@@ -69,13 +67,6 @@ export function useChatThreads(slug: MaybeRefOrGetter<string | null | undefined>
     return response
   }
 
-  /** Bot threads only: the worktree is released unless it holds unpushed work, which the response reports. */
-  async function close(threadId: string): Promise<ChatThreadCloseResponse> {
-    const response = await $api<ChatThreadCloseResponse>(threadClosePath(path(), threadId), { method: 'POST' })
-    replace(response.thread)
-    return response
-  }
-
   async function markRead(threadId: string): Promise<ChatThread> {
     const response = await $api<{ thread: ChatThread }>(threadReadPath(path(), threadId), { method: 'POST' })
     replace(response.thread)
@@ -98,7 +89,6 @@ export function useChatThreads(slug: MaybeRefOrGetter<string | null | undefined>
     create,
     prompt,
     cancel,
-    close,
     markRead,
     update,
   }
@@ -120,10 +110,11 @@ export function useChatThread(slug: MaybeRefOrGetter<string | null | undefined>,
   const matches = computed(() => request.data.value?.thread.id === toValue(threadId) ? request.data.value : null)
 
   return {
+    /** The whole response, for a contributing layer that reads its own fields of it. */
+    response: matches,
     thread: computed(() => matches.value?.thread ?? null),
     session: computed(() => matches.value?.session ?? null),
     sessions: computed(() => matches.value?.sessions ?? []),
-    bot: computed(() => matches.value?.bot ?? null),
     status: request.status,
     error: request.error,
     refresh: () => request.refresh(),

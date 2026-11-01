@@ -1,4 +1,5 @@
 import type { ModuleInfo, PluginInstance, PluginScope, PluginTypeInfo } from '@candy-mountain/shared'
+import { SCOPE } from './scope-label'
 
 export interface ModulePluginNeed {
   typeId: string
@@ -53,10 +54,10 @@ export function modulePluginNeeds(mod: ModuleInfo, types: readonly PluginTypeInf
 export function pluginHealth(typeId: string, types: readonly PluginTypeInfo[], instances: readonly PluginInstance[]): PluginHealthSummary {
   const instance = instances.find(candidate => candidate.type === typeId && candidate.scope === 'project')
     ?? instances.find(candidate => candidate.type === typeId && candidate.scope === 'global')
-  if (!instance) return { state: 'missing', scope: null, detail: 'Not configured for this project or the platform.' }
+  if (!instance) return { state: 'missing', scope: null, detail: `Not configured for this ${SCOPE.singular} or the platform.` }
 
   const { scope } = instance
-  const owner = scope === 'project' ? 'This project\'s instance' : 'The platform instance'
+  const owner = scope === 'project' ? `This ${SCOPE.singular}'s instance` : 'The platform instance'
   const missing = (types.find(type => type.id === typeId)?.secretFields ?? [])
     .filter(field => field.required && instance.secrets[field.name] !== 'set')
     .map(field => field.label)

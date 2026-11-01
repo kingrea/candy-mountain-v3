@@ -1,9 +1,10 @@
-import { PLUGIN_TYPE_IDS } from '@candy-mountain/shared'
 import { describe, expect, it } from 'vitest'
 import { cloneManifest, fixtureCapability } from './fixtures'
 import { CapabilityManifestError } from './manifest'
-import { CAPABILITIES } from './manifests'
+import { platformDefinitions } from '../platform-capabilities'
+import { PLUGIN_TYPES } from '../plugins'
 import { createCapabilityRegistry } from './registry'
+import { CAPABILITY_DEFINITIONS } from '../testing/platform'
 
 describe('createCapabilityRegistry', () => {
   it('loads valid manifests and looks them up', () => {
@@ -19,8 +20,8 @@ describe('createCapabilityRegistry', () => {
     expect(registry.has('issues')).toBe(true)
   })
 
-  it('loads the real manifest list', () => {
-    const registry = createCapabilityRegistry(CAPABILITIES, { pluginTypeIds: PLUGIN_TYPE_IDS })
+  it('loads the real definition list', () => {
+    const registry = createCapabilityRegistry([...platformDefinitions(), ...CAPABILITY_DEFINITIONS], { pluginTypeIds: PLUGIN_TYPES.map(t => t.id) })
     expect(registry.get('bots')).toMatchObject({ views: [{ id: 'bots', path: 'bots' }], requiresPlugins: ['repository'], requiresAnyPlugins: [['claude-code', 'codex']] })
     expect(registry.get('team')).toMatchObject({ views: [{ id: 'team', path: 'team' }], requiresPlugins: [], requiresProjectFacts: ['hasBots'] })
     for (const id of ['bots', 'team']) expect(registry.get(id).ladder.map(r => r.name)).toEqual(['none', 'manage'])

@@ -11,17 +11,18 @@ import {
   type IssueResponse,
 } from '@candy-mountain/shared'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { createApp } from '../app'
+import { createTestApp } from '../testing/platform'
 import { dataPaths } from '../data-dir'
 import type { PlatformDatabase } from '../db'
 import { createProject } from '../projects'
 import { openTestDatabase } from '../testing'
+import { issuesRoutes } from './definition'
 import { createTempBeadsWorkspace, hasBd, type TempBeadsWorkspace } from './test-workspace'
 
 describe.skipIf(!hasBd)('issue routes against a real workspace', () => {
   let workspace: TempBeadsWorkspace
   let database: PlatformDatabase
-  let app: ReturnType<typeof createApp>
+  let app: ReturnType<typeof createTestApp>
   let bare: string
   const ids = { epic: '', first: '', second: '', closed: '' }
 
@@ -36,7 +37,7 @@ describe.skipIf(!hasBd)('issue routes against a real workspace', () => {
 
     bare = mkdtempSync(join(tmpdir(), 'candy-mountain-no-beads-'))
     database = openTestDatabase()
-    app = createApp({ db: database.db, paths: dataPaths('/unused') })
+    app = createTestApp({ db: database.db, paths: dataPaths('/unused'), runtime: issuesRoutes() })
     await createProject(database.db, { name: 'Tracked', slug: 'tracked', source: { kind: 'local-path', path: workspace.path } })
     await createProject(database.db, { name: 'Bare', slug: 'bare', source: { kind: 'local-path', path: bare } })
   }, 60_000)

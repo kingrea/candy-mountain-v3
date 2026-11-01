@@ -19,7 +19,7 @@ export function projectModuleRoutes() {
 
   app.get('/:slug/modules', admin, (c) => {
     const project = getProjectBySlug(c.var.db, c.req.param('slug'))
-    return c.json<ProjectModulesResponse>({ modules: listEnabledModules(c.var.db, project.id) })
+    return c.json<ProjectModulesResponse>({ modules: listEnabledModules(c.var.db, project.id, c.var.modules) })
   })
 
   app.put('/:slug/modules', admin, async (c) => {
@@ -28,7 +28,7 @@ export function projectModuleRoutes() {
       throw new ProjectModulesError('invalid_request', 'Request body must be valid JSON')
     })
     const modules = parseModuleIds(body, c.var.modules)
-    return c.json<ProjectModulesResponse>({ modules: setEnabledModules(c.var.db, project.id, modules) })
+    return c.json<ProjectModulesResponse>({ modules: setEnabledModules(c.var.db, project.id, modules, c.var.modules) })
   })
 
   return app

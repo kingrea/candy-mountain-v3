@@ -1,9 +1,11 @@
 import { existsSync } from 'node:fs'
 import type { ModuleDefinition } from '@candy-mountain/shared'
 import { afterEach, describe, expect, it } from 'vitest'
-import { CAPABILITIES, createCapabilityRegistry } from '../capabilities'
+import { CANDY_MOUNTAIN } from '../candy-mountain'
+import { createCapabilityRegistry } from '../capabilities'
+import { productCapabilityRegistry } from '../product'
 import { fixtureCapability } from '../capabilities/fixtures'
-import { startPlatform } from '../platform'
+import { startTestPlatform } from '../testing/platform'
 import { createTempDataDir, type TempDataDir } from '../testing'
 import { MODULES } from './definitions'
 import { createModuleRegistry, ModuleDefinitionError } from './registry'
@@ -24,7 +26,7 @@ const rejects = (modules: ModuleDefinition[], message: string) => {
 
 describe('createModuleRegistry', () => {
   it('loads the three declared modules, empty ones included', () => {
-    const registry = createModuleRegistry(MODULES, createCapabilityRegistry(CAPABILITIES))
+    const registry = createModuleRegistry(MODULES, productCapabilityRegistry(CANDY_MOUNTAIN))
     expect(registry.list().map(m => m.id)).toEqual(['issues', 'agent-hub', 'operations'])
     expect(registry.get('agent-hub').label).toBe('Agent Hub')
     expect(registry.get('agent-hub').capabilities).toEqual(expect.arrayContaining([{ capabilityId: 'bots', defaultRung: 'manage' }, { capabilityId: 'team', defaultRung: 'manage' }]))
@@ -53,8 +55,8 @@ describe('createModuleRegistry', () => {
     rejects([mod({ capabilities: [{ capabilityId: 'uptime', defaultRung: 'admin' }] })], "default rung 'admin' is not on the ladder of capability 'uptime' (none, read, full).")
   })
 
-  it('rejects unknown, duplicate and incomplete modules', () => {
-    rejects([mod({ id: 'billing' as never })], "Unknown module id 'billing'")
+  it('rejects malformed, duplicate and incomplete modules', () => {
+    rejects([mod({ id: 'Billing' })], "Invalid module id 'Billing'")
     rejects([mod(), mod()], "Duplicate module id(s): 'operations'.")
     rejects([mod({ label: ' ' })], "Module 'operations': label must not be empty.")
     rejects([mod({ capabilities: [{ capabilityId: 'uptime', defaultRung: 'read' }, { capabilityId: 'uptime', defaultRung: 'full' }] })], "lists capability 'uptime' more than once.")
@@ -67,14 +69,14 @@ describe('daemon boot with modules', () => {
 
   it('refuses to start on a bad module and touches nothing on disk', () => {
     temp = createTempDataDir()
-    expect(() => startPlatform(temp.root, { modules: [mod({ capabilities: [{ capabilityId: 'uptime', defaultRung: 'full' }] })] }))
+    expect(() => startTestPlatform(temp.root, { modules: [mod({ capabilities: [{ capabilityId: 'uptime', defaultRung: 'full' }] })] }))
       .toThrow("Module 'operations': default rung 'full' is not on the ladder of capability 'uptime' (none, read, manage).")
     expect(existsSync(temp.root)).toBe(false)
   })
 
   it('exposes the module registry', () => {
     temp = createTempDataDir()
-    const platform = startPlatform(temp.root)
+    const platform = startTestPlatform(temp.root)
     try {
       expect(platform.modules.list().map(m => m.id)).toEqual(['issues', 'agent-hub', 'operations'])
     }

@@ -43,11 +43,13 @@ export interface LiveVersionSourceInfo {
   label: string
   description: string
   fields: readonly LiveVersionSourceField[]
+  /** Plugin type the source reads through; it is unusable until the project resolves a healthy instance. */
+  plugin?: string
 }
 
 export function liveVersionSourceInfo(source: LiveVersionSourceInfo): LiveVersionSourceInfo {
-  const { id, label, description, fields } = source
-  return { id, label, description, fields }
+  const { id, label, description, fields, plugin } = source
+  return { id, label, description, fields, ...(plugin === undefined ? {} : { plugin }) }
 }
 
 export interface Environment {

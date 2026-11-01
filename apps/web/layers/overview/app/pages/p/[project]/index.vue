@@ -11,11 +11,16 @@
 
       <template #body>
         <div class="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
-          <OverviewActivity class="order-last lg:order-first" />
+          <div class="order-last flex flex-col gap-6 lg:order-first">
+            <OverviewActivity />
+            <OverviewCards name="main" />
+          </div>
           <div class="flex flex-col gap-6">
             <OverviewFacts />
+            <OverviewCards name="facts" />
             <OverviewModules />
             <OverviewPlugins />
+            <OverviewCards name="aside" />
           </div>
         </div>
       </template>

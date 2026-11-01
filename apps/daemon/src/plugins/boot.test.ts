@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs'
 import { afterEach, describe, expect, it } from 'vitest'
 import { CapabilityManifestError } from '../capabilities'
 import { fixtureCapability } from '../capabilities/fixtures'
-import { startPlatform } from '../platform'
+import { startTestPlatform } from '../testing/platform'
 import { createTempDataDir, type TempDataDir } from '../testing'
 import { PluginTypeError } from './definition'
 import { clonePluginType, fixturePluginType } from './fixtures'
@@ -14,7 +14,7 @@ describe('daemon boot with plugin types', () => {
 
   it('refuses to start when a manifest requires an unknown plugin type', () => {
     temp = createTempDataDir()
-    const start = () => startPlatform(temp.root, {
+    const start = () => startTestPlatform(temp.root, {
       pluginTypes: [fixturePluginType('repository')],
       capabilities: [fixtureCapability('deployments', ['repository', 'netlify'])],
     })
@@ -27,13 +27,13 @@ describe('daemon boot with plugin types', () => {
     temp = createTempDataDir()
     const bad = clonePluginType(fixturePluginType('slack'))
     bad.scopes = []
-    expect(() => startPlatform(temp.root, { pluginTypes: [bad] })).toThrow(PluginTypeError)
+    expect(() => startTestPlatform(temp.root, { pluginTypes: [bad] })).toThrow(PluginTypeError)
     expect(existsSync(temp.root)).toBe(false)
   })
 
   it('starts when every required plugin type is registered', () => {
     temp = createTempDataDir()
-    const platform = startPlatform(temp.root, {
+    const platform = startTestPlatform(temp.root, {
       pluginTypes: [fixturePluginType('repository'), fixturePluginType('netlify')],
       capabilities: [fixtureCapability('deployments', ['repository', 'netlify'])],
       modules: [],

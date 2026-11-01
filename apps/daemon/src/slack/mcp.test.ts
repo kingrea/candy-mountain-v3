@@ -13,7 +13,7 @@ import { GOOD_TOKEN, stubHosts } from '../plugins/repository/fake-hosts'
 import { createSlackClient, createSlackOperations } from '../plugins/slack'
 import { assertPostureNotWidened, PostureError, resolveBotPosture } from '../posture'
 import { createProject } from '../projects/projects'
-import { startPlatform, type Platform } from '../platform'
+import { startAcpPlatform, type AcpPlatform } from '../chat-claude-code/test-support'
 import { MasterKey } from '../secrets'
 import { addTeamMember } from '../team'
 import { createTempDataDir, type TempDataDir } from '../testing'
@@ -124,7 +124,7 @@ describe('MCP registration at launch', () => {
 describe('MCP host', () => {
   let host: AgentMcpHost | undefined
   let temp: TempDataDir | undefined
-  let platform: Platform | undefined
+  let platform: AcpPlatform | undefined
   afterEach(async () => {
     await host?.close()
     host = undefined
@@ -136,7 +136,7 @@ describe('MCP host', () => {
 
   it('serves only the session it issued the token to, over loopback POST', async () => {
     temp = createTempDataDir()
-    platform = startPlatform(temp.root, { secretsKey: MasterKey.generate() })
+    platform = startAcpPlatform(temp.root, { secretsKey: MasterKey.generate() })
     const project = await createProject(platform.db, { name: 'beta', slug: 'beta', source: { kind: 'local-path', path: temp.root } })
     const plain = platform.sessions.create({ projectId: project.id, family: 'claude-code', actorId: 'u', cwd: temp.root })
     const bot = platform.sessions.create({ projectId: project.id, family: 'claude-code', actorId: 'u', cwd: temp.root, posture: { bot: { id: 'b', name: 'B', holder: { kind: 'slack', id: 'b:C1:1.1' } } } })
@@ -200,7 +200,7 @@ for await (const line of readline.createInterface({ input: process.stdin })) {
 
 describe('Block Kit tool end to end', () => {
   let temp: TempDataDir | undefined
-  let platform: Platform | undefined
+  let platform: AcpPlatform | undefined
   let repo: TempGitRepo | undefined
   let router: SlackRouter | undefined
 
@@ -251,7 +251,7 @@ describe('Block Kit tool end to end', () => {
     stubHosts()
     temp = createTempDataDir()
     const transport = fakeTransport()
-    const p = startPlatform(temp.root, { secretsKey: MasterKey.generate(), acp: { bins: fakeBins, killTimeoutMs: 1000 }, agentMcp: { slack: transport.slack } })
+    const p = startAcpPlatform(temp.root, { secretsKey: MasterKey.generate(), acp: { bins: fakeBins, killTimeoutMs: 1000 }, slack: { web: transport.slack } })
     platform = p
     const script = join(temp.root, 'mcp-claude.mjs')
     writeFileSync(script, MCP_CLAUDE)

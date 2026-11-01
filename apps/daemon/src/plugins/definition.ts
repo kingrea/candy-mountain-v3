@@ -1,5 +1,5 @@
 import {
-  isPluginTypeId,
+  MANIFEST_ID_PATTERN,
   PLUGIN_FIELD_NAME_PATTERN,
   PLUGIN_SCOPES,
   validatePluginConfig,
@@ -73,8 +73,8 @@ export function assertPluginType(type: AnyPluginType): void {
   const fail = (msg: string): never => {
     throw new PluginTypeError(`Plugin type '${String(type.id)}': ${msg}`)
   }
-  if (!isPluginTypeId(type.id)) {
-    throw new PluginTypeError(`Unknown plugin type id '${String(type.id)}'; add it to PLUGIN_TYPE_IDS in @candy-mountain/shared first.`)
+  if (typeof type.id !== 'string' || !MANIFEST_ID_PATTERN.test(type.id)) {
+    throw new PluginTypeError(`Invalid plugin type id '${String(type.id)}'; ids are lowercase letters and digits joined by '-', '_' or '.'.`)
   }
   if (isBlank(type.name) || isBlank(type.description)) fail('name and description must not be empty.')
   if (!Array.isArray(type.reach) || !type.reach.length || type.reach.some(isBlank)) fail('needs at least one reach line, none empty.')

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { PlatformDatabase } from '../db'
 import { roleGrants, roles } from '../db/schema'
-import { startPlatform } from '../platform'
+import { startTestPlatform } from '../testing/platform'
 import { createTempDataDir, openTestDatabase, type TempDataDir } from '../testing'
 import type { AccessDeps } from './access'
 import { GrantError } from './errors'
@@ -100,13 +100,13 @@ describe('grants across restarts', () => {
   it('keeps grants and resolved rungs after the platform restarts', () => {
     temp = createTempDataDir()
     const options = { capabilities: TEST_CAPABILITIES, modules: TEST_MODULES }
-    const first = startPlatform(temp.root, options)
+    const first = startTestPlatform(temp.root, options)
     addRole(first.db, 'developer')
     expect(listGrants(first.db).map(g => g.target.id)).toEqual(['agent-hub', 'issues', 'operations'])
     const grant = setGrant(first, { role: 'developer', target: { kind: 'module', id: 'operations' }, rungs: { deployments: 'full' } })
     first.close()
 
-    const second = startPlatform(temp.root, options)
+    const second = startTestPlatform(temp.root, options)
     try {
       expect(second.appliedMigrations).toBe(0)
       expect(listGrants(second.db, ['developer'])).toEqual([grant])

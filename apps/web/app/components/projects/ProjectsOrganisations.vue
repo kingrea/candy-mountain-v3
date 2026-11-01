@@ -87,8 +87,8 @@ async function remove(organisation: Organisation) {
   const confirmed = await confirm.open({
     title: `Delete ${organisation.name}?`,
     description: count === 0
-      ? 'It has no projects.'
-      : `Its ${count} project${count === 1 ? '' : 's'} will move to No organisation.`,
+      ? `It has no ${SCOPE.plural}.`
+      : `Its ${SCOPE.count(count)} will move to No organisation.`,
     confirmLabel: 'Delete organisation',
   }).result
   if (!confirmed) return
@@ -111,7 +111,7 @@ async function remove(organisation: Organisation) {
         Organisations
       </h2>
       <p class="text-sm text-muted">
-        Groups for the project picker.
+        Groups for the {{ SCOPE.singular }} picker.
       </p>
     </template>
 
@@ -158,7 +158,7 @@ async function remove(organisation: Organisation) {
               {{ organisation.name }}
             </p>
             <p class="text-xs text-muted">
-              {{ projectCounts.get(organisation.id) ?? 0 }} project{{ projectCounts.get(organisation.id) === 1 ? '' : 's' }}
+              {{ SCOPE.count(projectCounts.get(organisation.id) ?? 0) }}
             </p>
           </div>
           <UButton

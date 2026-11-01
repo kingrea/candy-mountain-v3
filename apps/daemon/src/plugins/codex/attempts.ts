@@ -178,5 +178,5 @@ export class CodexLoginAttempts {
   }
 }
 
-/** The daemon's registry; `Platform.close` ends its open attempts. */
+/** The daemon's registry; the chat-codex definition's close ends its open attempts. */
 export const codexLoginAttempts = new CodexLoginAttempts()

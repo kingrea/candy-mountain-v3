@@ -1,5 +1,6 @@
 import {
   LIVE_VERSION_SOURCE_ID_PATTERN,
+  MANIFEST_ID_PATTERN,
   MONITOR_OPTION_FIELD_KINDS,
   MONITOR_OPTION_NAME_PATTERN,
   validateLiveVersionSettings,
@@ -62,6 +63,7 @@ export function assertLiveVersionSource(source: LiveVersionSource): void {
   if (typeof source.read !== 'function') fail('read must be a function.')
   if (source.validate !== undefined && typeof source.validate !== 'function') fail('validate must be a function.')
   if (!Array.isArray(source.fields)) fail('fields must be an array.')
+  if (source.plugin !== undefined && (typeof source.plugin !== 'string' || !MANIFEST_ID_PATTERN.test(source.plugin))) fail(`invalid plugin type id '${String(source.plugin)}'.`)
 
   const names = source.fields.map(f => f.name)
   const badNames = names.filter(n => typeof n !== 'string' || !MONITOR_OPTION_NAME_PATTERN.test(n))

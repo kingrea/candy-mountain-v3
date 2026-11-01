@@ -1,7 +1,7 @@
 import { ADMIN_ROLE, ADMIN_USERNAME } from '@candy-mountain/shared'
 import { describe, expect, it } from 'vitest'
 import { roles, userRoles, users } from '../db/schema'
-import { startPlatform } from '../platform'
+import { startTestPlatform } from '../testing/platform'
 import { createTempDataDir, openTestDatabase } from '../testing'
 import { findActorByUsername } from './actors'
 import { seedAuth } from './seed'
@@ -24,12 +24,12 @@ describe('seedAuth', () => {
 
   it('seeds at boot and keeps the same admin across restarts', () => {
     const temp = createTempDataDir()
-    const first = startPlatform(temp.root)
+    const first = startTestPlatform(temp.root)
     const admin = findActorByUsername(first.db, ADMIN_USERNAME)
     first.close()
     expect(admin).toMatchObject({ roles: [ADMIN_ROLE] })
 
-    const second = startPlatform(temp.root)
+    const second = startTestPlatform(temp.root)
     try {
       expect(findActorByUsername(second.db, ADMIN_USERNAME)).toEqual(admin)
       expect(second.db.select().from(users).all()).toHaveLength(1)

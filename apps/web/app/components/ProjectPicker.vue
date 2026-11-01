@@ -1,7 +1,7 @@
 <template>
   <UTooltip
     v-if="status === 'success' && items.length === 0"
-    text="Add a project"
+    :text="addLabel"
     :disabled="!collapsed"
     :content="{ side: 'right' }"
   >
@@ -10,14 +10,14 @@
       icon="i-lucide-plus"
       color="neutral"
       variant="ghost"
-      :label="collapsed ? undefined : 'Add a project'"
-      :aria-label="collapsed ? 'Add a project' : undefined"
+      :label="collapsed ? undefined : addLabel"
+      :aria-label="collapsed ? addLabel : undefined"
       :class="collapsed ? 'h-8 w-full justify-center' : 'w-full justify-start'"
     />
   </UTooltip>
   <UTooltip
     v-else
-    :text="project?.name ?? 'Select a project'"
+    :text="project?.name ?? selectLabel"
     :disabled="!collapsed"
     :content="{ side: 'right' }"
   >
@@ -25,12 +25,12 @@
       :model-value="slug ?? undefined"
       :items="items"
       value-key="value"
-      :search-input="searchable ? { placeholder: 'Search projects…' } : false"
-      placeholder="Select a project"
+      :search-input="searchable ? { placeholder: `Search ${SCOPE.plural}…` } : false"
+      :placeholder="selectLabel"
       color="neutral"
       variant="ghost"
       :loading="status === 'pending'"
-      aria-label="Project"
+      :aria-label="SCOPE.singularTitle"
       :class="collapsed ? 'h-8 w-full' : 'w-full'"
       :ui="collapsed ? collapsedUi : expandedUi"
       @update:open="onOpen"
@@ -55,7 +55,7 @@
             color="neutral"
             variant="ghost"
             size="sm"
-            label="Manage projects"
+            :label="`Manage ${SCOPE.plural}`"
             block
             class="justify-start"
           />
@@ -70,6 +70,9 @@ defineProps<{ collapsed?: boolean }>()
 
 // Shows the last opened project on system pages too, so the picker agrees with the side menu.
 const { slug, routeSlug, project, groups, status, refresh, select } = useNavigationProject()
+
+const addLabel = `Add ${SCOPE.aSingular}`
+const selectLabel = `Select ${SCOPE.aSingular}`
 
 const items = computed(() => projectPickerItems(groups.value))
 const searchable = computed(() =>

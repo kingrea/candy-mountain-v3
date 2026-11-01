@@ -145,8 +145,8 @@ describe('assertCapability', () => {
     rejects(cap, "rung 'full' allows chat but the capability has no agents.")
   })
 
-  it('rejects ids outside the fixed capability list', () => {
-    rejects({ ...valid(), id: 'billing' }, "Unknown capability id 'billing'")
+  it('rejects a malformed capability id', () => {
+    rejects({ ...valid(), id: 'Billing' }, "Invalid capability id 'Billing'")
   })
 
   it('rejects duplicate and malformed ids within a manifest', () => {
@@ -157,6 +157,10 @@ describe('assertCapability', () => {
     const malformed = valid()
     malformed.tools[0]!.id = 'Has Spaces'
     rejects(malformed, "invalid tool id(s) 'Has Spaces'")
+
+    const family = valid()
+    family.agents[0]!.family = 'Claude Code'
+    rejects(family, "invalid session family id(s) 'Claude Code'")
   })
 
   it('rejects bad view paths', () => {
@@ -176,9 +180,9 @@ describe('assertCapability', () => {
     rejects({ ...valid(), requiresProjectFacts: ['hasBeads', 'hasBeads'] }, "repeats required project fact(s) 'hasBeads'.")
   })
 
-  it('accepts any-of plugin groups and rejects unknown, repeated, single or already required types', () => {
+  it('accepts any-of plugin groups and rejects malformed, repeated, single or already required types', () => {
     expect(() => assertCapability({ ...valid(), requiresPlugins: ['repository'], requiresAnyPlugins: [['claude-code', 'codex']] })).not.toThrow()
-    rejects({ ...valid(), requiresAnyPlugins: [['claude-code', 'gitlab']] }, "has unknown plugin type(s) 'gitlab' in an any-of group.")
+    rejects({ ...valid(), requiresAnyPlugins: [['claude-code', 'Git Lab']] }, "invalid any-of plugin id(s) 'Git Lab'")
     rejects({ ...valid(), requiresAnyPlugins: [['codex', 'codex']] }, "repeats plugin type(s) 'codex' in an any-of group.")
     rejects({ ...valid(), requiresAnyPlugins: [['codex']] }, 'an any-of plugin group needs at least two plugin types')
     rejects({ ...valid(), requiresPlugins: ['codex'], requiresAnyPlugins: [['claude-code', 'codex']] }, "plugin type(s) 'codex' are both required and in an any-of group.")

@@ -5,7 +5,7 @@ import { chatThreadLink, CHAT_THREAD_QUERY } from '../../app/utils/chatLinks'
 import { chatAgentRailEntries, chatRailRegister, chatRailSources } from '../../app/utils/chatRail'
 import { chatRelativeTime } from '../../app/utils/chatTime'
 
-const agent = (id: string, extra: Partial<RegistryAgent> = {}): RegistryAgent => ({ id, capabilityId: 'chat-claude-code', label: id, description: '', ...extra })
+const agent = (id: string, extra: Partial<RegistryAgent> = {}): RegistryAgent => ({ id, capabilityId: 'chat-scribe', label: id, description: '', ...extra })
 
 function thread(agentId: string, flags: Partial<ChatThread> = {}): ChatThread {
   return {
@@ -18,12 +18,12 @@ function thread(agentId: string, flags: Partial<ChatThread> = {}): ChatThread {
 describe('chatAgentRailEntries', () => {
   it('maps registry agents with flags folded from their threads', () => {
     const entries = chatAgentRailEntries(
-      [agent('claude-code', { label: 'Claude Code', avatar: 'i-lucide-sparkles' }), agent('codex')],
-      [thread('claude-code', { unread: true }), thread('claude-code', { id: 't2', working: true }), thread('codex')],
+      [agent('scribe', { label: 'Scribe', avatar: 'i-lucide-sparkles' }), agent('oracle')],
+      [thread('scribe', { unread: true }), thread('scribe', { id: 't2', working: true }), thread('oracle')],
     )
     expect(entries).toEqual([
-      expect.objectContaining({ id: 'claude-code', label: 'Claude Code', avatar: 'i-lucide-sparkles', agentId: 'claude-code', unread: true, working: true }),
-      expect.objectContaining({ id: 'codex', avatar: 'i-lucide-bot', unread: false, working: false }),
+      expect.objectContaining({ id: 'scribe', label: 'Scribe', avatar: 'i-lucide-sparkles', agentId: 'scribe', unread: true, working: true }),
+      expect.objectContaining({ id: 'oracle', avatar: 'i-lucide-bot', unread: false, working: false }),
     ])
   })
 

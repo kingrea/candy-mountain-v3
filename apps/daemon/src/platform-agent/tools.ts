@@ -23,7 +23,7 @@ export function openView(turn: PlatformTurnContext, viewId: string): PlatformAct
   if (!result.allowed) return refusal(result)
   return {
     refused: false,
-    action: { kind: 'navigate', to: projectViewRoute(turn.project.slug, view.path), projectSlug: turn.project.slug, viewId, capabilityId: owner.id },
+    action: { kind: 'navigate', to: projectViewRoute(turn.scopeUrlPrefix, turn.project.slug, view.path), projectSlug: turn.project.slug, viewId, capabilityId: owner.id },
     summary: `The browser opens ${view.label} for ${turn.project.name}.`,
   }
 }

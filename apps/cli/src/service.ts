@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { PRODUCT_NAME } from '@candy-mountain/shared'
+import { product } from './product'
 import { EXIT, stop, type Io } from './commands'
 import { isRunning, readPidFile } from './pid-file'
 import { isHealthy, sleep } from './probe'
@@ -161,7 +161,7 @@ async function waitForService(ctx: ServiceContext, settings: Settings, io: Io, t
   while (Date.now() < deadline) {
     const health = await Promise.all(settings.services.map((service) => isHealthy(service.healthUrl)))
     if (health.every(Boolean)) {
-      io.out(`${PRODUCT_NAME} is running at ${settings.services[1].url} (${UNIT_NAME})`)
+      io.out(`${product.name} is running at ${settings.services[1].url} (${UNIT_NAME})`)
       return EXIT.ok
     }
     if ((await systemctl(ctx.systemd, 'is-failed', '--quiet', UNIT_NAME)).code === 0) break

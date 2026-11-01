@@ -1,6 +1,6 @@
 import type { Decision, DecisionOption } from '@candy-mountain/shared'
 
-/** The extension key the daemon and the Claude shim put on ACP `_meta`; the web app does not depend on the shim package. */
+/** The extension key the daemon and the agent adapters put on a decision's `_meta`; the web app does not depend on the adapter package. */
 export const CHAT_DECISION_META_KEY = 'clanker-corner'
 
 export interface ChatQuestionChoice {

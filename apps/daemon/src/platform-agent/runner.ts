@@ -1,13 +1,13 @@
 import { PLATFORM_AGENT_ID, type AgentSessionEventPayload, type PlatformClientAction } from '@candy-mountain/shared'
 import type { Mastra } from '@mastra/core'
 import { RequestContext } from '@mastra/core/request-context'
-import { loadRegistry, resolveCapabilityAccess, type CapabilityAccess, type RegistryDeps } from '../registry'
+import { loadRegistry, resolveCapabilityAccess, type CapabilityAccess, type RegistryLoadDeps } from '../registry'
 import type { SecretsStore } from '../secrets'
 import { resolveLlmGatewayConfig } from '../settings/platform-settings'
 import type { NativeFamilyRunner } from '../threads'
 import { PLATFORM_TURN_KEY, type PlatformRequestContext, type PlatformTurnContext } from './context'
 
-export interface PlatformAgentDeps extends RegistryDeps {
+export interface PlatformAgentDeps extends RegistryLoadDeps {
   secretsReader: SecretsStore
   mastra: Mastra
 }
@@ -51,6 +51,7 @@ export function createPlatformAgentRunner(deps: PlatformAgentDeps, options: Plat
       project,
       capabilities: deps.capabilities,
       registry: loadRegistry(deps, actor, project),
+      scopeUrlPrefix: deps.scopeUrlPrefix,
       access(capabilityId) {
         let access = accessed.get(capabilityId)
         if (!access) accessed.set(capabilityId, access = resolveCapabilityAccess(deps, actor, project, capabilityId))

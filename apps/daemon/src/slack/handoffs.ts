@@ -1,4 +1,4 @@
-import { parseHandoff, stripHandoff, type AgentSessionEvent, type Handoff } from '@candy-mountain/shared'
+import { parseHandoff, projectViewRoute, stripHandoff, type AgentSessionEvent, type Handoff } from '@candy-mountain/shared'
 import { and, eq, sql } from 'drizzle-orm'
 import { ActivityError, appendActivityEvent } from '../activity'
 import type { BotSessionService } from '../bot-sessions'
@@ -21,6 +21,7 @@ export interface SlackHandoffsDeps {
   slack: Pick<SlackConnections, 'subscribe' | 'web'>
   botSessions: Pick<BotSessionService, 'closeSession'>
   sessions: Pick<SessionManager, 'events'>
+  scopeUrlPrefix: string
 }
 
 export interface SlackHandoffsOptions {
@@ -58,7 +59,7 @@ function finalMessage(events: AgentSessionEvent[]): string {
 /** Fence lines are skipped: a malformed handoff block must not become the headline. */
 const firstLine = (text: string) => stripHandoff(text).split('\n').map(line => line.trim()).find(line => line && !/^(`{3,}|~{3,})/.test(line)) ?? null
 
-export function startSlackHandoffs({ db, slack, botSessions, sessions }: SlackHandoffsDeps, { fetch, now = Date.now, log = console }: SlackHandoffsOptions = {}): SlackHandoffs {
+export function startSlackHandoffs({ db, slack, botSessions, sessions, scopeUrlPrefix }: SlackHandoffsDeps, { fetch, now = Date.now, log = console }: SlackHandoffsOptions = {}): SlackHandoffs {
   const controller = new AbortController()
   const inFlight = new Set<Promise<unknown>>()
   const at = () => new Date(now()).toISOString()
@@ -137,7 +138,7 @@ export function startSlackHandoffs({ db, slack, botSessions, sessions }: SlackHa
     const headline = handoff?.summary ?? firstLine(finalMessage(turnEvents(turn))) ?? firstLine(end.text) ?? (end.outcome === 'failed' ? 'could not finish' : 'finished without a reply')
     const slackUrl = await permalink(end.client, shown ?? { channel: thread.channelId, ts: thread.threadTs })
     // A Slack session has no chat panel thread, so the Slack thread is the conversation to open; the bots page if Slack did not say where it is.
-    const link = slackUrl ?? (project ? `/p/${encodeURIComponent(project.slug)}/bots` : undefined)
+    const link = slackUrl ?? (project ? projectViewRoute(scopeUrlPrefix, encodeURIComponent(project.slug), 'bots') : undefined)
     try {
       appendActivityEvent(db, {
         projectId: thread.projectId,

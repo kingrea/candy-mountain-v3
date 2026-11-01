@@ -1,6 +1,6 @@
-import { ACTIVITY_EVENT_TYPES, type ActivityEventType } from '@candy-mountain/shared'
+import type { ActivityEventType } from '@candy-mountain/shared'
 
-export const OVERVIEW_EVENT_KINDS: Record<ActivityEventType, { label: string, icon: string }> = {
+export const OVERVIEW_EVENT_KINDS: Readonly<Record<ActivityEventType, { label: string, icon: string }>> = {
   'session.started': { label: 'Session started', icon: 'i-lucide-message-square' },
   'run.started': { label: 'Run started', icon: 'i-lucide-play' },
   'bot.handoff': { label: 'Bot handoff', icon: 'i-lucide-bot' },
@@ -9,7 +9,7 @@ export const OVERVIEW_EVENT_KINDS: Record<ActivityEventType, { label: string, ic
   'deploy.attempted': { label: 'Deploy', icon: 'i-lucide-rocket' },
 }
 
-export const OVERVIEW_TYPE_ITEMS = ACTIVITY_EVENT_TYPES.map(type => ({ value: type, label: OVERVIEW_EVENT_KINDS[type].label, icon: OVERVIEW_EVENT_KINDS[type].icon }))
+export const OVERVIEW_TYPE_ITEMS = Object.entries(OVERVIEW_EVENT_KINDS).map(([value, { label, icon }]) => ({ value, label, icon }))
 
 export const OVERVIEW_RANGES = [
   { value: 'all', label: 'All time', ms: null },

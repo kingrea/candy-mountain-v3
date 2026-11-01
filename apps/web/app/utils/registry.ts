@@ -1,6 +1,7 @@
 import type { CapabilityId, ProjectFactId, ReadinessReason, RegistryCapability, RegistryResponse, RegistryView } from '@candy-mountain/shared'
 import { projectPluginsPagePath } from './navigation'
 import { PROJECTS_PAGE_PATH, projectPath } from './project-scope'
+import { SCOPE } from './scope-label'
 
 export const PROJECT_REGISTRY_KEY_PREFIX = 'project-registry:'
 
@@ -46,7 +47,7 @@ export function lockoutActions(reasons: readonly ReadinessReason[], slug: string
     const fix = FACT_ACTIONS[reason.fact]
     add(fix
       ? { label: fix.label, icon: fix.icon, to: projectPath(slug, ...fix.segments) }
-      : { label: 'Re-check the project', icon: 'i-lucide-folder-git-2', to: PROJECTS_PAGE_PATH })
+      : { label: `Re-check the ${SCOPE.singular}`, icon: 'i-lucide-folder-git-2', to: PROJECTS_PAGE_PATH })
   }
   return actions
 }

@@ -2,7 +2,8 @@ import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { Actor, PluginHealth, Project } from '@candy-mountain/shared'
-import { createApp } from '../../app'
+import type { AppDeps } from '../../app'
+import { createTestApp } from '../../testing/platform'
 import type { AuthStrategy } from '../../auth'
 import { dataPaths, type DataPaths } from '../../data-dir'
 import type { PlatformDatabase } from '../../db'
@@ -34,7 +35,7 @@ export interface InstanceHarness {
   secretsDir: string
   deps: PluginInstanceDeps & { secretsReader: SecretsStore, paths: DataPaths }
   createProject(slug: string): Promise<Project>
-  app(roles?: string[]): ReturnType<typeof createApp>
+  app(roles?: string[], runtime?: AppDeps['runtime']): ReturnType<typeof createTestApp>
   close(): void
 }
 
@@ -56,7 +57,7 @@ export function instanceHarness(types: readonly AnyPluginType[], { locked = fals
       mkdirSync(path, { recursive: true })
       return createProject(database.db, { name: slug, slug, source: { kind: 'local-path', path } })
     },
-    app: (roles = ['admin']) => createApp({ db: database.db, paths, auth: as(roles), pluginTypes, secrets: store.writeOnly, secretsReader: store }),
+    app: (roles = ['admin'], runtime?) => createTestApp({ db: database.db, paths, auth: as(roles), pluginTypes, secrets: store.writeOnly, secretsReader: store, runtime }),
     close() {
       database.close()
       rmSync(root, { recursive: true, force: true })

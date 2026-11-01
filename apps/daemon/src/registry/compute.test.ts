@@ -1,4 +1,4 @@
-import type { AnyCapabilityManifest, ModuleDefinition } from '@candy-mountain/shared'
+import { CANDY_MOUNTAIN_PRODUCT, type AnyCapabilityManifest, type ModuleDefinition, type ScopeLabel } from '@candy-mountain/shared'
 import { describe, expect, it } from 'vitest'
 import { fixtureCapability } from '../capabilities/fixtures'
 import { computeRegistry, type RegistryInput } from './compute'
@@ -22,6 +22,8 @@ const healthy: PluginReadiness = { name: 'Repository', state: 'ready' }
 function input(overrides: Partial<RegistryInput> = {}): RegistryInput {
   return {
     project: { id: 'p1', slug: 'alpha', name: 'Alpha' },
+    scopeUrlPrefix: 'p',
+    scopeLabel: CANDY_MOUNTAIN_PRODUCT.scope.label,
     capabilities: CAPABILITIES,
     modules: MODULES,
     enabledModules: ['issues', 'operations'],
@@ -53,6 +55,20 @@ describe('computeRegistry', () => {
     const home: AnyCapabilityManifest = { ...issues, views: [{ id: 'issues-home', label: 'Home', icon: 'i-lucide-box', path: '' }, issues.views[1]!] }
     const registry = computeRegistry(input({ capabilities: [home], enabledModules: ['issues'] }))
     expect(registry.views[0]!.to).toBe('/p/alpha')
+  })
+
+  it('builds view links under the given scope prefix', () => {
+    const registry = computeRegistry(input({ scopeUrlPrefix: 'w', enabledModules: ['issues'] }))
+    expect(registry.groups[0]!.entries.map(entry => entry.to)).toEqual(['/w/alpha/issues'])
+    expect(registry.views.map(view => view.to)).toEqual(['/w/alpha/issues', '/w/alpha/platform-agent'])
+  })
+
+  it('names the workspace with the given scope label in readiness messages and the system group', () => {
+    const scopeLabel: ScopeLabel = { singular: 'app', plural: 'apps', singularTitle: 'App', pluralTitle: 'Apps' }
+    const registry = computeRegistry(admin({ scopeLabel, plugins: {}, facts: { hasBeads: false, isGitRepo: true, hasRemote: true, hasBots: true } }))
+    expect(registry.capabilities.find(c => c.id === 'uptime')!.reasons.map(r => r.message)).toEqual(['No repository plugin is configured for this app or the platform.'])
+    expect(registry.capabilities.find(c => c.id === 'team')!.reasons.map(r => r.message)).toEqual(['The app has no .beads directory.'])
+    expect(registry.groups.at(-1)!.entries.map(e => e.label)).toEqual(['Apps', 'Activity', 'Settings'])
   })
 
   it('marks a capability with an unhealthy required plugin not ready and degrades its module naming the plugin', () => {

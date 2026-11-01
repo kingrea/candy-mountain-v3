@@ -16,12 +16,12 @@ const { registry, status, refresh } = useProjectRegistry()
         v-else-if="registry"
         icon="i-lucide-shield-off"
         title="Only the admin can set up modules"
-        description="Ask the admin to enable modules for this project."
+        :description="`Ask the admin to enable modules for this ${SCOPE.singular}.`"
       />
       <UEmpty
         v-else-if="status === 'error'"
         icon="i-lucide-circle-x"
-        title="Couldn't load this project's setup"
+        :title="`Couldn't load this ${SCOPE.singular}'s setup`"
         description="The daemon did not answer. Try again in a moment."
         :actions="[{ label: 'Try again', icon: 'i-lucide-refresh-cw', onClick: () => { refresh() } }]"
       />

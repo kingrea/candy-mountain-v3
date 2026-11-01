@@ -5,7 +5,7 @@
       Can't reach the daemon
     </h1>
     <p class="max-w-md text-muted">
-      The web app is running, but the Candy Mountain daemon is not answering
+      The web app is running, but the {{ PRODUCT.name }} daemon is not answering
       <template v-if="daemonUrl">
         at <code class="rounded bg-elevated px-1.5 py-0.5 text-default">{{ daemonUrl }}</code>
       </template>.

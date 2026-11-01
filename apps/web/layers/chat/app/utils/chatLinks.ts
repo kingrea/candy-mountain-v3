@@ -12,4 +12,3 @@ export function chatThreadLink(threadId: string, path?: string): RouteLocationRa
 
 export const chatThreadsDataKey = (slug: string | null | undefined) => `chat-threads:${slug ?? ''}`
 export const chatThreadDataKey = (slug: string | null | undefined, threadId: string | null | undefined) => `chat-thread:${slug ?? ''}:${threadId ?? ''}`
-export const chatAgentOptionsDataKey = (slug: string | null | undefined, agentId: string | null | undefined) => `chat-agent-options:${slug ?? ''}:${agentId ?? ''}`

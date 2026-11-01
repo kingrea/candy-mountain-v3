@@ -1,5 +1,5 @@
 import { join } from 'node:path'
-import { PRODUCT_NAME } from '@candy-mountain/shared'
+import { product } from './product'
 import type { Settings } from './settings'
 
 export const UNIT_NAME = 'candy-mountain.service'
@@ -32,7 +32,7 @@ const STOP_TIMEOUT_S = 45
 
 export function renderUnit({ nodePath, cliEntry, repoRoot, envFile }: UnitOptions): string {
   return `[Unit]
-Description=${PRODUCT_NAME} daemon and web server
+Description=${product.name} daemon and web server
 
 [Service]
 Type=simple

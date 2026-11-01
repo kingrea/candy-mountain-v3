@@ -81,7 +81,7 @@
 </template>
 
 <script setup lang="ts">
-import { ACTIVITY_EVENT_TYPES, projectActivityPath, type ActivityEvent, type ActivityEventType, type ActivityListResponse } from '@candy-mountain/shared'
+import { projectActivityPath, type ActivityEvent, type ActivityEventType, type ActivityListResponse } from '@candy-mountain/shared'
 import { NuxtLink } from '#components'
 
 const { slug } = useSelectedProject()
@@ -94,7 +94,8 @@ const router = useRouter()
 const rangeItems = OVERVIEW_RANGES.map(({ value, label }) => ({ value, label }))
 
 const types = computed<ActivityEventType[]>({
-  get: () => String(route.query.type ?? '').split(',').filter((t): t is ActivityEventType => (ACTIVITY_EVENT_TYPES as readonly string[]).includes(t)),
+  // Only listed types are offered, and the daemon refuses a filter on a type it does not register.
+  get: () => String(route.query.type ?? '').split(',').filter(t => Object.hasOwn(OVERVIEW_EVENT_KINDS, t)),
   set: value => setQuery({ type: value.length ? value.join(',') : undefined }),
 })
 const range = computed<OverviewRange>({
@@ -140,7 +141,8 @@ watch(data, () => {
 const events = computed(() => [...(data.value?.events ?? []), ...older.value])
 const cursor = computed(() => (olderCursor.value === undefined ? data.value?.nextCursor ?? null : olderCursor.value))
 
-const kind = (event: ActivityEvent) => OVERVIEW_EVENT_KINDS[event.type] ?? { label: event.type, icon: 'i-lucide-circle-dot' }
+// Core's fallback words and icon cover a type this layer does not list.
+const kind = (event: ActivityEvent) => OVERVIEW_EVENT_KINDS[event.type] ?? activityEventKind(event.type)
 
 async function loadOlder() {
   if (!cursor.value || !slug.value) return

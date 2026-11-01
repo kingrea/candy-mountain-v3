@@ -1,7 +1,7 @@
 import { join } from 'node:path'
 import type { ApiErrorBody, OrganisationResponse, ProjectListResponse, ProjectResponse, VerifyPathResponse } from '@candy-mountain/shared'
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { createApp } from '../app'
+import { createTestApp } from '../testing/platform'
 import { dataPaths } from '../data-dir'
 import type { PlatformDatabase } from '../db'
 import { openTestDatabase } from '../testing'
@@ -11,10 +11,10 @@ const repos = createTempRepos()
 afterAll(() => repos.cleanup())
 
 let database: PlatformDatabase
-let app: ReturnType<typeof createApp>
+let app: ReturnType<typeof createTestApp>
 beforeEach(() => {
   database = openTestDatabase()
-  app = createApp({ db: database.db, paths: dataPaths('/unused') })
+  app = createTestApp({ db: database.db, paths: dataPaths('/unused') })
 })
 afterEach(() => database.close())
 

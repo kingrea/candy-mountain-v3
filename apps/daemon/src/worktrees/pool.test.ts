@@ -2,8 +2,10 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Project } from '@candy-mountain/shared'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { BOT_WORKTREES } from '../bots/definition'
 import type { PlatformDatabase } from '../db'
-import { startPlatform } from '../platform'
+import { capabilityDefinitions } from '../definitions'
+import { startTestPlatform } from '../testing/platform'
 import { createProject, deleteProject } from '../projects/projects'
 import { createTempDataDir, openTestDatabase, type TempDataDir } from '../testing'
 import { resolveWorktreeSettings } from './config'
@@ -273,17 +275,18 @@ describe('settings and platform', () => {
     expect(() => resolveWorktreeSettings({ CM_WORKTREES_PER_PROJECT: 'two' })).toThrow('CM_WORKTREES_PER_PROJECT')
   })
 
-  it('exposes the pool on the platform under the data directory', async () => {
-    const platform = startPlatform(data.root, { worktrees: { maxPerProject: 1 } })
+  it('exposes the pool through the bots definition under the data directory', async () => {
+    const platform = startTestPlatform(data.root, { capabilities: capabilityDefinitions({ bots: { worktrees: { maxPerProject: 1 } } }) })
     try {
+      const worktrees = platform.runtime.services('bots').get(BOT_WORKTREES)
       repo = createTempGitRepo()
       const created = await createProject(platform.db, { name: 'beta', source: { kind: 'local-path', path: repo.clone } })
-      const lease = await platform.worktrees.acquire({ projectId: created.id, holder: holder('s1'), baseBranch: 'main' })
+      const lease = await worktrees.acquire({ projectId: created.id, holder: holder('s1'), baseBranch: 'main' })
       expect(lease.path).toBe(join(platform.paths.worktrees, created.id, lease.id))
-      expect(await failure(platform.worktrees.acquire({ projectId: created.id, holder: holder('s2'), baseBranch: 'main' }))).toMatchObject({ code: 'cap_reached' })
+      expect(await failure(worktrees.acquire({ projectId: created.id, holder: holder('s2'), baseBranch: 'main' }))).toMatchObject({ code: 'cap_reached' })
     }
     finally {
-      platform.close()
+      await platform.close()
     }
   })
 })

@@ -2,6 +2,7 @@ import { cpSync, existsSync, readFileSync, statSync, writeFileSync } from 'node:
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { eq, sql } from 'drizzle-orm'
+import { CANDY_MOUNTAIN } from './candy-mountain'
 import { MIGRATIONS_DIR, schema } from './db'
 import { startPlatform, type Platform } from './platform'
 import { createTempDataDir, type TempDataDir } from './testing'
@@ -11,7 +12,7 @@ describe('startPlatform', () => {
   const open: Platform[] = []
 
   function start(migrationsFolder?: string) {
-    const platform = startPlatform(temp.root, { migrationsFolder })
+    const platform = startPlatform(temp.root, { product: CANDY_MOUNTAIN, migrationsFolder })
     open.push(platform)
     return platform
   }

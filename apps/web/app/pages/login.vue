@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { INVALID_CREDENTIALS_ERROR_CODE, LOGIN_PATH, PRODUCT_NAME, type LoginRequest, type LoginResponse } from '@candy-mountain/shared'
+import { INVALID_CREDENTIALS_ERROR_CODE, LOGIN_PATH, type LoginRequest, type LoginResponse } from '@candy-mountain/shared'
 import { z } from 'zod'
 
 definePageMeta({ layout: false })
@@ -43,7 +43,7 @@ async function onSubmit() {
         <div class="flex items-center gap-2">
           <UIcon name="i-lucide-mountain-snow" class="size-6 text-primary" />
           <h1 class="text-lg font-bold tracking-tight text-highlighted">
-            Sign in to {{ PRODUCT_NAME }}
+            Sign in to {{ PRODUCT.name }}
           </h1>
         </div>
       </template>

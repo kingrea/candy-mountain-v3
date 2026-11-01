@@ -199,7 +199,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 <template>
   <UModal
     v-model:open="open"
-    :title="isEdit ? `Edit ${project?.name}` : 'New project'"
+    :title="isEdit ? `Edit ${project?.name}` : `New ${SCOPE.singular}`"
     :description="isEdit ? 'Saving re-checks the path.' : 'Register a local codebase.'"
     :ui="{ footer: 'justify-end' }"
   >
@@ -223,14 +223,14 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         />
 
         <UFormField name="name" label="Name" required>
-          <UInput v-model="state.name" class="w-full" autofocus placeholder="Candy Mountain" />
+          <UInput v-model="state.name" class="w-full" autofocus :placeholder="PRODUCT.name" />
         </UFormField>
 
         <UFormField
           name="slug"
           label="Slug"
           required
-          :description="isEdit ? 'Changing the slug changes every project URL.' : 'Derived from the name until you edit it.'"
+          :description="isEdit ? `Changing the slug changes every ${SCOPE.singular} URL.` : 'Derived from the name until you edit it.'"
         >
           <UInput v-model="state.slug" class="w-full font-mono" @update:model-value="slugTouched = true" />
         </UFormField>
@@ -269,7 +269,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       <UButton
         type="submit"
         form="project-form"
-        :label="isEdit ? 'Save' : 'Create project'"
+        :label="isEdit ? 'Save' : `Create ${SCOPE.singular}`"
         :loading="saving"
       />
     </template>

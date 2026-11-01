@@ -1,7 +1,7 @@
 import type { PluginInstance, PluginTypeInfo, RegistryResponse } from '@candy-mountain/shared'
 import { describe, expect, it } from 'vitest'
 import { defineComponent } from 'vue'
-import { pluginPanelFor, registerPluginPanel } from '../../app/utils/plugin-panels'
+import { PLUGIN_ICON_FALLBACK, pluginIconFor, pluginPanelFor, registerPluginIcon, registerPluginPanel } from '../../app/utils/plugin-panels'
 import {
   availablePluginScopes,
   PLUGIN_SELECT_NONE,
@@ -126,5 +126,13 @@ describe('plugin panels', () => {
     registerPluginPanel('heroku', panel)
     expect(pluginPanelFor('heroku')).toBe(panel)
     expect(pluginPanelFor('netlify')).toBeUndefined()
+  })
+})
+
+describe('plugin icons', () => {
+  it('returns the icon registered for a type and the generic fallback for others', () => {
+    registerPluginIcon('heroku', { src: '/heroku.svg', class: 'bg-white' })
+    expect(pluginIconFor('heroku')).toEqual({ src: '/heroku.svg', class: 'bg-white' })
+    expect(pluginIconFor('netlify')).toBe(PLUGIN_ICON_FALLBACK)
   })
 })

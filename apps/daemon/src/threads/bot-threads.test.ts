@@ -4,7 +4,7 @@ import { botAgentId, botSessionsPath, chatAgentOptionsPath, projectRegistryPath,
 import { eq } from 'drizzle-orm'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fakeBins, fakeClaude } from '../acp/test-support'
-import { createApp } from '../app'
+import { createTestApp } from '../testing/platform'
 import type { AuthStrategy } from '../auth'
 import { createBot, getBot, parseCreateBot, recordBotPersonaCheck, type BotReadDeps } from '../bots'
 import { pluginInstances } from '../db/schema'
@@ -13,7 +13,7 @@ import { createPluginInstance } from '../plugins/instances/instances'
 import { GOOD_TOKEN, stubHosts } from '../plugins/repository/fake-hosts'
 import { setEnabledModules } from '../project-modules/enablement'
 import { createProject, sourcePath } from '../projects/projects'
-import { startPlatform, type Platform } from '../platform'
+import { startAcpPlatform, type AcpPlatform } from '../chat-claude-code/test-support'
 import { MasterKey } from '../secrets'
 import type { SessionManager, SessionMessage } from '../sessions'
 import { createTempDataDir, type TempDataDir } from '../testing'
@@ -24,7 +24,7 @@ const DEVELOPER: Actor = { id: 'dev-actor', username: 'dev', displayName: 'Dev',
 const CLAUDE_PERSONA = '---\nname: ana\ndescription: Ana fixes small issues.\n---\nYou are Ana. Keep changes small.\n'
 
 let temp: TempDataDir | undefined
-let platform: Platform | undefined
+let platform: AcpPlatform | undefined
 let repo: TempGitRepo | undefined
 
 afterEach(async () => {
@@ -40,8 +40,8 @@ afterEach(async () => {
 
 const as = (actor: Actor): AuthStrategy => ({ name: 'development', resolve: () => actor })
 
-function call(p: Platform, method: string, path: string, body?: unknown, actor: Actor = ADMIN) {
-  const app = createApp({ db: p.db, paths: p.paths, auth: as(actor), pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly, secretsReader: p.secrets, sessions: p.sessions, decisions: p.decisions, botSessions: p.botSessions })
+function call(p: AcpPlatform, method: string, path: string, body?: unknown, actor: Actor = ADMIN) {
+  const app = createTestApp({ db: p.db, paths: p.paths, auth: as(actor), pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly, secretsReader: p.secrets, families: p.families, runtime: p.runtime })
   const init: RequestInit = { method }
   if (body !== undefined) {
     init.headers = { 'content-type': 'application/json' }
@@ -68,16 +68,16 @@ function commitFile(path: string, text: string): void {
   repo!.git(repo!.clone, 'push', '--quiet', 'origin', 'main')
 }
 
-function setHealth(p: Platform, projectId: string, type: PluginTypeId, config: Record<string, unknown> = {}, secrets: Record<string, string> = {}): void {
+function setHealth(p: AcpPlatform, projectId: string, type: PluginTypeId, config: Record<string, unknown> = {}, secrets: Record<string, string> = {}): void {
   const existing = p.db.select().from(pluginInstances).where(eq(pluginInstances.projectId, projectId)).all().find(row => row.typeId === type)
   const id = existing?.id ?? createPluginInstance({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly }, { type, scope: 'project', projectId, config, secrets }).id
   p.db.update(pluginInstances).set({ health: { healthy: true }, healthCheckedAt: new Date().toISOString() }).where(eq(pluginInstances.id, id)).run()
 }
 
-const readDeps = (p: Platform): BotReadDeps => ({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly, secretsReader: p.secrets })
+const readDeps = (p: AcpPlatform): BotReadDeps => ({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly, secretsReader: p.secrets })
 
-function boot(dataDir: string, key: MasterKey): Platform {
-  platform = startPlatform(dataDir, { secretsKey: key, acp: { bins: fakeBins, killTimeoutMs: 1000 } })
+function boot(dataDir: string, key: MasterKey): AcpPlatform {
+  platform = startAcpPlatform(dataDir, { secretsKey: key, acp: { bins: fakeBins, killTimeoutMs: 1000 } })
   return platform
 }
 
@@ -118,20 +118,20 @@ async function until(read: () => Promise<boolean> | boolean, timeoutMs = 10_000)
   }
 }
 
-function textOf(p: Platform, sessionId: string, match: string): string {
+function textOf(p: AcpPlatform, sessionId: string, match: string): string {
   const event = p.sessions.events(sessionId).find(e => e.kind === 'text' && e.text.includes(match))
   return event?.kind === 'text' ? event.text : ''
 }
 
-const agentsOf = async (p: Platform, actor: Actor = ADMIN) => (await json<RegistryResponse>(await call(p, 'GET', projectRegistryPath('alpha'), undefined, actor), 200)).agents
-const getThread = async (p: Platform, id: string) => json<ChatThreadResponse>(await call(p, 'GET', projectThreadPath('alpha', id)), 200)
-const listThreads = async (p: Platform) => (await json<ChatThreadListResponse>(await call(p, 'GET', projectThreadsPath('alpha')), 200)).threads
+const agentsOf = async (p: AcpPlatform, actor: Actor = ADMIN) => (await json<RegistryResponse>(await call(p, 'GET', projectRegistryPath('alpha'), undefined, actor), 200)).agents
+const getThread = async (p: AcpPlatform, id: string) => json<ChatThreadResponse>(await call(p, 'GET', projectThreadPath('alpha', id)), 200)
+const listThreads = async (p: AcpPlatform) => (await json<ChatThreadListResponse>(await call(p, 'GET', projectThreadsPath('alpha')), 200)).threads
 
-async function prompt(p: Platform, threadId: string, text: string): Promise<ChatThreadPromptResponse> {
+async function prompt(p: AcpPlatform, threadId: string, text: string): Promise<ChatThreadPromptResponse> {
   return json<ChatThreadPromptResponse>(await call(p, 'POST', threadPromptPath('alpha', threadId), { text }), 202)
 }
 
-async function promptAndWait(p: Platform, threadId: string, text: string): Promise<ChatThreadPromptResponse> {
+async function promptAndWait(p: AcpPlatform, threadId: string, text: string): Promise<ChatThreadPromptResponse> {
   const { session } = await getThread(p, threadId)
   const turnEnd = waitFor(p.sessions, session.id, 'turn_end')
   const response = await prompt(p, threadId, text)

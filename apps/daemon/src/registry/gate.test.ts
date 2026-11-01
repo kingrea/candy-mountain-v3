@@ -1,9 +1,9 @@
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { Actor, ModuleDefinition, Project } from '@candy-mountain/shared'
+import { CANDY_MOUNTAIN_PRODUCT, type Actor, type ModuleDefinition, type Project } from '@candy-mountain/shared'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { createApp } from '../app'
+import { createTestApp } from '../testing/platform'
 import type { AuthStrategy } from '../auth'
 import { createCapabilityRegistry, defineCapability } from '../capabilities'
 import { dataPaths } from '../data-dir'
@@ -43,7 +43,7 @@ const MODULES: readonly ModuleDefinition[] = [
 ]
 
 function access(overrides: Partial<CapabilityAccess> = {}): CapabilityAccess {
-  return { capabilityId: 'issues', projectSlug: 'alpha', admin: false, capability: issues, enabled: true, rung: issues.ladder[1], reasons: [], ...overrides }
+  return { capabilityId: 'issues', projectSlug: 'alpha', scopeLabel: CANDY_MOUNTAIN_PRODUCT.scope.label, admin: false, capability: issues, enabled: true, rung: issues.ladder[1], reasons: [], ...overrides }
 }
 
 describe('gate checks', () => {
@@ -69,6 +69,8 @@ describe('gate checks', () => {
     expect(checkView(access({ rung: issues.ladder[0] }), 'issues-home')).toMatchObject({ allowed: false, code: 'not_granted', status: 403 })
     expect(checkView(access({ capability: undefined, rung: undefined }), 'issues-home')).toEqual({ allowed: false, code: 'capability_unknown', status: 404, reason: 'Capability \'issues\' is not registered.' })
     expect(checkView(access({ enabled: false }), 'issues-home')).toEqual({ allowed: false, code: 'not_enabled', status: 404, reason: 'Capability \'issues\' is not enabled for project \'alpha\'.' })
+    const app = { singular: 'app', plural: 'apps', singularTitle: 'App', pluralTitle: 'Apps' }
+    expect(checkView(access({ enabled: false, scopeLabel: app }), 'issues-home')).toMatchObject({ reason: 'Capability \'issues\' is not enabled for app \'alpha\'.' })
   })
 
   it('refuses an unready capability after the rung check, with reasons for the admin only', () => {
@@ -91,7 +93,7 @@ describe('gate helpers over the database', () => {
     database = openTestDatabase()
     root = mkdtempSync(join(tmpdir(), 'candy-mountain-gate-'))
     const capabilities = createCapabilityRegistry([issues])
-    deps = { db: database.db, capabilities, modules: createModuleRegistry(MODULES, capabilities), pluginTypes: createPluginTypeRegistry([]), secrets: lockedSecretsStore().writeOnly }
+    deps = { db: database.db, capabilities, modules: createModuleRegistry(MODULES, capabilities), pluginTypes: createPluginTypeRegistry([]), secrets: lockedSecretsStore().writeOnly, scopeLabel: CANDY_MOUNTAIN_PRODUCT.scope.label }
     addRole(database.db, 'developer')
     setGrant(deps, { role: 'developer', target: { kind: 'capability', id: 'issues' }, rungs: { issues: 'read' } })
     project = await createProject(database.db, { name: 'Alpha', slug: 'alpha', source: { kind: 'local-path', path: root } })
@@ -117,7 +119,7 @@ describe('gate helpers over the database', () => {
   it('refuses from middleware with the error body and status', async () => {
     const as = (actor: Actor): AuthStrategy => ({ name: 'development', resolve: () => actor })
     const build = (actor: Actor) => {
-      const app = createApp({ db: database.db, paths: dataPaths(root), auth: as(actor), capabilities: deps.capabilities, modules: deps.modules, pluginTypes: deps.pluginTypes })
+      const app = createTestApp({ db: database.db, paths: dataPaths(root), auth: as(actor), capabilities: deps.capabilities, modules: deps.modules, pluginTypes: deps.pluginTypes })
       app.get('/projects/:slug/write', requireCapability({ capability: 'issues', tool: 'issues.write' }), c => c.json({ ok: true }))
       app.get('/projects/:slug/home', requireCapability({ capability: 'issues', view: 'issues-home' }), c => c.json({ ok: true }))
       return app

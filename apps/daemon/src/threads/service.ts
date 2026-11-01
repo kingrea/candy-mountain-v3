@@ -3,14 +3,14 @@ import { BOTS_CAPABILITY_ID, botAgentId, botIdOfAgent, CHAT_THREAD_TITLE_MAX_LEN
 import { and, eq, sql } from 'drizzle-orm'
 import { appendActivityEvent } from '../activity'
 import { BotStartError } from '../bot-sessions/errors'
-import type { BotSessionService } from '../bot-sessions/service'
 import type { CapabilityRegistry } from '../capabilities'
 import type { Db } from '../db'
 import { bots } from '../db/schema'
 import { findProjectById, sourcePath } from '../projects/projects'
-import type { NativeTurn, SessionManager } from '../sessions'
+import type { ThreadBots } from './bots'
 import { ThreadError } from './errors'
 import { assertModelEffort, chatPosture, familyOptions, type FamilyOptions } from './options'
+import type { NativeTurn, ThreadSessions } from './sessions'
 import { allThreads, findThread, insertThread, listThreads, listThreadSessions, switchThreadSession, updateThread } from './store'
 
 export interface ChatAgent {
@@ -100,7 +100,9 @@ export interface ThreadServiceOptions {
   /** Families prompted here rather than on the session manager's harness path. */
   native?: NativeFamilyRunners
   /** Without it, threads with a bot agent cannot start. */
-  bots?: BotSessionService
+  bots?: ThreadBots
+  /** The product's `scope.urlPrefix`, for the run.started link. */
+  scopeUrlPrefix: string
 }
 
 const BUSY: ReadonlySet<AgentSessionStatus> = new Set(['queued', 'starting', 'prompting'])
@@ -110,7 +112,7 @@ export function threadTitle(text: string): string {
   return flat.length <= CHAT_THREAD_TITLE_MAX_LENGTH ? flat : `${flat.slice(0, CHAT_THREAD_TITLE_MAX_LENGTH - 1).trimEnd()}…`
 }
 
-export function createThreadService(db: Db, sessions: SessionManager, options: ThreadServiceOptions = {}): ThreadService {
+export function createThreadService(db: Db, sessions: ThreadSessions, options: ThreadServiceOptions): ThreadService {
   const now = () => new Date((options.now ?? Date.now)()).toISOString()
   const watches = new Map<string, { sessionId: string, stop: () => void }>()
 
@@ -155,7 +157,7 @@ export function createThreadService(db: Db, sessions: SessionManager, options: T
     return findThread(db, thread.id) ?? thread
   }
 
-  function requireBots(): BotSessionService {
+  function requireBots(): ThreadBots {
     if (!options.bots) throw new ThreadError('unsupported_agent', 'Bots cannot run in this daemon')
     return options.bots
   }
@@ -248,7 +250,7 @@ export function createThreadService(db: Db, sessions: SessionManager, options: T
           projectId: project.id,
           type: 'run.started',
           title: `${agent.label} run: ${issueIds.join(', ')}`,
-          link: chatThreadLink(project.slug, thread.id),
+          link: chatThreadLink(options.scopeUrlPrefix, project.slug, thread.id),
           payload: { threadId: thread.id, agentId: agent.id, sessionId: session.id, issueIds: [...issueIds] },
         })
       }
@@ -329,10 +331,10 @@ export function createThreadService(db: Db, sessions: SessionManager, options: T
   }
 }
 
-const services = new WeakMap<SessionManager, ThreadService>()
+const services = new WeakMap<ThreadSessions, ThreadService>()
 
 /** One service per session manager, so building the app twice never doubles the session subscriptions. */
-export function threadServiceFor(db: Db, sessions: SessionManager, options?: ThreadServiceOptions): ThreadService {
+export function threadServiceFor(db: Db, sessions: ThreadSessions, options: ThreadServiceOptions): ThreadService {
   let service = services.get(sessions)
   if (!service) {
     service = createThreadService(db, sessions, options)

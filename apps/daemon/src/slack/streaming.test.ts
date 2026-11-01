@@ -9,7 +9,7 @@ import { createPluginInstance } from '../plugins/instances/instances'
 import { GOOD_TOKEN, stubHosts } from '../plugins/repository/fake-hosts'
 import { createSlackClient, createSlackOperations } from '../plugins/slack'
 import { createProject } from '../projects/projects'
-import { startPlatform, type Platform } from '../platform'
+import { startAcpPlatform, type AcpPlatform } from '../chat-claude-code/test-support'
 import { MasterKey } from '../secrets'
 import { addTeamMember } from '../team'
 import { createTempDataDir, type TempDataDir } from '../testing'
@@ -23,7 +23,7 @@ const JACK = 'U0JACK'
 const BOT_USER = 'U0BOT'
 
 let temp: TempDataDir | undefined
-let platform: Platform | undefined
+let platform: AcpPlatform | undefined
 let repo: TempGitRepo | undefined
 let router: SlackRouter | undefined
 
@@ -42,12 +42,14 @@ afterEach(async () => {
 
 /**
  * The claude fixture behind a filter that hands it only the Slack message, so a message can name a fixture scenario.
- * Two scenarios of its own: `slow` streams a tool call and text over ~600ms, `hang` does the same and never ends the turn.
+ * Three scenarios of its own: `slow` streams a tool call and text over ~600ms, `hang` does the same and never ends the turn,
+ * `gated` holds the tool result until the file `gate` appears beside the filter, so a test can see the call in flight.
  */
 function slackClaude(dir: string): string {
   const filter = join(dir, 'slack-claude.mjs')
   writeFileSync(filter, `
 import { spawn } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import readline from 'node:readline'
 const args = process.argv.slice(2)
 const id = args[args.indexOf(args.includes('--resume') ? '--resume' : '--session-id') + 1]
@@ -60,14 +62,16 @@ const text = (index, value) => [
   { type: 'stream_event', event: { type: 'content_block_delta', index, delta: { type: 'text_delta', text: value } } },
   { type: 'stream_event', event: { type: 'content_block_stop', index } },
 ]
-async function work(ending) {
+const gate = ${JSON.stringify(join(dir, 'gate'))}
+async function work(ending, gated) {
   emit({ type: 'stream_event', event: { type: 'message_start', message: { id: 'm1' } } })
   for (const line of text(0, 'Looking around. ')) emit(line)
   await sleep(200)
   emit({ type: 'stream_event', event: { type: 'content_block_start', index: 1, content_block: { type: 'tool_use', id: 'toolcall1', name: 'Bash', input: {} } } })
   emit({ type: 'stream_event', event: { type: 'content_block_delta', index: 1, delta: { type: 'input_json_delta', partial_json: '{"command":"ls"}' } } })
   emit({ type: 'stream_event', event: { type: 'content_block_stop', index: 1 } })
-  await sleep(200)
+  if (gated) while (!existsSync(gate)) await sleep(10)
+  else await sleep(200)
   emit({ type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 'toolcall1', content: [{ type: 'text', text: 'file1' }] }] } })
   for (const line of text(2, 'Found file1.')) emit(line)
   if (!ending) return
@@ -80,6 +84,7 @@ for await (const line of readline.createInterface({ input: process.stdin })) {
   const block = value.type === 'user' ? value.message?.content?.[0] : null
   const match = typeof block?.text === 'string' ? block.text.match(/\\nmessage:\\n([\\s\\S]*)\\n<\\/slack-(?:request|reply)>$/) : null
   if (match?.[1] === 'slow') { void work(true); continue }
+  if (match?.[1] === 'gated') { void work(true, true); continue }
   if (match?.[1] === 'hang') { void work(false); continue }
   if (match) block.text = match[1]
   child.stdin.write(JSON.stringify(value) + '\\n')
@@ -98,11 +103,15 @@ interface SlackCall { method: string, body: Record<string, unknown> }
 function fakeTransport(input: { stream: boolean, expired?: boolean }) {
   const bus: SlackEventBus = createSlackEventBus({ error: () => {} })
   const calls: SlackCall[] = []
+  // Final text per message ts: a turn that flushed before it ended is edited in place, so only the settled text is stable.
+  const texts = new Map<string, string>()
   let posted = 0
   const fetch: typeof globalThis.fetch = async (url, init) => {
     const method = String(url).replace('https://slack.com/api/', '')
     const body = JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>
     calls.push({ method, body })
+    if (method === 'chat.update') texts.set(String(body.ts), String(body.text))
+    if (method === 'chat.postMessage') texts.set(`9.${posted + 1}`, String(body.text))
     const reply = method === 'chat.postMessage' || (method === 'chat.startStream' && input.stream)
       ? { ok: true, channel: body.channel, ts: `9.${++posted}` }
       : method === 'chat.startStream'
@@ -117,7 +126,7 @@ function fakeTransport(input: { stream: boolean, expired?: boolean }) {
   const of = (method: string) => calls.filter(call => call.method === method).map(call => call.body)
   /** Calls that create a message in the thread, which exactly-once is about. */
   const created = () => calls.filter(call => call.method === 'chat.postMessage' || call.method === 'chat.startStream')
-  return { bus, slack, calls, of, created }
+  return { bus, slack, calls, of, created, texts }
 }
 
 let eventCounter = 0
@@ -136,20 +145,20 @@ function commitFile(path: string, text: string): void {
   repo!.git(repo!.clone, 'push', '--quiet', 'origin', 'main')
 }
 
-function setHealth(p: Platform, projectId: string, type: 'repository' | 'claude-code', config: Record<string, unknown> = {}, secrets: Record<string, string> = {}): void {
+function setHealth(p: AcpPlatform, projectId: string, type: 'repository' | 'claude-code', config: Record<string, unknown> = {}, secrets: Record<string, string> = {}): void {
   const existing = p.db.select().from(pluginInstances).where(eq(pluginInstances.projectId, projectId)).all().find(row => row.typeId === type)
   const id = existing?.id ?? createPluginInstance({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly }, { type, scope: 'project', projectId, config, secrets }).id
   p.db.update(pluginInstances).set({ health: { healthy: true }, healthCheckedAt: new Date().toISOString() }).where(eq(pluginInstances.id, id)).run()
 }
 
-const readDeps = (p: Platform): BotReadDeps => ({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly, secretsReader: p.secrets })
+const readDeps = (p: AcpPlatform): BotReadDeps => ({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly, secretsReader: p.secrets })
 
-function boot(dataDir: string, key: MasterKey): Platform {
-  platform = startPlatform(dataDir, { secretsKey: key, acp: { bins: fakeBins, killTimeoutMs: 1000 } })
+function boot(dataDir: string, key: MasterKey): AcpPlatform {
+  platform = startAcpPlatform(dataDir, { secretsKey: key, acp: { bins: fakeBins, killTimeoutMs: 1000 } })
   return platform
 }
 
-function route(p: Platform, input: { stream: boolean, expired?: boolean }, options: SlackRouterOptions = {}) {
+function route(p: AcpPlatform, input: { stream: boolean, expired?: boolean }, options: SlackRouterOptions = {}) {
   const transport = fakeTransport(input)
   router = startSlackRouter({ db: p.db, slack: transport.slack, botSessions: p.botSessions, sessions: p.sessions }, { log: { error: () => {} }, streamIntervalMs: 50, ...options })
   return { ...transport, router }
@@ -207,7 +216,9 @@ describe('Slack turn progress', () => {
   it('falls back to one message edited in place when the workspace cannot stream', async () => {
     const { p, project, bot } = await setup()
     const t = route(p, { stream: false })
-    t.bus.emit(messageEvent(bot.id, project.id, { text: `<@${BOT_USER}> slow`, ts: '1.1' }))
+    t.bus.emit(messageEvent(bot.id, project.id, { text: `<@${BOT_USER}> gated`, ts: '1.1' }))
+    await waitFor(() => t.of('chat.update').some(body => String(body.text).includes('… Bash: ls')))
+    writeFileSync(join(temp!.root, 'gate'), '')
     await t.router.idle()
 
     expect(t.of('chat.startStream')).toHaveLength(1)
@@ -223,7 +234,8 @@ describe('Slack turn progress', () => {
     t.bus.emit(messageEvent(bot.id, project.id, { kind: 'message', text: 'again', ts: '1.2', threadTs: '1.1' }))
     await t.router.idle()
     expect(t.of('chat.startStream')).toHaveLength(1)
-    expect(t.of('chat.postMessage').at(-1)).toMatchObject({ thread_ts: '1.1', text: 'again' })
+    expect(t.of('chat.postMessage').at(-1)).toMatchObject({ thread_ts: '1.1' })
+    expect(t.texts.get('9.2')).toBe('again')
   }, 60_000)
 
   it('finishes a turn interrupted by a restart exactly once, in the message it started', async () => {

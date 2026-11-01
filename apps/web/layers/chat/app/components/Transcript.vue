@@ -4,7 +4,13 @@
       Send a prompt to start the conversation.
     </p>
     <template v-for="(item, index) in items" :key="item.key">
-      <ChatModelEffortDivider v-if="item.kind === 'divider'" :label="item.label" />
+      <USeparator
+        v-if="item.kind === 'divider'"
+        :label="item.label"
+        class="py-1"
+        :ui="{ label: 'text-xs font-normal text-muted' }"
+        data-testid="chat-session-divider"
+      />
       <div
         v-else-if="item.kind === 'prompt'"
         class="max-w-[90%] self-end rounded-lg bg-primary/10 px-3 py-2 text-sm whitespace-pre-wrap text-highlighted"

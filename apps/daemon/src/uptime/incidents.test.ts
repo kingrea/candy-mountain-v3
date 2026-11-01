@@ -8,7 +8,7 @@ import type {
 } from '@candy-mountain/shared'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { listActivityEvents } from '../activity'
-import { createApp } from '../app'
+import { createTestApp } from '../testing/platform'
 import type { AuthStrategy } from '../auth'
 import { dataPaths } from '../data-dir'
 import type { PlatformDatabase } from '../db'
@@ -18,6 +18,7 @@ import { openTestDatabase } from '../testing'
 import { MONITOR_SOURCE_REGISTRY } from './builtin-sources'
 import type { MonitorCheckResult } from './check'
 import { listMonitorChecks, recordMonitorCheck } from './checks'
+import { uptimeRoutes } from './definition'
 import { findOpenIncident, listIncidents, setIncidentThread } from './incidents'
 import { startUptimeScheduler, type UptimeScheduler, type UptimeSchedulerDeps } from './scheduler'
 import { createMonitor } from './service'
@@ -73,7 +74,7 @@ const monitor = (name = 'API', intervalSeconds = 30): Monitor =>
 
 function start(deps: Partial<UptimeSchedulerDeps> = {}) {
   const scheduler = startUptimeScheduler({ db: database.db, sources, key: root, ...deps }, { staggerWindowMs: 0 })
-  const tracker = startIncidentTracker({ db: database.db, scheduler })
+  const tracker = startIncidentTracker({ db: database.db, scheduler, scopeUrlPrefix: 'p' })
   running.push({ scheduler, tracker })
   return scheduler
 }
@@ -97,7 +98,7 @@ const events = () => listActivityEvents(database.db, project.id, {}).events.filt
 
 function app(roles = ['admin']) {
   const auth: AuthStrategy = { name: 'development', resolve: (): Actor => ({ id: 'u1', username: 'jack', displayName: 'Jack', roles }) }
-  return createApp({ db: database.db, paths: dataPaths('/unused'), auth })
+  return createTestApp({ db: database.db, paths: dataPaths('/unused'), auth, runtime: uptimeRoutes() })
 }
 const get = async <T>(path: string) => {
   const res = await app().request(path)

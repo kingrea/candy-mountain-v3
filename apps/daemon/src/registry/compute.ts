@@ -5,7 +5,7 @@ import {
   BOTS_CAPABILITY_ID,
   NONE_RUNG,
   projectViewRoute,
-  REGISTRY_SYSTEM_GROUP,
+  registrySystemGroup,
   type AnyCapabilityManifest,
   type BotFamily,
   type BotWriteScope,
@@ -21,6 +21,7 @@ import {
   type RegistryResponse,
   type RegistryView,
   type Rung,
+  type ScopeLabel,
 } from '@candy-mountain/shared'
 import { getRung } from '../capabilities'
 import { rungOf } from '../grants/resolve'
@@ -29,16 +30,18 @@ import { capabilityReadiness, type PlatformFacts, type PluginReadiness, type Pro
 /** Plain data only, so the answer can be computed without a database. */
 export interface RegistryInput {
   project: { id: string, slug: string, name: string }
+  scopeUrlPrefix: string
+  scopeLabel: ScopeLabel
   capabilities: readonly AnyCapabilityManifest[]
   modules: readonly ModuleDefinition[]
   enabledModules: readonly ModuleId[]
   rungs: CapabilityRungs
   admin: boolean
-  /** Keyed by plugin type id, as resolved for this project. */
+  /** Keyed by plugin type id, as resolved for this workspace. */
   plugins: Readonly<Record<string, PluginReadiness>>
   facts: ProjectFacts
   platformFacts?: PlatformFacts
-  /** The project's bots that can run from the console. */
+  /** The workspace's bots that can run from the console. */
   bots?: readonly RegistryBotInput[]
 }
 
@@ -50,7 +53,7 @@ export interface RegistryBotInput {
   baseBranch: string | null
 }
 
-/** A capability is a candidate for a project through an enabled module, or on its own when it belongs to no module at all. */
+/** A capability is a candidate for a workspace through an enabled module, or on its own when it belongs to no module at all. */
 export function candidateModules(cap: Pick<AnyCapabilityManifest, 'id'>, modules: readonly ModuleDefinition[], enabledModules: readonly ModuleId[]): { members: ModuleDefinition[], standalone: boolean } {
   const owners = modules.filter(mod => mod.capabilities.some(member => member.capabilityId === cap.id))
   return { members: owners.filter(mod => enabledModules.includes(mod.id)), standalone: owners.length === 0 }
@@ -77,14 +80,14 @@ export function computeRegistry(input: RegistryInput): RegistryResponse {
   const assessed = new Map<string, Assessed>()
   for (const cap of input.capabilities) {
     const rung = actorRung(cap, input.rungs)
-    const reasons = capabilityReadiness(cap, input.plugins, input.facts, input.platformFacts)
+    const reasons = capabilityReadiness(cap, input.scopeLabel, input.plugins, input.facts, input.platformFacts)
     assessed.set(cap.id, { cap, rung, granted: rung.name !== NONE_RUNG, ...candidateModules(cap, input.modules, input.enabledModules), reasons, ready: reasons.length === 0 })
   }
   const held = [...assessed.values()].filter(a => a.granted && (a.members.length > 0 || a.standalone))
   const visible = (a: Assessed) => admin || a.ready
 
   const entriesOf = (a: Assessed): RegistryNavEntry[] =>
-    a.cap.views.filter(view => a.rung.views.includes(view.id)).map(view => ({ id: view.id, label: view.label, icon: view.icon, to: projectViewRoute(project.slug, view.path) }))
+    a.cap.views.filter(view => a.rung.views.includes(view.id)).map(view => ({ id: view.id, label: view.label, icon: view.icon, to: projectViewRoute(input.scopeUrlPrefix, project.slug, view.path) }))
 
   const moduleGroups: RegistryNavGroup[] = []
   for (const mod of enabled) {
@@ -93,7 +96,7 @@ export function computeRegistry(input: RegistryInput): RegistryResponse {
     if (!entries.length) continue
     moduleGroups.push({ id: mod.id, label: mod.label, icon: mod.icon, kind: 'module', entries, degraded: admin && members.some(a => !a.ready) })
   }
-  // A standalone capability holding the project home leads the sidebar; the rest follow the modules.
+  // A standalone capability holding the workspace home leads the sidebar; the rest follow the modules.
   const homeGroups: RegistryNavGroup[] = []
   const standaloneGroups: RegistryNavGroup[] = []
   for (const a of held.filter(a => a.standalone && visible(a))) {
@@ -102,10 +105,10 @@ export function computeRegistry(input: RegistryInput): RegistryResponse {
     const target = a.cap.views.some(view => view.path === '' && a.rung.views.includes(view.id)) ? homeGroups : standaloneGroups
     target.push({ id: a.cap.id, label: a.cap.label, icon: entries[0]!.icon, kind: 'capability', entries, degraded: admin && !a.ready })
   }
-  const groups = [...homeGroups, ...moduleGroups, ...standaloneGroups, structuredClone(REGISTRY_SYSTEM_GROUP)]
+  const groups = [...homeGroups, ...moduleGroups, ...standaloneGroups, registrySystemGroup(input.scopeLabel)]
 
   const views: RegistryView[] = held.flatMap(a =>
-    a.cap.views.filter(view => a.rung.views.includes(view.id)).map(view => ({ id: view.id, capabilityId: a.cap.id, label: view.label, icon: view.icon, path: view.path, to: projectViewRoute(project.slug, view.path), ready: a.ready })),
+    a.cap.views.filter(view => a.rung.views.includes(view.id)).map(view => ({ id: view.id, capabilityId: a.cap.id, label: view.label, icon: view.icon, path: view.path, to: projectViewRoute(input.scopeUrlPrefix, project.slug, view.path), ready: a.ready })),
   )
   const chats = (a: Assessed | undefined) => a !== undefined && held.includes(a) && a.rung.chat && a.ready
   const agents: RegistryAgent[] = held.filter(chats).flatMap(a => a.cap.agents.map(agent => ({ id: agent.id, capabilityId: a.cap.id, label: agent.label, description: agent.description, ...(agent.family ? { family: agent.family } : {}), ...(agent.avatar ? { avatar: agent.avatar } : {}) })))

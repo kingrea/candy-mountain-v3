@@ -38,13 +38,13 @@ export function listIncidents(db: Db, projectId: string, { status, limit = INCID
     .orderBy(desc(uptimeIncidents.openedAt), desc(uptimeIncidents.id)).limit(capped).all().map(toIncident)
 }
 
-function monitorLink(db: Db, monitor: Monitor): string | undefined {
+function monitorLink(db: Db, monitor: Monitor, scopeUrlPrefix: string): string | undefined {
   const project = findProjectById(db, monitor.projectId)
-  return project ? uptimeMonitorLink(project.slug, monitor.id) : undefined
+  return project ? uptimeMonitorLink(scopeUrlPrefix, project.slug, monitor.id) : undefined
 }
 
 /** Opens the monitor's incident and records incident.opened; an already open incident is returned instead. */
-export function openIncident(db: Db, monitor: Monitor, { reason, openedAt }: OpenIncidentInput): { incident: MonitorIncident, created: boolean } {
+export function openIncident(db: Db, monitor: Monitor, { reason, openedAt }: OpenIncidentInput, scopeUrlPrefix: string): { incident: MonitorIncident, created: boolean } {
   const row = { id: randomUUID(), projectId: monitor.projectId, monitorId: monitor.id, openedAt, closedAt: null, reason, threadId: null }
   // The partial unique index keeps one open incident per monitor even if two daemons share the database.
   const inserted = db.insert(uptimeIncidents).values(row).onConflictDoNothing().returning().get()
@@ -54,14 +54,14 @@ export function openIncident(db: Db, monitor: Monitor, { reason, openedAt }: Ope
     projectId: monitor.projectId,
     type: 'incident.opened',
     title: `${monitor.name} is down: ${reason}`,
-    link: monitorLink(db, monitor),
+    link: monitorLink(db, monitor, scopeUrlPrefix),
     payload: { incidentId: incident.id, monitorId: monitor.id, monitorName: monitor.name, reason, openedAt },
   })
   return { incident, created: true }
 }
 
 /** Closes an open incident and records incident.closed; null when it was already closed. */
-export function closeIncident(db: Db, monitor: Monitor, incidentId: string, closedAt: string): MonitorIncident | null {
+export function closeIncident(db: Db, monitor: Monitor, incidentId: string, closedAt: string, scopeUrlPrefix: string): MonitorIncident | null {
   const updated = db.update(uptimeIncidents).set({ closedAt })
     .where(and(eq(uptimeIncidents.id, incidentId), isNull(uptimeIncidents.closedAt))).returning().get()
   if (!updated) return null
@@ -70,7 +70,7 @@ export function closeIncident(db: Db, monitor: Monitor, incidentId: string, clos
     projectId: monitor.projectId,
     type: 'incident.closed',
     title: `${monitor.name} is back up`,
-    link: monitorLink(db, monitor),
+    link: monitorLink(db, monitor, scopeUrlPrefix),
     payload: {
       incidentId: incident.id,
       monitorId: monitor.id,

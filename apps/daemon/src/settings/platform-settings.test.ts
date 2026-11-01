@@ -1,8 +1,8 @@
 import { PLATFORM_SETTINGS_PATH, type Actor } from '@candy-mountain/shared'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { createApp } from '../app'
+import { createTestApp, startTestPlatform } from '../testing/platform'
 import type { AuthStrategy } from '../auth'
-import { startPlatform, type Platform } from '../platform'
+import type { Platform } from '../platform'
 import { MasterKey } from '../secrets'
 import { createTempDataDir, type TempDataDir } from '../testing'
 import { LLM_GATEWAY_SECRET_NAME, LLM_GATEWAY_SECRET_OWNER, resolveLlmGatewayConfig } from './platform-settings'
@@ -11,7 +11,7 @@ let dir: TempDataDir
 let platform: Platform
 beforeEach(() => {
   dir = createTempDataDir()
-  platform = startPlatform(dir.root, { secretsKey: MasterKey.generate() })
+  platform = startTestPlatform(dir.root, { secretsKey: MasterKey.generate() })
 })
 afterEach(() => {
   platform.close()
@@ -24,7 +24,7 @@ const as = (roles: string[]): AuthStrategy => ({
 })
 
 const app = (roles = ['admin'], secrets = platform.secrets.writeOnly) =>
-  createApp({ db: platform.db, paths: platform.paths, auth: as(roles), secrets })
+  createTestApp({ db: platform.db, paths: platform.paths, auth: as(roles), secrets })
 
 const put = (body: unknown, roles?: string[]) =>
   app(roles).request(PLATFORM_SETTINGS_PATH, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
@@ -67,7 +67,7 @@ describe('platform settings', () => {
   })
 
   it('works with the secrets store locked', async () => {
-    const locked = startPlatform(dir.root + '-locked')
+    const locked = startTestPlatform(dir.root + '-locked')
     try {
       const res = await app(['admin'], locked.secrets.writeOnly).request(PLATFORM_SETTINGS_PATH)
       expect(await res.json()).toEqual({ gatewayBaseUrl: null, modelId: null, gatewayKeySet: false, secretsUnlocked: false })
@@ -80,7 +80,7 @@ describe('platform settings', () => {
   })
 
   it('boots without the route when secrets are not wired', async () => {
-    const res = await createApp({ db: platform.db, paths: platform.paths }).request(PLATFORM_SETTINGS_PATH)
+    const res = await createTestApp({ db: platform.db, paths: platform.paths }).request(PLATFORM_SETTINGS_PATH)
     expect(res.status).toBe(404)
   })
 })

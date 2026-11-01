@@ -1,5 +1,6 @@
 import type { ApiErrorBody, Environment, LiveVersionsResponse, Project } from '@candy-mountain/shared'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { DEPLOYMENTS_PLUGIN_TYPES, deploymentsRoutes } from '../deployments/definition'
 import { PLUGIN_TYPES } from '../plugins'
 import { createPluginInstance, deletePluginInstance, testPluginInstance, updatePluginInstance } from '../plugins/instances/instances'
 import { instanceHarness, type InstanceHarness } from '../plugins/instances/test-support'
@@ -70,7 +71,7 @@ beforeEach(async () => {
   vendors.deploys = []
   vendors.releases = [release(3, 'slug-3', true), release(2, 'slug-2')]
   urls = stubVendors()
-  h = instanceHarness(PLUGIN_TYPES)
+  h = instanceHarness([...PLUGIN_TYPES, ...DEPLOYMENTS_PLUGIN_TYPES])
   shop = await h.createProject('shop')
 })
 afterEach(() => {
@@ -79,7 +80,7 @@ afterEach(() => {
 })
 
 const call = (method: string, path: string, body?: unknown, roles?: string[]) =>
-  h.app(roles).request(path, { method, headers: { 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) })
+  h.app(roles, deploymentsRoutes(h.store)).request(path, { method, headers: { 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) })
 const errorOf = async (res: Response) => ((await res.json()) as ApiErrorBody).error
 const saveEnvironment = (name: string, liveSourceKind: string) => call('POST', `/projects/${shop.slug}/environments`, { name, liveSourceKind })
 const liveVersions = async () => ((await (await call('GET', `/projects/${shop.slug}/live-versions`, undefined, ['viewer'])).json()) as LiveVersionsResponse).environments

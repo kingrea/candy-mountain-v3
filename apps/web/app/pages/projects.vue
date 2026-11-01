@@ -4,11 +4,12 @@ import ProjectsConfirmModal from '~/components/projects/ProjectsConfirmModal.vue
 import type { ProjectGroup } from '~/components/projects/ProjectsList.vue'
 
 definePageMeta({ layout: 'dashboard' })
-useHead({ title: 'Projects' })
+useHead({ title: SCOPE.pluralTitle })
 
 const { $api } = useNuxtApp()
 const toast = useToast()
 const confirm = useOverlay().create(ProjectsConfirmModal)
+const newLabel = `New ${SCOPE.singular}`
 
 const { projects, status, error: loadError } = useProjects({ includeArchived: true })
 const { organisations } = useOrganisations()
@@ -91,7 +92,7 @@ function verify(project: Project) {
 async function archive(project: Project) {
   const confirmed = await confirm.open({
     title: `Archive ${project.name}?`,
-    description: 'It disappears from the project picker but keeps its slug and settings. You can unarchive it later.',
+    description: `It disappears from the ${SCOPE.singular} picker but keeps its slug and settings. You can unarchive it later.`,
     confirmLabel: 'Archive',
     color: 'warning',
   }).result
@@ -105,8 +106,8 @@ function unarchive(project: Project) {
 async function remove(project: Project) {
   const confirmed = await confirm.open({
     title: `Delete ${project.name}?`,
-    description: 'This removes the project and everything Candy Mountain stores for it. Files on disk are not touched.',
-    confirmLabel: 'Delete project',
+    description: `This removes the ${SCOPE.singular} and everything ${PRODUCT.name} stores for it. Files on disk are not touched.`,
+    confirmLabel: `Delete ${SCOPE.singular}`,
   }).result
   if (confirmed) await runAction(() => $api(projectPath(project), { method: 'DELETE' }))
 }
@@ -115,7 +116,7 @@ async function remove(project: Project) {
 <template>
   <UDashboardPanel id="projects">
     <template #header>
-      <UDashboardNavbar title="Projects">
+      <UDashboardNavbar :title="SCOPE.pluralTitle">
         <template #right>
           <USwitch
             v-model="showArchived"
@@ -123,7 +124,7 @@ async function remove(project: Project) {
             size="sm"
             data-testid="show-archived"
           />
-          <UButton icon="i-lucide-plus" label="New project" data-testid="new-project" @click="openCreate" />
+          <UButton icon="i-lucide-plus" :label="newLabel" data-testid="new-project" @click="openCreate" />
         </template>
       </UDashboardNavbar>
     </template>
@@ -146,7 +147,7 @@ async function remove(project: Project) {
             color="error"
             variant="subtle"
             icon="i-lucide-circle-alert"
-            title="Could not load projects"
+            :title="`Could not load ${SCOPE.plural}`"
             :description="toApiError(loadError).message"
           />
 
@@ -165,9 +166,9 @@ async function remove(project: Project) {
           <UEmpty
             v-else
             icon="i-lucide-folder-git-2"
-            :title="projects.length ? 'All projects are archived' : 'No projects yet'"
+            :title="projects.length ? `All ${SCOPE.plural} are archived` : `No ${SCOPE.plural} yet`"
             description="Register a local codebase to start working on it."
-            :actions="[{ label: 'New project', icon: 'i-lucide-plus', onClick: openCreate }]"
+            :actions="[{ label: newLabel, icon: 'i-lucide-plus', onClick: openCreate }]"
           />
         </div>
 

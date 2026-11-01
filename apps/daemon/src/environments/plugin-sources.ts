@@ -34,6 +34,7 @@ export const NETLIFY_SOURCE = defineLiveVersionSource({
   label: 'Netlify',
   description: 'The production deploy of the project\'s Netlify site, read through its Netlify plugin.',
   fields: [],
+  plugin: 'netlify',
   validate: requireHealthyPlugin('netlify', 'Netlify'),
   async read({ project, signal, fetch, deps }) {
     const instance = healthyPlugin(deps, project.id, 'netlify', 'Netlify')
@@ -55,6 +56,7 @@ export const HEROKU_SOURCE = defineLiveVersionSource({
   label: 'Heroku',
   description: 'The current release of the project\'s Heroku app, read through its Heroku plugin.',
   fields: [],
+  plugin: 'heroku',
   validate: requireHealthyPlugin('heroku', 'Heroku'),
   async read({ project, signal, fetch, deps }) {
     const instance = healthyPlugin(deps, project.id, 'heroku', 'Heroku')

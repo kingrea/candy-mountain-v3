@@ -159,7 +159,7 @@ export const projectUptimeStatusPath = (slug: string) => `/projects/${slug}/upti
 export const projectUptimeIncidentsPath = (slug: string) => `/projects/${slug}/uptime/incidents`
 
 /** In-app link to a monitor on the Uptime page; the page opens that monitor's drawer from `?monitor=`. */
-export const uptimeMonitorLink = (slug: string, monitorId: string) => `/p/${slug}/uptime?monitor=${encodeURIComponent(monitorId)}`
+export const uptimeMonitorLink = (prefix: string, slug: string, monitorId: string) => `/${prefix}/${slug}/uptime?monitor=${encodeURIComponent(monitorId)}`
 
 /** A monitor is down only when this many newest checks all failed. */
 export const MONITOR_DOWN_THRESHOLD = 3

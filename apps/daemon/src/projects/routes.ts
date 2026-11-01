@@ -2,13 +2,13 @@ import type {
   ApiErrorBody,
   OrganisationListResponse,
   OrganisationResponse,
+  Project,
   ProjectListResponse,
   ProjectResponse,
   VerifyPathResponse,
 } from '@candy-mountain/shared'
 import { Hono, type Context } from 'hono'
 import type { AppEnv } from '../app'
-import { deleteProjectBots } from '../bots/bots'
 import { deleteProjectPluginInstances, type SecretsReader } from '../plugins/instances/instances'
 import { ProjectError } from './errors'
 import {
@@ -53,7 +53,12 @@ function onProjectError(error: Error, c: Context) {
   throw error
 }
 
-export function projectRoutes(secretsReader: SecretsReader) {
+export interface ProjectRouteHooks {
+  /** The definitions' deletion hooks, dependents first; a throw leaves the project in place. */
+  onWorkspaceDeleted?(project: Project): Promise<void>
+}
+
+export function projectRoutes(secretsReader: SecretsReader, hooks: ProjectRouteHooks = {}) {
   const app = new Hono<AppEnv>()
   app.onError(onProjectError)
 
@@ -88,10 +93,10 @@ export function projectRoutes(secretsReader: SecretsReader) {
   app.post('/:slug/unarchive', c => c.json<ProjectResponse>({ project: unarchiveProject(c.var.db, c.req.param('slug')) }))
 
   app.delete('/:slug', async (c) => {
-    const projectId = getProjectBySlug(c.var.db, c.req.param('slug')).id
-    deleteProjectBots(c.var, projectId)
-    await deleteProjectPluginInstances({ ...c.var, secretsReader }, projectId)
-    deleteProject(c.var.db, c.req.param('slug'))
+    const project = getProjectBySlug(c.var.db, c.req.param('slug'))
+    await hooks.onWorkspaceDeleted?.(project)
+    await deleteProjectPluginInstances({ ...c.var, secretsReader }, project.id)
+    deleteProject(c.var.db, project.slug)
     return c.body(null, 204)
   })
 

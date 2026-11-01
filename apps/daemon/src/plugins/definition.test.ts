@@ -38,7 +38,7 @@ describe('definePluginType', () => {
   })
 
   it.each<[string, (t: ReturnType<typeof clonePluginType>) => void, string]>([
-    ['unknown id', t => { t.id = 'gitlab' as never }, "Unknown plugin type id 'gitlab'"],
+    ['malformed id', t => { t.id = 'Git Lab' }, "Invalid plugin type id 'Git Lab'"],
     ['blank name', t => { t.name = ' ' }, 'name and description must not be empty'],
     ['no reach lines', t => { t.reach = [] }, 'at least one reach line'],
     ['unknown scope', t => { t.scopes = ['organisation' as never] }, "unknown scope(s) 'organisation'"],

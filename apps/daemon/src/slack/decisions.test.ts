@@ -4,7 +4,7 @@ import { sessionDecisionPath, sessionDecisionsPath, sessionEventsPath, type Acto
 import { eq, like } from 'drizzle-orm'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fakeBins, fakeClaude } from '../acp/test-support'
-import { createApp } from '../app'
+import { createTestApp } from '../testing/platform'
 import type { AuthStrategy } from '../auth'
 import { createBot, parseCreateBot, recordBotPersonaCheck, type BotReadDeps } from '../bots'
 import { pluginInstances, platformMeta } from '../db/schema'
@@ -13,7 +13,7 @@ import { GOOD_TOKEN, stubHosts } from '../plugins/repository/fake-hosts'
 import { createSlackClient, createSlackOperations } from '../plugins/slack'
 import { setEnabledModules } from '../project-modules/enablement'
 import { createProject } from '../projects/projects'
-import { startPlatform, type Platform, type PlatformOptions } from '../platform'
+import { startAcpPlatform, type AcpPlatform, type AcpPlatformOptions } from '../chat-claude-code/test-support'
 import { MasterKey } from '../secrets'
 import type { SessionMessage } from '../sessions'
 import { addTeamMember } from '../team'
@@ -31,7 +31,7 @@ const BOT_USER = 'U0BOT'
 const ADMIN: Actor = { id: 'admin-actor', username: 'admin', displayName: 'Admin', roles: ['admin'] }
 
 let temp: TempDataDir | undefined
-let platform: Platform | undefined
+let platform: AcpPlatform | undefined
 let repo: TempGitRepo | undefined
 let stops: (() => void)[] = []
 
@@ -104,21 +104,21 @@ function commitFile(path: string, text: string): void {
   repo!.git(repo!.clone, 'push', '--quiet', 'origin', 'main')
 }
 
-function setHealth(p: Platform, projectId: string, type: 'repository' | 'claude-code', config: Record<string, unknown> = {}, secrets: Record<string, string> = {}): void {
+function setHealth(p: AcpPlatform, projectId: string, type: 'repository' | 'claude-code', config: Record<string, unknown> = {}, secrets: Record<string, string> = {}): void {
   const existing = p.db.select().from(pluginInstances).where(eq(pluginInstances.projectId, projectId)).all().find(row => row.typeId === type)
   const id = existing?.id ?? createPluginInstance({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly }, { type, scope: 'project', projectId, config, secrets }).id
   p.db.update(pluginInstances).set({ health: { healthy: true }, healthCheckedAt: new Date().toISOString() }).where(eq(pluginInstances.id, id)).run()
 }
 
-const readDeps = (p: Platform): BotReadDeps => ({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly, secretsReader: p.secrets })
+const readDeps = (p: AcpPlatform): BotReadDeps => ({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly, secretsReader: p.secrets })
 
-function boot(dataDir: string, key: MasterKey, decisions?: PlatformOptions['decisions']): Platform {
-  platform = startPlatform(dataDir, { secretsKey: key, acp: { bins: fakeBins, killTimeoutMs: 1000 }, decisions })
+function boot(dataDir: string, key: MasterKey, decisions?: AcpPlatformOptions['decisions']): AcpPlatform {
+  platform = startAcpPlatform(dataDir, { secretsKey: key, acp: { bins: fakeBins, killTimeoutMs: 1000 }, decisions })
   return platform
 }
 
 /** The Slack side wired as the platform wires it, but against a recording transport. */
-function wire(p: Platform) {
+function wire(p: AcpPlatform) {
   const transport = fakeTransport()
   const decisions = startSlackDecisions({ db: p.db, slack: transport.slack, decisions: p.decisions, sessions: p.sessions }, { log: { error: () => {} } })
   const router = startSlackRouter({ db: p.db, slack: transport.slack, botSessions: p.botSessions, sessions: p.sessions, interceptReply: decisions.interceptReply }, { log: { error: () => {} } })
@@ -130,7 +130,7 @@ function wire(p: Platform) {
   return { ...transport, decisions, router, idle }
 }
 
-async function setup(decisions?: PlatformOptions['decisions']) {
+async function setup(decisions?: AcpPlatformOptions['decisions']) {
   repo = createTempGitRepo()
   commitFile('.claude/agents/ana.md', CLAUDE_PERSONA)
   stubHosts()
@@ -149,7 +149,7 @@ async function setup(decisions?: PlatformOptions['decisions']) {
 }
 
 /** Opens the thread through the router, then has the agent raise `scenario` the way a turn would. */
-async function raise(p: Platform, t: ReturnType<typeof wire>, botId: string, projectId: string, scenario: string) {
+async function raise(p: AcpPlatform, t: ReturnType<typeof wire>, botId: string, projectId: string, scenario: string) {
   let thread = findSlackThread(p.db, { botId, channelId: 'C01LISTED', threadTs: '1.1' })
   if (!thread) {
     t.bus.emit(messageEvent(botId, projectId, { kind: 'app_mention', text: `<@${BOT_USER}> start`, ts: '1.1' }))
@@ -166,7 +166,7 @@ async function raise(p: Platform, t: ReturnType<typeof wire>, botId: string, pro
   return { sessionId: thread.sessionId, decision, post, turnEnd }
 }
 
-function waitFor(p: Platform, id: string, kind: AgentSessionEventKind): Promise<AgentSessionEvent> {
+function waitFor(p: AcpPlatform, id: string, kind: AgentSessionEventKind): Promise<AgentSessionEvent> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => { unsubscribe(); reject(new Error(`No ${kind} event`)) }, 15_000)
     const unsubscribe = p.sessions.subscribe(id, (message: SessionMessage) => {
@@ -178,9 +178,9 @@ function waitFor(p: Platform, id: string, kind: AgentSessionEventKind): Promise<
   })
 }
 
-function call(p: Platform, method: string, path: string, body?: unknown) {
+function call(p: AcpPlatform, method: string, path: string, body?: unknown) {
   const auth: AuthStrategy = { name: 'development', resolve: () => ADMIN }
-  const app = createApp({ db: p.db, paths: p.paths, auth, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly, secretsReader: p.secrets, sessions: p.sessions, decisions: p.decisions, botSessions: p.botSessions })
+  const app = createTestApp({ db: p.db, paths: p.paths, auth, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly, secretsReader: p.secrets, families: p.families, runtime: p.runtime })
   const init: RequestInit = { method }
   if (body !== undefined) {
     init.headers = { 'content-type': 'application/json' }
@@ -190,7 +190,7 @@ function call(p: Platform, method: string, path: string, body?: unknown) {
 }
 
 /** The panel's view: rows replayed on the SSE stream, read until the decision is settled. */
-async function streamedOutcome(p: Platform, sessionId: string, decisionId: string): Promise<AgentSessionEvent> {
+async function streamedOutcome(p: AcpPlatform, sessionId: string, decisionId: string): Promise<AgentSessionEvent> {
   const res = await call(p, 'GET', sessionEventsPath('alpha', sessionId))
   expect(res.status).toBe(200)
   const reader = res.body!.getReader()

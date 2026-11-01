@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process'
 import { existsSync, mkdirSync } from 'node:fs'
 import { addressUrl } from '@candy-mountain/config'
-import { PRODUCT_NAME } from '@candy-mountain/shared'
+import { product } from './product'
 import { isRunning, readPidFile, removePidFile } from './pid-file'
 import { isHealthy, isPortInUse } from './probe'
 import type { Settings } from './settings'
@@ -17,7 +17,7 @@ export interface Io {
 export async function start(settings: Settings, io: Io, timeoutMs: number): Promise<number> {
   const launched = await bringUp(settings, io, { detached: true, timeoutMs })
   if (!launched) return EXIT.failure
-  io.out(`${PRODUCT_NAME} is running at ${settings.services[1].url}`)
+  io.out(`${product.name} is running at ${settings.services[1].url}`)
   return EXIT.ok
 }
 
@@ -99,7 +99,7 @@ export function logs(settings: Settings, io: Io, options: LogsOptions): Promise<
 export async function run(settings: Settings, io: Io, timeouts: { stopMs: number, startMs: number }): Promise<number> {
   const launched = await bringUp(settings, io, { detached: false, timeoutMs: timeouts.startMs, supervisor: process.pid })
   if (!launched) return EXIT.failure
-  io.out(`${PRODUCT_NAME} is running at ${settings.services[1].url} (foreground, pid ${process.pid})`)
+  io.out(`${product.name} is running at ${settings.services[1].url} (foreground, pid ${process.pid})`)
 
   return new Promise((resolve) => {
     let stopping = false

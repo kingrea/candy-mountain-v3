@@ -1,6 +1,6 @@
 import { FORBIDDEN_ERROR_CODE, GRANTS_PATH, type Actor, type GrantListResponse, type GrantResponse } from '@candy-mountain/shared'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { createApp } from '../app'
+import { createTestApp } from '../testing/platform'
 import type { AuthStrategy } from '../auth'
 import type { PlatformDatabase } from '../db'
 import { openTestDatabase } from '../testing'
@@ -22,7 +22,7 @@ const as = (roles: string[]): AuthStrategy => ({
 
 function app(roles = ['admin']) {
   const { capabilities, modules } = testAccess(database.db)
-  return createApp({ db: database.db, paths: {} as never, capabilities, modules, auth: as(roles) })
+  return createTestApp({ db: database.db, paths: {} as never, capabilities, modules, auth: as(roles) })
 }
 
 const put = (body: unknown, roles?: string[]) =>

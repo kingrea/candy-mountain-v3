@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import type { ActivityListResponse, CrossProjectActivityResponse, ApiErrorBody, Project } from '@candy-mountain/shared'
 import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { createApp } from '../app'
+import { createTestApp } from '../testing/platform'
 import { dataPaths } from '../data-dir'
 import type { PlatformDatabase } from '../db'
 import { archiveProject, createProject, deleteProject } from '../projects/projects'
@@ -25,7 +25,7 @@ afterEach(() => {
 })
 
 const project = (name: string): Promise<Project> => createProject(database.db, { name, source: { kind: 'local-path', path: root } })
-const app = () => createApp({ db: database.db, paths: dataPaths('/unused') })
+const app = () => createTestApp({ db: database.db, paths: dataPaths('/unused') })
 
 describe('activity events', () => {
   it('appends and lists with link and payload', async () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isPluginTypeId, pluginTypeInfo, validatePluginConfig, type PluginConfigField, type PluginTypeInfo } from './plugins'
+import { pluginTypeInfo, validatePluginConfig, type PluginConfigField, type PluginTypeInfo } from './plugins'
 
 const fields: readonly PluginConfigField[] = [
   { kind: 'select', name: 'host', label: 'Host', options: [{ value: 'github', label: 'GitHub' }, { value: 'bitbucket', label: 'Bitbucket' }], required: true },
@@ -45,11 +45,6 @@ describe('validatePluginConfig', () => {
 })
 
 describe('plugin type helpers', () => {
-  it('knows the fixed ids', () => {
-    expect(isPluginTypeId('repository')).toBe(true)
-    expect(isPluginTypeId('gitlab')).toBe(false)
-  })
-
   it('strips the health check for the wire', () => {
     const type: PluginTypeInfo & { healthCheck: () => unknown } = {
       id: 'slack',

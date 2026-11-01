@@ -1,6 +1,7 @@
 import type { Organisation, Project } from '@candy-mountain/shared'
+import { PRODUCT } from '../../shared/utils/product'
 
-export const PROJECT_ROUTE_PREFIX = '/p'
+export const PROJECT_ROUTE_PREFIX = `/${PRODUCT.scope.urlPrefix}`
 export const PROJECT_ROUTE_PARAM = 'project'
 export const PROJECTS_PAGE_PATH = '/projects'
 export const LAST_PROJECT_COOKIE = 'cm-last-project'
@@ -54,7 +55,7 @@ export function projectPickerItems(groups: readonly ProjectGroup[]): ProjectPick
   })
 }
 
-// System pages live outside /p/[project], so the side menu and picker keep the last opened project while it is still active.
+// System pages live outside the scoped routes, so the side menu and picker keep the last opened project while it is still active.
 export function navigationProjectSlug(
   routeSlug: string | null,
   lastSlug: string | null,

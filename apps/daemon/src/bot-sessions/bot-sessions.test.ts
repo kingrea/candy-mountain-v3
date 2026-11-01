@@ -6,7 +6,7 @@ import { eq } from 'drizzle-orm'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fakeBins, fakeClaude } from '../acp/test-support'
 import { listActivityEvents } from '../activity'
-import { createApp } from '../app'
+import { createTestApp } from '../testing/platform'
 import type { AuthStrategy } from '../auth'
 import { createBot, parseCreateBot, type BotReadDeps } from '../bots'
 import { pluginInstances } from '../db/schema'
@@ -15,7 +15,7 @@ import { createPluginInstance } from '../plugins/instances/instances'
 import { GOOD_TOKEN, json as hostJson, stubHosts } from '../plugins/repository/fake-hosts'
 import { setEnabledModules } from '../project-modules/enablement'
 import { createProject } from '../projects/projects'
-import { startPlatform, type Platform, type PlatformOptions } from '../platform'
+import { startAcpPlatform, type AcpPlatform, type AcpPlatformOptions } from '../chat-claude-code/test-support'
 import { MasterKey } from '../secrets'
 import type { SessionManager, SessionMessage } from '../sessions'
 import { createTempDataDir, type TempDataDir } from '../testing'
@@ -27,7 +27,7 @@ const CLAUDE_PERSONA = '---\nname: ana\ndescription: Ana fixes small issues.\n--
 const CODEX_PERSONA = 'You are Cody. Keep changes small.\n'
 
 let temp: TempDataDir | undefined
-let platform: Platform | undefined
+let platform: AcpPlatform | undefined
 let repo: TempGitRepo | undefined
 
 afterEach(async () => {
@@ -65,8 +65,8 @@ function commitFile(path: string, text: string): void {
 
 const as = (actor: Actor): AuthStrategy => ({ name: 'development', resolve: () => actor })
 
-function call(p: Platform, method: string, path: string, body?: unknown, actor: Actor = ADMIN) {
-  const app = createApp({ db: p.db, paths: p.paths, auth: as(actor), pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly, secretsReader: p.secrets, sessions: p.sessions, decisions: p.decisions, botSessions: p.botSessions })
+function call(p: AcpPlatform, method: string, path: string, body?: unknown, actor: Actor = ADMIN) {
+  const app = createTestApp({ db: p.db, paths: p.paths, auth: as(actor), pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly, secretsReader: p.secrets, families: p.families, runtime: p.runtime })
   const init: RequestInit = { method }
   if (body !== undefined) {
     init.headers = { 'content-type': 'application/json' }
@@ -85,10 +85,10 @@ async function errorOf(res: Response) {
   return { status: res.status, code: body.error.code, message: body.error.message }
 }
 
-const readDeps = (p: Platform): BotReadDeps => ({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly, secretsReader: p.secrets })
+const readDeps = (p: AcpPlatform): BotReadDeps => ({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly, secretsReader: p.secrets })
 
 /** Stands in for a passing connection test: the starter only reads the stored result. */
-function setHealth(p: Platform, projectId: string, type: PluginTypeId, healthy: boolean, config: Record<string, unknown> = {}): void {
+function setHealth(p: AcpPlatform, projectId: string, type: PluginTypeId, healthy: boolean, config: Record<string, unknown> = {}): void {
   const existing = p.db.select().from(pluginInstances).where(eq(pluginInstances.projectId, projectId)).all().find(row => row.typeId === type)
   const id = existing?.id ?? createPluginInstance({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly }, { type, scope: 'project', projectId, config, secrets: {} }).id
   p.db.update(pluginInstances).set({ health: healthy ? { healthy: true } : { healthy: false, reason: 'Not logged in.' }, healthCheckedAt: new Date().toISOString() }).where(eq(pluginInstances.id, id)).run()
@@ -100,7 +100,7 @@ interface SetupOptions {
   personaName?: string
   /** `bd` runs `bd init --stealth` in the clone; `dir` only creates `.beads` so the env is produced without bd. */
   beads?: 'bd' | 'dir' | false
-  worktrees?: PlatformOptions['worktrees']
+  worktrees?: AcpPlatformOptions['worktrees']
 }
 
 /** Project `alpha` on a temp clone with a bare origin, personas `ana` (Claude) and `cody` (Codex) on main, both agent plugins stored healthy. */
@@ -114,7 +114,7 @@ async function setup({ family = 'claude-code', writeScope = 'write-confirm', per
   stubHosts(request => (decodeURIComponent(request.url.pathname) === '/repos/jack/candy/contents/.agents/cody.md' ? hostJson(200, { type: 'file', path: '.agents/cody.md' }) : undefined))
 
   temp = createTempDataDir()
-  const p = startPlatform(temp.root, { secretsKey: MasterKey.generate(), acp: { bins: fakeBins, killTimeoutMs: 1000 }, worktrees })
+  const p = startAcpPlatform(temp.root, { secretsKey: MasterKey.generate(), acp: { bins: fakeBins, killTimeoutMs: 1000 }, worktrees })
   platform = p
   const project = await createProject(p.db, { name: 'alpha', slug: 'alpha', source: { kind: 'local-path', path: repo.clone } })
   // The session routes the console prompts through are gated on the chat capabilities of the Agent Hub module.
@@ -146,9 +146,9 @@ async function until(read: () => boolean, timeoutMs = 10_000): Promise<void> {
   }
 }
 
-const start = (p: Platform, botId: string, threadId?: string) => call(p, 'POST', botSessionsPath('alpha', botId), threadId ? { threadId } : undefined)
+const start = (p: AcpPlatform, botId: string, threadId?: string) => call(p, 'POST', botSessionsPath('alpha', botId), threadId ? { threadId } : undefined)
 
-const textOf = (p: Platform, sessionId: string, match: string) => {
+const textOf = (p: AcpPlatform, sessionId: string, match: string) => {
   const event = p.sessions.events(sessionId).find(e => e.kind === 'text' && e.text.includes(match))
   return event && event.kind === 'text' ? event.text : undefined
 }
