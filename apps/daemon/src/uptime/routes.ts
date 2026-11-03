@@ -3,13 +3,9 @@ import {
   MONITOR_STATUS_RECENT_DEFAULT, MONITOR_STATUS_RECENT_MAX, monitorSourceInfo, UPTIME_MANAGE_TOOL,
   type ApiErrorBody, type IncidentListResponse, type IncidentStatusFilter, type MonitorCheckListResponse, type MonitorListResponse,
   type MonitorResponse, type MonitorSourceListResponse, type MonitorStatusResponse, type UptimeStatusResponse,
-} from '@candy-mountain/shared'
+} from '@candy-mountain/platform-sdk'
 import { Hono, type Context } from 'hono'
-import type { AppEnv } from '../app'
-import { requireAdmin } from '../auth/admin'
-import { WorkspaceError } from '../workspaces/errors'
-import { getWorkspaceBySlug } from '../workspaces/workspaces'
-import { requireCapability } from '../registry/gate'
+import { type AppEnv, getWorkspaceBySlug, requireAdmin, requireCapability, WorkspaceError } from '@candy-mountain/platform-daemon'
 import { MONITOR_SOURCE_REGISTRY } from './builtin-sources'
 import { listMonitorChecks } from './checks'
 import { MonitorError } from './errors'

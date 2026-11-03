@@ -1,12 +1,10 @@
+import { CANDY_MOUNTAIN_PRODUCT } from '@candy-mountain/platform-sdk'
 import { serve } from '@hono/node-server'
-import { createApp } from './app'
-import { ADMIN_PASSWORD_ENV, applyAdminPassword, createAuthStrategy, requireAdminPassword } from './auth'
+import { ADMIN_PASSWORD_ENV, applyAdminPassword, createApp, createAuthStrategy, requireAdminPassword, SECRETS_KEY_ENV, startPlatform } from '@candy-mountain/platform-daemon'
 import { candyMountainProduct } from './candy-mountain'
 import { loadConfig } from './config'
-import { startPlatform } from './platform'
-import { SECRETS_KEY_ENV } from './secrets'
 
-const config = loadConfig()
+const config = loadConfig(CANDY_MOUNTAIN_PRODUCT)
 const product = candyMountainProduct({ chatClaudeCode: { sessions: config.sessions, decisions: config.decisions }, bots: { worktrees: config.worktrees }, uptime: config.uptime })
 const platform = startPlatform(config.dataDir, { secretsKey: config.secretsKey, product, notifications: config.notifications })
 const { name } = product.config

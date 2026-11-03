@@ -2,9 +2,10 @@ import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:f
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { CLAUDE_CODE_TYPE_ACTIONS, PLUGIN_TYPES_PATH, type ClaudeExecutableResponse } from '@candy-mountain/shared'
+import { CLAUDE_CODE_TYPE_ACTIONS, PLUGIN_TYPES_PATH, type ClaudeExecutableResponse } from '@candy-mountain/platform-sdk'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { instanceHarness, type InstanceHarness } from '../instances/test-support'
+import { type InstanceHarness } from '@candy-mountain/platform-daemon'
+import { instanceHarness } from '../../testing'
 import { claudeCodePluginType } from '../types/claude-code'
 import { EXECUTABLE_REASONS, findClaudeExecutable, probeClaudeExecutable } from './executable'
 

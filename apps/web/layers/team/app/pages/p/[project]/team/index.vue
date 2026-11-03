@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { TeamMember } from '@candy-mountain/shared'
+import type { TeamMember } from '@candy-mountain/platform-sdk'
 
 const editing = ref<TeamMember | null | undefined>()
 </script>

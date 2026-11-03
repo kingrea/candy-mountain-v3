@@ -1,7 +1,7 @@
 import {
   SLACK_MEMBER_ID_PATTERN, TEAM_EMAIL_MAX_LENGTH, TEAM_NAME_MAX_LENGTH,
   type CreateTeamMemberRequest, type TeamBotScope, type UpdateTeamMemberRequest,
-} from '@candy-mountain/shared'
+} from '@candy-mountain/platform-sdk'
 import { TeamError } from './errors'
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/

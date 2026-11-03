@@ -1,13 +1,8 @@
-import { CODEX_SESSION_MODES, SESSION_EVENT_NAME, SESSION_PROMPT_MAX_LENGTH, SESSION_STATUS_EVENT_NAME, type AgentSession, type AgentSessionFamily, type AgentSessionPosture, type ApiErrorBody, type CreateSessionRequest, type SessionListResponse, type SessionPromptRequest, type SessionResponse, type SessionStatusEvent } from '@candy-mountain/shared'
+import { CODEX_SESSION_MODES, SESSION_EVENT_NAME, SESSION_STATUS_EVENT_NAME, type AgentSession, type AgentSessionFamily, type AgentSessionPosture, type ApiErrorBody, type CreateSessionRequest, type SessionListResponse, type SessionResponse, type SessionStatusEvent } from '@candy-mountain/platform-sdk'
 import { Hono, type Context } from 'hono'
 import { streamSSE } from 'hono/streaming'
-import type { AppEnv } from '../app'
-import { WorkspaceError } from '../workspaces/errors'
-import { getWorkspaceBySlug } from '../workspaces/workspaces'
-import type { GateRefusal } from '../registry'
+import { type AppEnv, type GateRefusal, getWorkspaceBySlug, parsePrompt, SessionError, type SessionFamilyRegistry, WorkspaceError } from '@candy-mountain/platform-daemon'
 import { canAccessSession, gateSessionFamily, requireSessionAccess } from './access'
-import { SessionError } from './errors'
-import type { SessionFamilyRegistry } from '../threads/families'
 import type { SessionManager, SessionMessage } from './manager'
 
 // Node fetch (the web proxy) drops a response body that stays silent for 300s.
@@ -64,13 +59,6 @@ export function parseCreateSession(body: Record<string, unknown>, families: Pick
   if (typeof body.family !== 'string' || !families.has(body.family)) throw new SessionError('invalid_request', `family must be one of ${families.ids().join(', ')}`)
   const posture = parsePosture(body.posture)
   return { family: body.family, ...(posture ? { posture } : {}) }
-}
-
-export function parsePrompt(body: Record<string, unknown>): SessionPromptRequest {
-  const text = body.text
-  if (typeof text !== 'string' || text.trim() === '') throw new SessionError('invalid_request', 'text must be a non-empty string')
-  if (text.length > SESSION_PROMPT_MAX_LENGTH) throw new SessionError('invalid_request', `text must be at most ${SESSION_PROMPT_MAX_LENGTH} characters`)
-  return { text }
 }
 
 function parseAfter(value: string | undefined): number {

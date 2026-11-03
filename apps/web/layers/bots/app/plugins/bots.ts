@@ -1,4 +1,4 @@
-import { BOT_FAMILIES } from '@candy-mountain/shared'
+import { BOT_FAMILIES } from '@candy-mountain/platform-sdk'
 
 // A bot agent carries its engine's family, so its threads arrive under that family's pieces.
 export default defineNuxtPlugin(() => {

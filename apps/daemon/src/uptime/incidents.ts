@@ -2,12 +2,10 @@ import { randomUUID } from 'node:crypto'
 import {
   INCIDENTS_DEFAULT_LIMIT, INCIDENTS_MAX_LIMIT, uptimeMonitorLink,
   type IncidentStatusFilter, type Monitor, type MonitorIncident,
-} from '@candy-mountain/shared'
+} from '@candy-mountain/platform-sdk'
 import { and, desc, eq, isNotNull, isNull, type SQL } from 'drizzle-orm'
-import { appendActivityEvent } from '../activity'
-import type { Db } from '../db'
+import { appendActivityEvent, type Db, findWorkspaceById } from '@candy-mountain/platform-daemon'
 import { uptimeIncidents } from './schema'
-import { findWorkspaceById } from '../workspaces/workspaces'
 
 export interface ListIncidentsOptions {
   status?: IncidentStatusFilter

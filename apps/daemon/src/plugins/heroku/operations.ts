@@ -1,4 +1,4 @@
-import type { PluginSecrets } from '@candy-mountain/shared'
+import type { PluginSecrets } from '@candy-mountain/platform-sdk'
 import type { HerokuConfig } from '../types/heroku'
 import { createHerokuClient, type HerokuClientOptions } from './client'
 

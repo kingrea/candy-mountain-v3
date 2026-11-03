@@ -1,4 +1,4 @@
-import { CLAUDE_CODE_ACTIONS, type ClaudeCodeStartLoginResponse, type ClaudeCodeSubmitCodeResponse } from '@candy-mountain/shared'
+import { CLAUDE_CODE_ACTIONS, type ClaudeCodeStartLoginResponse, type ClaudeCodeSubmitCodeResponse } from '@candy-mountain/platform-sdk'
 
 const ATTEMPT_GONE_CODES = ['claude_code_attempt_not_found', 'claude_code_attempt_not_waiting']
 

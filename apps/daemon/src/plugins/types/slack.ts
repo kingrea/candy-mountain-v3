@@ -1,5 +1,5 @@
-import { validatePluginConfig, type PluginConfigOf, type PluginHealth } from '@candy-mountain/shared'
-import { definePluginType } from '../definition'
+import { validatePluginConfig, type PluginConfigOf, type PluginHealth } from '@candy-mountain/platform-sdk'
+import { definePluginType } from '@candy-mountain/platform-daemon'
 import { createSlackOperations } from '../slack/operations'
 
 export const slackPluginType = definePluginType({

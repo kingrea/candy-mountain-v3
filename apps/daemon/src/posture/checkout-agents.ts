@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { basename, dirname, isAbsolute, join } from 'node:path'
-import type { BotWriteScope } from '@candy-mountain/shared'
+import type { BotWriteScope } from '@candy-mountain/platform-sdk'
 import { mirrorAllowAsAsk, type CheckoutVetting } from './checkout-settings'
 import { PostureError } from './errors'
 import { assertFrontMatterWithinScope, frontMatterList, parsePersonaFrontMatter, toolName } from './front-matter'

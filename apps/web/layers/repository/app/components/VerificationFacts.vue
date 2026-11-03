@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { RepositoryVerification } from '@candy-mountain/shared'
+import type { RepositoryVerification } from '@candy-mountain/platform-sdk'
 
 const props = defineProps<{
   verification: RepositoryVerification

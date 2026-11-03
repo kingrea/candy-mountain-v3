@@ -1,4 +1,4 @@
-import type { IssueDependency } from '@candy-mountain/shared'
+import type { IssueDependency } from '@candy-mountain/platform-sdk'
 import { describe, expect, it } from 'vitest'
 import { issuesBlockedIds, issuesFilterTree, issuesMatchesSearch, issuesPriorityFlameClass, issuesShortId, type IssuesListItem } from '../../app/utils/issues-list'
 import { issuesGroupTree } from '../../app/utils/issues-tree'

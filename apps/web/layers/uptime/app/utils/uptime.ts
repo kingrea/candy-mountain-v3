@@ -16,7 +16,7 @@ import {
   type MonitorState,
   type MonitorStatus,
   type UpdateMonitorRequest,
-} from '@candy-mountain/shared'
+} from '@candy-mountain/platform-sdk'
 
 export const UPTIME_SOURCES_DATA_KEY = 'uptime-sources'
 export const uptimeStatusDataKey = (slug: string | null) => `uptime-status:${slug ?? ''}`

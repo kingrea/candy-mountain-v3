@@ -8,7 +8,7 @@ import {
   type MonitorCheckRecord,
   type MonitorIncident,
   type MonitorStatus,
-} from '@candy-mountain/shared'
+} from '@candy-mountain/platform-sdk'
 
 const props = defineProps<{
   status: MonitorStatus | null

@@ -1,4 +1,4 @@
-import { repositoryPath, type Repository, type RepositoryResponse } from '@candy-mountain/shared'
+import { repositoryPath, type Repository, type RepositoryResponse } from '@candy-mountain/platform-sdk'
 
 export const repositoryDataKey = (slug: string) => `repository:${slug}`
 

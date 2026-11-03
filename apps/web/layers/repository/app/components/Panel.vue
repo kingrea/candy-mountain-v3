@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { PluginInstance, PluginTypeInfo, RepositoryBranchList } from '@candy-mountain/shared'
+import type { PluginInstance, PluginTypeInfo, RepositoryBranchList } from '@candy-mountain/platform-sdk'
 
 const props = defineProps<{
   instance: PluginInstance

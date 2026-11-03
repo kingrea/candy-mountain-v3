@@ -1,9 +1,8 @@
-import { validatePluginConfig, type CodexLoginAttempt, type CodexLoginStatusResponse, type CodexRevokeResponse, type PluginConfigOf } from '@candy-mountain/shared'
-import { PluginActionError } from '../actions'
+import { validatePluginConfig, type CodexLoginAttempt, type CodexLoginStatusResponse, type CodexRevokeResponse, type PluginConfigOf } from '@candy-mountain/platform-sdk'
+import { definePluginType, PluginActionError } from '@candy-mountain/platform-daemon'
 import { CodexLoginAttempts, codexLoginAttempts } from '../codex/attempts'
 import { codexCommand, readCodexLoginState } from '../codex/cli'
 import { codexHome, removeCodexHome } from '../codex/home'
-import { definePluginType } from '../definition'
 
 export function createCodexPluginType(attempts: CodexLoginAttempts) {
   return definePluginType({

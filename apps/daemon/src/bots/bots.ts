@@ -7,13 +7,11 @@ import {
   type BotPersonaStatus,
   type BotSecretName,
   type BotSecretValues,
-} from '@candy-mountain/shared'
+} from '@candy-mountain/platform-sdk'
 import { and, eq, inArray, ne, sql } from 'drizzle-orm'
-import type { Db } from '../db'
+import { createPluginSecrets, type Db, type PluginInstanceDeps, resolvePluginInstance, type SecretsReader } from '@candy-mountain/platform-daemon'
 import { bots, slackDeliveries } from './schema'
-import { resolvePluginInstance, type PluginInstanceDeps, type SecretsReader } from '../plugins/instances/instances'
 import { createRepositoryOperations, repositoryConfig, repositoryPluginType } from '../plugins/repository'
-import { createPluginSecrets } from '../plugins/secrets'
 import { BotError } from './errors'
 import { botUsableWithoutSlack, computeBotStatus } from './status'
 import type { CreateBotInput, UpdateBotInput } from './validation'

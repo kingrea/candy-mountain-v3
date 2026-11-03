@@ -1,0 +1,29 @@
+{
+  "$schema": "./node_modules/turbo/schema.json",
+  "envMode": "loose",
+  "tasks": {
+    // A no-op task whose hash carries a package's sources, so a dependency's change invalidates dependents without ordering them behind its build.
+    "transit": {
+      "dependsOn": ["^transit"]
+    },
+    "build": {
+      "dependsOn": ["^build"],
+      "env": ["CM_*", "NUXT_*"],
+      "outputs": ["dist/**", ".output/**"]
+    },
+    "typecheck": {
+      "dependsOn": ["^transit"]
+    },
+    "test": {
+      "dependsOn": ["^transit"],
+      "env": ["CM_*", "CLAUDE_ACP_TEST_BIN"]
+    },
+    "lint": {
+      "dependsOn": ["^transit"]
+    },
+    "//#lint:root": {
+      "dependsOn": ["^transit"],
+      "inputs": ["*.{js,mjs,cjs,ts,mts,cts}", "scripts/**"]
+    }
+  }
+}

@@ -1,6 +1,6 @@
 import { spawn, type ChildProcess } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
-import { CLAUDE_CODE_LOGIN_ATTEMPT_TTL_MS } from '@candy-mountain/shared'
+import { CLAUDE_CODE_LOGIN_ATTEMPT_TTL_MS } from '@candy-mountain/platform-sdk'
 import { CLAUDE_LOGIN_ARGS, claudeCliEnv, ensureConfigDir, readClaudeAuthStatus } from './cli'
 
 /** How long the CLI may take to print its sign-in link before the attempt is failed. */

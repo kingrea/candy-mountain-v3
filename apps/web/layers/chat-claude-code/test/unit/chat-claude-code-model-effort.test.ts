@@ -1,4 +1,4 @@
-import type { ChatAgentOptions, ChatThreadSession } from '@candy-mountain/shared'
+import type { ChatAgentOptions, ChatThreadSession } from '@candy-mountain/platform-sdk'
 import { describe, expect, it } from 'vitest'
 import { CHAT_CLAUDE_CODE_OPTION_DEFAULT, chatClaudeCodeHasOptions, chatClaudeCodeOptionChoice, chatClaudeCodeOptionItems, chatClaudeCodeOptionValue, chatClaudeCodeSessionDividers } from '../../app/utils/chat-claude-code-model-effort'
 

@@ -1,4 +1,4 @@
-import { threadClosePath, type ChatThreadCloseResponse } from '@candy-mountain/shared'
+import { chatThreadBot, threadClosePath, type ChatThreadCloseResponse } from '@candy-mountain/platform-sdk'
 
 /** Where a bot thread's current session works, read from the thread the chat panel already fetches. */
 export function useBotsThread(slug: MaybeRefOrGetter<string | null | undefined>, threadId: MaybeRefOrGetter<string | null | undefined>) {
@@ -14,7 +14,7 @@ export function useBotsThread(slug: MaybeRefOrGetter<string | null | undefined>,
   }
 
   return {
-    bot: computed(() => current.response.value?.bot ?? null),
+    bot: computed(() => (current.response.value ? chatThreadBot(current.response.value) : null)),
     close,
   }
 }

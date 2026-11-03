@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { and, eq } from 'drizzle-orm'
-import type { Db } from '../db'
+import type { Db } from '@candy-mountain/platform-daemon'
 import { slackDeliveries, slackThreads, type SlackThreadState } from '../bots/schema'
 
 export interface SlackThread {

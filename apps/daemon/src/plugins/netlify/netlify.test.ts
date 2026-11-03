@@ -1,9 +1,8 @@
-import { pluginTypeInfo } from '@candy-mountain/shared'
+import { pluginTypeInfo } from '@candy-mountain/platform-sdk'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { startTestPlatform } from '../../testing/platform'
 import { createTempDataDir } from '../../testing'
-import { checkPluginHealth } from '../health'
-import { createPluginTypeRegistry } from '../registry'
+import { checkPluginHealth, createPluginTypeRegistry } from '@candy-mountain/platform-daemon'
 import { PLUGIN_TYPES } from '../types'
 import { createNetlifyOperations, netlifyConfig, netlifyPluginType, NetlifyApiError } from '.'
 

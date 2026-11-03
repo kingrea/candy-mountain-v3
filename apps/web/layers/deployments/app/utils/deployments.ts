@@ -11,7 +11,7 @@ import {
   type LiveVersionSourceInfo,
   type PluginInstance,
   type UpdateEnvironmentRequest,
-} from '@candy-mountain/shared'
+} from '@candy-mountain/platform-sdk'
 
 export const DEPLOYMENTS_SOURCES_DATA_KEY = 'deployments-sources'
 export const deploymentsEnvironmentsDataKey = (slug: string | null) => `deployments-environments:${slug ?? ''}`

@@ -1,4 +1,4 @@
-import type { RepositoryRecordErrorCode } from '@candy-mountain/shared'
+import type { RepositoryRecordErrorCode } from '@candy-mountain/platform-sdk'
 import type { ContentfulStatusCode } from 'hono/utils/http-status'
 
 const STATUS: Record<RepositoryRecordErrorCode, ContentfulStatusCode> = {

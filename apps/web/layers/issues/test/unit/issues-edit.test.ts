@@ -1,5 +1,5 @@
-import type { Issue } from '@candy-mountain/shared'
-import { ISSUE_TEXT_MAX_LENGTH, ISSUE_TITLE_MAX_LENGTH } from '@candy-mountain/shared'
+import type { Issue } from '@candy-mountain/platform-sdk'
+import { ISSUE_TEXT_MAX_LENGTH, ISSUE_TITLE_MAX_LENGTH } from '@candy-mountain/platform-sdk'
 import { describe, expect, it } from 'vitest'
 import {
   issuesEditChanges,

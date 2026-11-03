@@ -10,7 +10,7 @@ import {
   type CreateIssueRequest,
   type IssueCommentRequest,
   type UpdateIssueRequest,
-} from '@candy-mountain/shared'
+} from '@candy-mountain/platform-sdk'
 import { IssueError } from './errors'
 
 type Body = Record<string, unknown>

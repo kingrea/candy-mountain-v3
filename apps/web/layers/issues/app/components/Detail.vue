@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { IssueDetail, IssueLink, IssueType } from '@candy-mountain/shared'
+import type { IssueDetail, IssueLink, IssueType } from '@candy-mountain/platform-sdk'
 import type { IssuesEditDraft, IssuesEditField, IssuesEditableValues } from '#layers/issues/app/utils/issues-edit'
 
 const props = defineProps<{

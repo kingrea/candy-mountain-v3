@@ -3,7 +3,7 @@ import {
   workspaceUptimeStatusPath,
   type MonitorSourceListResponse,
   type UptimeStatusResponse,
-} from '@candy-mountain/shared'
+} from '@candy-mountain/platform-sdk'
 
 export function useUptimeSources() {
   const request = useApi<MonitorSourceListResponse>(MONITOR_SOURCES_PATH, { key: UPTIME_SOURCES_DATA_KEY })

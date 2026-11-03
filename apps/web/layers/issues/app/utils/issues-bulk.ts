@@ -4,7 +4,7 @@ import {
   type BulkIssueChanges,
   type BulkUpdateIssuesRequest,
   type Issue,
-} from '@candy-mountain/shared'
+} from '@candy-mountain/platform-sdk'
 import { issuesParentId, type IssuesEpicNode } from './issues-tree'
 import { issuesPickerItems, type IssuesPickerItem } from './issue-create'
 import { issuesStatusMeta } from './issues-display'

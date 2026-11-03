@@ -1,6 +1,6 @@
-import { BOT_FAMILIES, BOT_PERSONA_NAME_PATTERN, BOT_WRITE_SCOPES, type BotFamily, type BotWriteScope } from '@candy-mountain/shared'
+import { BOT_FAMILIES, BOT_PERSONA_NAME_PATTERN, BOT_WRITE_SCOPES, type BotFamily, type BotWriteScope } from '@candy-mountain/platform-sdk'
 import { isAbsolute } from 'node:path'
-import { claudeMcpToolRule, WRAPPED_MCP_TOOLS, type WrappedMcpTool } from '../agent-mcp/tools'
+import { claudeMcpToolRule, WRAPPED_MCP_TOOLS, type WrappedMcpTool } from '@candy-mountain/platform-daemon'
 import type { CodexLaunchOptions } from '../acp/families'
 import { vetCheckoutAgents } from './checkout-agents'
 import { readCheckoutSettings, vetCheckoutSettings, type CheckoutSettingsFile, type NeutralisedItem } from './checkout-settings'

@@ -3,7 +3,7 @@ import { stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { isAbsolute, join, resolve } from 'node:path'
 import { promisify } from 'node:util'
-import type { RepositoryVerification } from '@candy-mountain/shared'
+import type { RepositoryVerification } from '@candy-mountain/platform-sdk'
 import { RepositoryError } from './errors'
 
 const run = promisify(execFile)

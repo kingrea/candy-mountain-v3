@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { workspaceTeamPath, type TeamMember } from '@candy-mountain/shared'
+import { workspaceTeamPath, type TeamMember } from '@candy-mountain/platform-sdk'
 import type { TableColumn } from '@nuxt/ui'
-import ProjectsConfirmModal from '~/components/projects/ProjectsConfirmModal.vue'
+import ProjectsConfirmModal from '#layers/platform-web/app/components/projects/ProjectsConfirmModal.vue'
 
 /** `null` opens the editor for a new member, `undefined` closes it. */
 const editing = defineModel<TeamMember | null | undefined>('editing')

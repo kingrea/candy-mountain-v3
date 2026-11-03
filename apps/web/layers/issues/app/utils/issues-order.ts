@@ -1,4 +1,4 @@
-import type { IssueDependency } from '@candy-mountain/shared'
+import type { IssueDependency } from '@candy-mountain/platform-sdk'
 
 export interface IssuesOrderable {
   id: string

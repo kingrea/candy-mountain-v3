@@ -1,6 +1,6 @@
 import { chmodSync, existsSync, mkdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
-import type { DataPaths } from '../../data-dir'
+import type { DataPaths } from '@candy-mountain/platform-daemon'
 
 const INSTANCE_ID = /^[A-Za-z0-9-]+$/
 

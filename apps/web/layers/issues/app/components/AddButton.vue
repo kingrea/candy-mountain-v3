@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CreateIssueResponse } from '@candy-mountain/shared'
+import type { CreateIssueResponse } from '@candy-mountain/platform-sdk'
 import type { IssuesAgentCreateOption } from '#layers/issues/app/utils/issue-create'
 
 const { slug } = useSelectedProject()

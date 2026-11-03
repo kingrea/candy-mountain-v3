@@ -1,4 +1,4 @@
-import type { BotWriteScope } from '@candy-mountain/shared'
+import type { BotWriteScope } from '@candy-mountain/platform-sdk'
 
 export const CLAUDE_PERMISSION_MODES = {
   'read-only': 'plan',

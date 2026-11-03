@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, isAbsolute, join } from 'node:path'
+import type { LaunchMcpServer } from '@candy-mountain/platform-daemon'
 import type { AgentFamily } from './events'
 
 export interface FamilyLaunch {
@@ -57,14 +58,7 @@ export const CODEX_LAUNCHER_ENV = [
 ] as const
 
 /** A daemon-hosted MCP endpoint registered for one launch; never persisted, since its port and token change with each daemon boot. */
-export interface LaunchMcpServer {
-  name: string
-  /** Streamable HTTP on the loopback interface. */
-  url: string
-  bearerToken: string
-  /** Pre-approved; for Codex also the only tools enabled. */
-  tools: string[]
-}
+export type { LaunchMcpServer }
 
 const MCP_SERVER_NAME = /^[a-z][a-z0-9_]{0,47}$/
 const MCP_TOOL_NAME = /^[a-z][a-z0-9_]{0,63}$/

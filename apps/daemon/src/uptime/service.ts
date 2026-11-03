@@ -2,10 +2,9 @@ import { randomUUID } from 'node:crypto'
 import {
   MONITOR_INTERVAL_DEFAULT_SECONDS, validateMonitorOptions,
   type CreateMonitorRequest, type Monitor, type MonitorOptions, type UpdateMonitorRequest,
-} from '@candy-mountain/shared'
+} from '@candy-mountain/platform-sdk'
 import { and, asc, eq, isNull, sql } from 'drizzle-orm'
-import type { Db } from '../db'
-import { workspaces } from '../db/schema'
+import { type Db, workspaces } from '@candy-mountain/platform-daemon'
 import { uptimeMonitors } from './schema'
 import { MONITOR_SOURCE_REGISTRY } from './builtin-sources'
 import type { MonitorCheckResult } from './check'

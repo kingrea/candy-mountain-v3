@@ -1,4 +1,4 @@
-import type { ChatAgentOptions, ChatOption, ChatThreadSession } from '@candy-mountain/shared'
+import type { ChatAgentOptions, ChatOption, ChatThreadSession } from '@candy-mountain/platform-sdk'
 
 /** Select items cannot carry null, so the agent's own default travels as this value. */
 export const CHAT_CLAUDE_CODE_OPTION_DEFAULT = 'agent-default'

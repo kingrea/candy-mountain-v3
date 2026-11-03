@@ -1,4 +1,4 @@
-import type { IssueComment, IssueDependency, IssueFields, IssueLink, IssueSummary } from '@candy-mountain/shared'
+import type { IssueComment, IssueDependency, IssueFields, IssueLink, IssueSummary } from '@candy-mountain/platform-sdk'
 import { IssueError } from './errors'
 
 type Raw = Record<string, unknown>

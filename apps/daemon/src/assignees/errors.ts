@@ -1,4 +1,4 @@
-import type { AssigneeErrorCode } from '@candy-mountain/shared'
+import type { AssigneeErrorCode } from '@candy-mountain/platform-sdk'
 
 export class AssigneeError extends Error {
   readonly code: AssigneeErrorCode

@@ -1,9 +1,6 @@
-import type { AddAssigneeResponse, ApiErrorBody, ProjectAssigneesResponse } from '@candy-mountain/shared'
+import type { AddAssigneeResponse, ApiErrorBody, ProjectAssigneesResponse } from '@candy-mountain/platform-sdk'
 import { Hono } from 'hono'
-import type { AppEnv } from '../app'
-import { WorkspaceError } from '../workspaces'
-import { getWorkspaceBySlug } from '../workspaces/workspaces'
-import { requireCapability } from '../registry/gate'
+import { type AppEnv, getWorkspaceBySlug, requireCapability, WorkspaceError } from '@candy-mountain/platform-daemon'
 import { AssigneeError } from './errors'
 import { addAssignee, listAssignees, parseAddAssignee } from './service'
 

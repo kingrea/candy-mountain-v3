@@ -1,0 +1,7 @@
+{
+  "extends": "./presets/tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": ["src", "presets", "vitest.config.ts"]
+}

@@ -1,15 +1,7 @@
-import { isAdmin, type Actor, type AgentSession, type AgentSessionFamily, type ApiErrorBody, type CapabilityId, type Workspace } from '@candy-mountain/shared'
+import { isAdmin, type Actor, type AgentSession, type AgentSessionFamily, type ApiErrorBody, type Workspace } from '@candy-mountain/platform-sdk'
 import type { MiddlewareHandler } from 'hono'
-import type { AppEnv } from '../app'
-import type { CapabilityRegistry } from '../capabilities'
-import { getWorkspaceBySlug } from '../workspaces/workspaces'
-import { gateChat, type GateResult, type RegistryDeps } from '../registry'
-import { SessionError } from './errors'
+import { type AppEnv, familyCapability, gateChat, type GateResult, getWorkspaceBySlug, type RegistryDeps, SessionError } from '@candy-mountain/platform-daemon'
 import type { SessionManager } from './manager'
-
-export function familyCapability(capabilities: CapabilityRegistry, family: AgentSessionFamily): CapabilityId | undefined {
-  return capabilities.list().find(cap => cap.agents.some(agent => agent.family === family))?.id
-}
 
 export function gateSessionFamily(deps: RegistryDeps, actor: Actor, workspace: Workspace, family: AgentSessionFamily): GateResult {
   const capabilityId = familyCapability(deps.capabilities, family)

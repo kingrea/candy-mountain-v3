@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { MonitorCheckRecord } from '@candy-mountain/shared'
+import type { MonitorCheckRecord } from '@candy-mountain/platform-sdk'
 
 const props = defineProps<{
   /** Newest first, as the daemon sends them. */

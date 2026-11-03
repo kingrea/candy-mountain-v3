@@ -1,4 +1,4 @@
-import type { PluginSecrets, RepositoryBranch, RepositoryBranchList, RepositoryHost } from '@candy-mountain/shared'
+import type { PluginSecrets, RepositoryBranch, RepositoryBranchList, RepositoryHost } from '@candy-mountain/platform-sdk'
 import type { RepositoryConfig } from '../types/repository'
 import { bitbucketOperations } from './bitbucket'
 import { githubOperations } from './github'

@@ -1,14 +1,10 @@
 import type { CreateElicitationResponse, RequestPermissionResponse, SessionConfigOption } from '@agentclientprotocol/sdk'
-import type { AgentSession, AgentSessionEvent, AgentSessionEventPayload, AgentSessionFamily, AgentSessionPosture } from '@candy-mountain/shared'
+import type { AgentSession, AgentSessionEvent, AgentSessionEventPayload, AgentSessionFamily, AgentSessionPosture } from '@candy-mountain/platform-sdk'
 import { AcpAuthRequiredError, AcpLaunchError, isAgentFamily, type AcpHarness, type AcpSession, type AcpSessionEvent, type AgentFamily, type LaunchMcpServer, type StartSessionOptions } from '../acp'
-import type { DataPaths } from '../data-dir'
-import type { PluginInstanceDeps, SecretsReader } from '../plugins/instances/instances'
-import type { CreateSessionInput, NativeTurnRunner, SessionListener, SessionObserver, SessionStore } from '../threads/sessions'
+import { createSessionFamilyRegistry, type CreateSessionInput, type DataPaths, type NativeTurnRunner, type PluginInstanceDeps, type SecretsReader, SESSION_FAMILIES, SessionError, type SessionFamilyRegistry, type SessionListener, type SessionObserver, type SessionStore } from '@candy-mountain/platform-daemon'
 import { DEFAULT_SESSION_IDLE_TIMEOUT, DEFAULT_SESSION_MAX_LIVE, resolveSessionSettings, type SessionSettings } from './config'
-import { SessionError } from './errors'
-import { createSessionFamilyRegistry, SESSION_FAMILIES, type SessionFamilyRegistry } from '../threads/families'
 
-export type { CreateSessionInput, NativeTurn, NativeTurnRunner, SessionListener, SessionMessage, SessionObserver } from '../threads/sessions'
+export type { CreateSessionInput, NativeTurn, NativeTurnRunner, SessionListener, SessionMessage, SessionObserver } from '@candy-mountain/platform-daemon'
 
 export interface SessionManagerDeps extends PluginInstanceDeps {
   paths: DataPaths

@@ -1,8 +1,8 @@
-import { CANDY_MOUNTAIN_PRODUCT } from '@candy-mountain/shared'
-import { createApp, type AppDeps } from '../app'
+import { CANDY_MOUNTAIN_PRODUCT } from '@candy-mountain/platform-sdk'
+import { createApp, startPlatform, suppliedIds, type AppDeps, type Platform, type PlatformOptions, type Product } from '@candy-mountain/platform-daemon'
 import { CANDY_MOUNTAIN } from '../candy-mountain'
-import { startPlatform, type Platform, type PlatformOptions } from '../platform'
-import { suppliedIds, type Product } from '../product'
+
+export { platformApp } from '@candy-mountain/platform-daemon'
 
 /** Candy Mountain's definitions as the entry point boots them; tests filter or swap entries to build a product. */
 export const CAPABILITY_DEFINITIONS = CANDY_MOUNTAIN.capabilities
@@ -40,22 +40,4 @@ export type TestAppDeps = Omit<AppDeps, 'product'> & { product?: Product }
 /** An app for route tests that pass their own registries or runtime; the product defaults to Candy Mountain. */
 export function createTestApp({ product = CANDY_MOUNTAIN, ...deps }: TestAppDeps): ReturnType<typeof createApp> {
   return createApp({ product, ...deps })
-}
-
-/** The app the entry point would build over this platform. */
-export function platformApp(platform: Platform, deps: Partial<AppDeps> = {}): ReturnType<typeof createApp> {
-  return createApp({
-    db: platform.db,
-    paths: platform.paths,
-    product: platform.product,
-    capabilities: platform.capabilities,
-    modules: platform.modules,
-    pluginTypes: platform.pluginTypes,
-    families: platform.families,
-    workspaceFacts: platform.workspaceFacts,
-    secrets: platform.secrets.writeOnly,
-    secretsReader: platform.secrets,
-    runtime: platform.runtime,
-    ...deps,
-  })
 }

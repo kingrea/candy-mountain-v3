@@ -1,4 +1,4 @@
-import type { BotWriteScope } from '@candy-mountain/shared'
+import type { BotWriteScope } from '@candy-mountain/platform-sdk'
 import { CLAUDE_DENIED_TOOLS, CLAUDE_PERMISSION_MODES } from './claude'
 import { PostureError } from './errors'
 import { findBypassToken } from './tokens'

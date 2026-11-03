@@ -1,13 +1,9 @@
 import {
   liveVersionSourceInfo,
   type ApiErrorBody, type EnvironmentListResponse, type EnvironmentResponse, type LiveVersionSourceListResponse, type LiveVersionsResponse,
-} from '@candy-mountain/shared'
+} from '@candy-mountain/platform-sdk'
 import { Hono, type Context } from 'hono'
-import type { AppEnv } from '../app'
-import { requireAdmin } from '../auth/admin'
-import type { SecretsReader } from '../plugins/instances/instances'
-import { WorkspaceError } from '../workspaces/errors'
-import { getWorkspaceBySlug } from '../workspaces/workspaces'
+import { type AppEnv, getWorkspaceBySlug, requireAdmin, type SecretsReader, WorkspaceError } from '@candy-mountain/platform-daemon'
 import { LIVE_VERSION_SOURCE_REGISTRY } from './builtin-sources'
 import { EnvironmentError } from './errors'
 import { createEnvironment, deleteEnvironment, getEnvironment, listEnvironments, readLiveVersions, updateEnvironment } from './service'

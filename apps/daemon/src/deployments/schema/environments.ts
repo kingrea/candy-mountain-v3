@@ -1,6 +1,6 @@
-import type { LiveVersionSettings } from '@candy-mountain/shared'
+import type { LiveVersionSettings } from '@candy-mountain/platform-sdk'
 import { sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
-import { workspaces } from '../../capabilities/definition'
+import { workspaces } from '@candy-mountain/platform-daemon'
 
 export const environments = sqliteTable('environments', {
   id: text('id').primaryKey(),

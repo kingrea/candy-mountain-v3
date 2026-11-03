@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { IssueLink } from '@candy-mountain/shared'
+import type { IssueLink } from '@candy-mountain/platform-sdk'
 import { issuesDetailLinkGroups, issuesPriorityMeta, issuesSplitLabels, issuesStatusMeta, issuesTypeMeta } from '../../app/utils/issues-display'
 
 function link(id: string, dependencyType: string): IssueLink {

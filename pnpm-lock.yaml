@@ -166,36 +166,36 @@ importers:
 
   .:
     devDependencies:
-      '@eslint/js':
-        specifier: ^10.0.1
-        version: 10.0.1(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))
+      '@candy-mountain/platform-config':
+        specifier: workspace:*
+        version: link:packages/platform-config
       '@types/node':
         specifier: ^22.20.5
         version: 22.20.5
       eslint:
         specifier: ^10.13.0
         version: 10.13.0(jiti@2.7.0)(supports-color@10.2.2)
-      globals:
-        specifier: ^17.13.0
-        version: 17.13.0
+      turbo:
+        specifier: ^2.11.10
+        version: 2.11.10
       typescript:
         specifier: ~6.0.3
         version: 6.0.3
-      typescript-eslint:
-        specifier: ^8.72.0
-        version: 8.72.0(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)
       vitest:
         specifier: ^5.0.5
         version: 5.0.5(@types/node@22.20.5)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
 
   apps/cli:
     dependencies:
-      '@candy-mountain/config':
+      '@candy-mountain/platform-cli':
         specifier: workspace:*
-        version: link:../../packages/config
-      '@candy-mountain/shared':
+        version: link:../../packages/platform-cli
+      '@candy-mountain/platform-config':
         specifier: workspace:*
-        version: link:../../packages/shared
+        version: link:../../packages/platform-config
+      '@candy-mountain/platform-sdk':
+        specifier: workspace:*
+        version: link:../../packages/platform-sdk
     devDependencies:
       tsdown:
         specifier: ^0.23.2
@@ -212,12 +212,15 @@ importers:
       '@candy-mountain/claude-acp':
         specifier: workspace:*
         version: link:../../packages/claude-acp
-      '@candy-mountain/config':
+      '@candy-mountain/platform-config':
         specifier: workspace:*
-        version: link:../../packages/config
-      '@candy-mountain/shared':
+        version: link:../../packages/platform-config
+      '@candy-mountain/platform-daemon':
         specifier: workspace:*
-        version: link:../../packages/shared
+        version: link:../../packages/platform-daemon
+      '@candy-mountain/platform-sdk':
+        specifier: workspace:*
+        version: link:../../packages/platform-sdk
       '@hono/node-server':
         specifier: ^2.1.5
         version: 2.1.5(hono@4.13.14)
@@ -264,9 +267,147 @@ importers:
 
   apps/web:
     dependencies:
-      '@candy-mountain/shared':
+      '@candy-mountain/platform-sdk':
         specifier: workspace:*
-        version: link:../../packages/shared
+        version: link:../../packages/platform-sdk
+      '@candy-mountain/platform-web':
+        specifier: workspace:*
+        version: link:../../packages/platform-web
+      '@iconify-json/lucide':
+        specifier: ^1.2.147
+        version: 1.2.147
+      '@nuxt/ui':
+        specifier: ^4.12.0
+        version: 4.12.0(b6d6ebbd6af74a56fa334ee50252a8b1)
+      marked:
+        specifier: ^17.0.6
+        version: 17.0.6
+      nuxt:
+        specifier: ^4.6.2
+        version: 4.6.2(84f7166b67c341755381304223671fad)
+      vue:
+        specifier: ^3.5.44
+        version: 3.5.44(typescript@6.0.3)
+      vue-router:
+        specifier: ^5.4.0
+        version: 5.4.0(@vue/compiler-sfc@3.5.44)(esbuild@0.28.2)(rolldown@1.2.15)(rollup@4.65.1)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))(vue@3.5.44(typescript@6.0.3))
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
+    devDependencies:
+      '@candy-mountain/platform-config':
+        specifier: workspace:*
+        version: link:../../packages/platform-config
+      '@nuxt/eslint':
+        specifier: ^1.17.0
+        version: 1.17.0(@nuxt/schema@4.6.2)(@typescript-eslint/utils@8.72.0(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3))(@vue/compiler-sfc@3.5.44)(confbox@0.3.1)(crossws@0.4.16(srvx@1.0.7))(dotenv@17.4.2)(esbuild@0.28.2)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(giget@3.3.1)(jiti@2.7.0)(magic-string@1.4.4)(rolldown@1.2.15)(rollup@4.65.1)(srvx@1.0.7)(supports-color@10.2.2)(typescript@6.0.3)(unplugin@3.5.0(esbuild@0.28.2)(rolldown@1.2.15)(rollup@4.65.1)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
+      vue-tsc:
+        specifier: ^3.3.13
+        version: 3.3.13(typescript@6.0.3)
+
+  packages/claude-acp:
+    dependencies:
+      '@agentclientprotocol/sdk':
+        specifier: 1.4.0
+        version: 1.4.0(zod@4.6.7)
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
+    devDependencies:
+      '@candy-mountain/platform-config':
+        specifier: workspace:*
+        version: link:../platform-config
+      tsdown:
+        specifier: ^0.23.2
+        version: 0.23.2(@volar/typescript@2.4.28(typescript@6.0.3))(@vue/language-core@3.3.13)(tsx@4.23.15)(typescript@6.0.3)(vue-tsc@3.3.13(typescript@6.0.3))
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
+
+  packages/platform-cli:
+    dependencies:
+      '@candy-mountain/platform-config':
+        specifier: workspace:*
+        version: link:../platform-config
+      '@candy-mountain/platform-sdk':
+        specifier: workspace:*
+        version: link:../platform-sdk
+
+  packages/platform-config:
+    dependencies:
+      '@eslint/js':
+        specifier: ^10.0.1
+        version: 10.0.1(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))
+      globals:
+        specifier: ^17.13.0
+        version: 17.13.0
+      typescript-eslint:
+        specifier: ^8.72.0
+        version: 8.72.0(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)
+      vitest:
+        specifier: ^5.0.5
+        version: 5.0.5(@types/node@22.20.5)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
+
+  packages/platform-daemon:
+    dependencies:
+      '@agentclientprotocol/sdk':
+        specifier: 1.4.0
+        version: 1.4.0(zod@4.6.7)
+      '@candy-mountain/platform-sdk':
+        specifier: workspace:*
+        version: link:../platform-sdk
+      '@mastra/core':
+        specifier: 1.79.0
+        version: 1.79.0(supports-color@10.2.2)(zod@4.6.7)
+      '@mastra/libsql':
+        specifier: 1.27.0
+        version: 1.27.0(@mastra/core@1.79.0(supports-color@10.2.2)(zod@4.6.7))
+      '@mastra/memory':
+        specifier: 1.39.0
+        version: 1.39.0(@mastra/core@1.79.0(supports-color@10.2.2)(zod@4.6.7))(supports-color@10.2.2)
+      better-sqlite3:
+        specifier: ^13.0.3
+        version: 13.0.3
+      drizzle-orm:
+        specifier: ^0.45.4
+        version: 0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)
+      hono:
+        specifier: ^4.13.14
+        version: 4.13.14
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
+    devDependencies:
+      '@candy-mountain/platform-config':
+        specifier: workspace:*
+        version: link:../platform-config
+      '@types/better-sqlite3':
+        specifier: ^9.6.0
+        version: 9.6.0
+      drizzle-kit:
+        specifier: ^0.31.11
+        version: 0.31.11
+
+  packages/platform-sdk:
+    devDependencies:
+      '@candy-mountain/platform-config':
+        specifier: workspace:*
+        version: link:../platform-config
+      '@types/better-sqlite3':
+        specifier: ^9.6.0
+        version: 9.6.0
+      drizzle-orm:
+        specifier: ^0.45.4
+        version: 0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)
+      hono:
+        specifier: ^4.13.14
+        version: 4.13.14
+
+  packages/platform-web:
+    dependencies:
+      '@candy-mountain/platform-sdk':
+        specifier: workspace:*
+        version: link:../platform-sdk
       '@iconify-json/lucide':
         specifier: ^1.2.147
         version: 1.2.147
@@ -295,32 +436,15 @@ importers:
         specifier: ^4.6.7
         version: 4.6.7
     devDependencies:
+      '@candy-mountain/platform-config':
+        specifier: workspace:*
+        version: link:../platform-config
       '@nuxt/eslint':
         specifier: ^1.17.0
         version: 1.17.0(@nuxt/schema@4.6.2)(@typescript-eslint/utils@8.72.0(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3))(@vue/compiler-sfc@3.5.44)(confbox@0.3.1)(crossws@0.4.16(srvx@1.0.7))(dotenv@17.4.2)(esbuild@0.28.2)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(giget@3.3.1)(jiti@2.7.0)(magic-string@1.4.4)(rolldown@1.2.15)(rollup@4.65.1)(srvx@1.0.7)(supports-color@10.2.2)(typescript@6.0.3)(unplugin@3.5.0(esbuild@0.28.2)(rolldown@1.2.15)(rollup@4.65.1)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
       vue-tsc:
         specifier: ^3.3.13
         version: 3.3.13(typescript@6.0.3)
-
-  packages/claude-acp:
-    dependencies:
-      '@agentclientprotocol/sdk':
-        specifier: 1.4.0
-        version: 1.4.0(zod@4.6.7)
-      zod:
-        specifier: ^4.6.7
-        version: 4.6.7
-    devDependencies:
-      tsdown:
-        specifier: ^0.23.2
-        version: 0.23.2(@volar/typescript@2.4.28(typescript@6.0.3))(@vue/language-core@3.3.13)(tsx@4.23.15)(typescript@6.0.3)(vue-tsc@3.3.13(typescript@6.0.3))
-      tsx:
-        specifier: ^4.23.15
-        version: 4.23.15
-
-  packages/config: {}
-
-  packages/shared: {}
 
 packages:
 
@@ -2554,6 +2678,36 @@ packages:
       prosemirror-view: ^1.9.10
       y-protocols: ^1.0.1
       yjs: ^13.5.38
+
+  '@turbo/darwin-64@2.11.10':
+    resolution: {integrity: sha512-By4idRap5+nLnMuRzLB4qkOPRlvNdyY1ne4VJYDyUoUB11H94k7uif9mbe3JT8JSNXs1D68uMcBj6hJ/jMQRvA==}
+    cpu: [x64]
+    os: [darwin]
+
+  '@turbo/darwin-arm64@2.11.10':
+    resolution: {integrity: sha512-pyEYlVcuexOPa92p0Wlwl9YT1Is5D60lxN3ItWm3g30YLvFaUq86TF4BBWg5ZAc0uMTnrOzCvuCsOBTdzUWnRQ==}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@turbo/linux-64@2.11.10':
+    resolution: {integrity: sha512-1tYeR/IDZ5HEdsb0jNq2L2xam5nMQ+g80tlV2BZmv4OFw+pMcUM0mMmUcfc5wXPPNHVNPuDMjh9Y8G8HgXPLZA==}
+    cpu: [x64]
+    os: [android, linux]
+
+  '@turbo/linux-arm64@2.11.10':
+    resolution: {integrity: sha512-HuekQxvVGhUd46g1Im/DKdOtglHr4/gguZAvzEpPUgtxNkztSa8lWhQEGQ+EmPQ0n7w19qjThFU+OfEEd0uvlw==}
+    cpu: [arm64]
+    os: [android, linux]
+
+  '@turbo/windows-64@2.11.10':
+    resolution: {integrity: sha512-UJOP3BkbreY3/JlMgJR6ZiimxYIBn+c+B4tnBIxD0E9c3Estmk+XoVNVBNBottZLNRXe3/ScgOU4+/k8tIWysg==}
+    cpu: [x64]
+    os: [win32]
+
+  '@turbo/windows-arm64@2.11.10':
+    resolution: {integrity: sha512-xOkEjF3ws/b/YNlc+bvJHMYBn+vL+QbEISZFVi0qS+ImmhA1X3/gmNmBrjjIG3dg6aeN+n6gQitzSkXQ286qJQ==}
+    cpu: [arm64]
+    os: [win32]
 
   '@tybys/wasm-util@0.10.4':
     resolution: {integrity: sha512-W3c4gRigFS0T/Ma4qIYF3GDAc5AQdHb1yL5znJT1Zv1YaD9Kitx656wBjvr19qbiosmZT8lWDM5BEMynUqX65A==}
@@ -5922,6 +6076,10 @@ packages:
     engines: {node: '>=18.0.0'}
     hasBin: true
 
+  turbo@2.11.10:
+    resolution: {integrity: sha512-3GJYwig8ygEI89oaOZdduJX8/aw6O9eRPYHoIt6T3FZl9hkKjiyIspufJoVgqXihPoJu8M5CSV0DlZvzfohBCw==}
+    hasBin: true
+
   type-check@0.4.0:
     resolution: {integrity: sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew==}
     engines: {node: '>= 0.8.0'}
@@ -8956,6 +9114,24 @@ snapshots:
       prosemirror-view: 1.42.8
       y-protocols: 1.0.7(yjs@13.6.33)
       yjs: 13.6.33
+
+  '@turbo/darwin-64@2.11.10':
+    optional: true
+
+  '@turbo/darwin-arm64@2.11.10':
+    optional: true
+
+  '@turbo/linux-64@2.11.10':
+    optional: true
+
+  '@turbo/linux-arm64@2.11.10':
+    optional: true
+
+  '@turbo/windows-64@2.11.10':
+    optional: true
+
+  '@turbo/windows-arm64@2.11.10':
+    optional: true
 
   '@tybys/wasm-util@0.10.4':
     dependencies:
@@ -12628,6 +12804,15 @@ snapshots:
       esbuild: 0.28.2
     optionalDependencies:
       fsevents: 2.3.3
+
+  turbo@2.11.10:
+    optionalDependencies:
+      '@turbo/darwin-64': 2.11.10
+      '@turbo/darwin-arm64': 2.11.10
+      '@turbo/linux-64': 2.11.10
+      '@turbo/linux-arm64': 2.11.10
+      '@turbo/windows-64': 2.11.10
+      '@turbo/windows-arm64': 2.11.10
 
   type-check@0.4.0:
     dependencies:

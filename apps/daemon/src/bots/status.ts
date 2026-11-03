@@ -8,7 +8,7 @@ import {
   type BotStatus,
   type PluginInstanceHealth,
   type PluginSecretState,
-} from '@candy-mountain/shared'
+} from '@candy-mountain/platform-sdk'
 
 export interface BotStatusInput {
   family: BotFamily

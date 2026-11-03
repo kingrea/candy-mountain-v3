@@ -1,0 +1,7 @@
+{
+  "extends": "@candy-mountain/platform-config/tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": ["src/daemon", "src/**/*.test.ts", "vitest.config.ts"]
+}

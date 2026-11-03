@@ -1,4 +1,4 @@
-import type { Issue, IssueDependency } from '@candy-mountain/shared'
+import type { Issue, IssueDependency } from '@candy-mountain/platform-sdk'
 import { describe, expect, it } from 'vitest'
 import { issuesSortSiblings } from '../app/utils/issues-order'
 

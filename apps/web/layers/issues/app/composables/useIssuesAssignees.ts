@@ -3,7 +3,7 @@ import {
   type AddAssigneeRequest,
   type AddAssigneeResponse,
   type ProjectAssigneesResponse,
-} from '@candy-mountain/shared'
+} from '@candy-mountain/platform-sdk'
 
 export function useIssuesAssignees(slug: MaybeRefOrGetter<string>) {
   const { $api } = useNuxtApp()

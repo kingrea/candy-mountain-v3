@@ -1,9 +1,6 @@
-import { defineConfig } from 'vitest/config'
+import { definePackageTestConfig } from '@candy-mountain/platform-config/vitest'
 
-export default defineConfig({
-  test: {
-    name: 'web',
-    include: ['test/unit/**/*.test.ts', 'layers/*/test/**/*.test.ts'],
-    environment: 'node',
-  },
+export default definePackageTestConfig('web', {
+  include: ['test/unit/**/*.test.ts', 'layers/*/test/**/*.test.ts'],
+  environment: 'node',
 })

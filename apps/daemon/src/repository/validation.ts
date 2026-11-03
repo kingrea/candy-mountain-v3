@@ -1,4 +1,4 @@
-import { REPOSITORY_SOURCE_KINDS, type CheckRepositoryPathRequest, type RepositorySource, type SetRepositoryRequest } from '@candy-mountain/shared'
+import { REPOSITORY_SOURCE_KINDS, type CheckRepositoryPathRequest, type RepositorySource, type SetRepositoryRequest } from '@candy-mountain/platform-sdk'
 import { RepositoryError } from './errors'
 
 type Body = Record<string, unknown>

@@ -21,7 +21,7 @@ import {
   type BotSecretValues,
   type CreateBotRequest,
   type UpdateBotRequest,
-} from '@candy-mountain/shared'
+} from '@candy-mountain/platform-sdk'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import * as z from 'zod'
 import type { BotsPersonaCheck } from '../utils/bots'

@@ -1,6 +1,6 @@
-import type { MonitorOptions } from '@candy-mountain/shared'
+import type { MonitorOptions } from '@candy-mountain/platform-sdk'
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
-import { workspaces } from '../../capabilities/definition'
+import { workspaces } from '@candy-mountain/platform-daemon'
 
 export const uptimeMonitors = sqliteTable('uptime_monitors', {
   id: text('id').primaryKey(),

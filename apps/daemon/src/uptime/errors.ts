@@ -1,4 +1,4 @@
-import type { MonitorErrorCode } from '@candy-mountain/shared'
+import type { MonitorErrorCode } from '@candy-mountain/platform-sdk'
 import type { ContentfulStatusCode } from 'hono/utils/http-status'
 
 const STATUS: Record<MonitorErrorCode, ContentfulStatusCode> = {

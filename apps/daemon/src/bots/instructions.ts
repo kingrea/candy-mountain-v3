@@ -7,9 +7,8 @@ import {
   type BotWriteScope,
   type Handoff,
   type RepositoryHost,
-} from '@candy-mountain/shared'
-import { claudeMcpToolRule, SLACK_POST_BLOCKS_TOOL } from '../agent-mcp/tools'
-import { resolvePluginInstance } from '../plugins/instances/instances'
+} from '@candy-mountain/platform-sdk'
+import { claudeMcpToolRule, resolvePluginInstance, SLACK_POST_BLOCKS_TOOL } from '@candy-mountain/platform-daemon'
 import { repositoryConfig } from '../plugins/repository'
 import type { BotDeps } from './bots'
 import { BotError } from './errors'

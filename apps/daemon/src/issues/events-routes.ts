@@ -1,8 +1,7 @@
-import { ISSUE_CHANGED_EVENT, type ApiErrorBody, type IssueChangedEvent } from '@candy-mountain/shared'
+import { ISSUE_CHANGED_EVENT, type ApiErrorBody, type IssueChangedEvent } from '@candy-mountain/platform-sdk'
 import { Hono, type Context } from 'hono'
 import { streamSSE } from 'hono/streaming'
-import type { AppEnv } from '../app'
-import { getWorkspaceBySlug, WorkspaceError } from '../workspaces'
+import { type AppEnv, getWorkspaceBySlug, WorkspaceError } from '@candy-mountain/platform-daemon'
 import type { IssueWatcher } from './watcher'
 
 // Node fetch (the web proxy) drops a response body that stays silent for 300s.

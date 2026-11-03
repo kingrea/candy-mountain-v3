@@ -1,5 +1,5 @@
 import { DECISION_META_KEY } from '@candy-mountain/claude-acp'
-import type { AnswerDecisionRequest, Decision, DecisionOption } from '@candy-mountain/shared'
+import type { AnswerDecisionRequest, Decision, DecisionOption } from '@candy-mountain/platform-sdk'
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
 const text = (value: unknown): string | null => (typeof value === 'string' && value.trim() ? value : null)

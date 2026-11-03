@@ -2,25 +2,19 @@ import { randomUUID } from 'node:crypto'
 import { existsSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { WORKSPACES_PATH, type ApiErrorBody } from '@candy-mountain/shared'
+import { WORKSPACES_PATH, type ApiErrorBody } from '@candy-mountain/platform-sdk'
 import { eq } from 'drizzle-orm'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fakeBins } from '../acp/test-support'
-import { CapabilityDefinitionError } from '../capabilities/definition'
-import { fixtureDefinition } from '../capabilities/fixtures'
+import { CapabilityDefinitionError, findWorkspaceBySlug, fixtureDefinition, MasterKey, type Platform, THREAD_SESSIONS } from '@candy-mountain/platform-daemon'
 import { ACP_SESSIONS, chatClaudeCodeDefinition } from '../chat-claude-code/definition'
 import { bots, worktreeLeases } from './schema'
 import { capabilityDefinitions } from '../definitions'
 import { codexPluginType, PLUGIN_TYPES } from '../plugins'
-import type { Platform } from '../platform'
 import { createTestApp, startTestPlatform, withoutCapabilities, type TestPlatformOptions } from '../testing/platform'
-import { findWorkspaceBySlug } from '../workspaces/workspaces'
-import { MasterKey } from '../secrets'
 import { SLACK_CONNECTIONS, slackDefinition } from '../slack/definition'
 import { repositoryDefinition } from '../repository/definition'
 import { createTempDataDir, type TempDataDir } from '../testing'
-import { THREAD_BOTS } from '../threads/bots'
-import { THREAD_SESSIONS } from '../threads/sessions'
 import { botSecretOwner } from './bots'
 import { BOT_SESSIONS, BOT_SLACK_DECISIONS, BOT_SLACK_HANDOFFS, BOT_SLACK_ROUTER, BOT_WORKTREE_RECLAIMER, BOT_WORKTREES, botsDefinition } from './definition'
 import { createWorkspaceWithRepository } from '../repository/test-support'
@@ -47,12 +41,12 @@ describe('the bots definition', () => {
 
   const withAcp = (): TestPlatformOptions => ({ capabilities: capabilityDefinitions({ chatClaudeCode: { acp } }) })
 
-  it('offers the bot session service, the thread-facing key, the worktree pool and Slack routing, started after chat-claude-code and slack', () => {
+  it('offers the bot session service, its workspace agents, the worktree pool and Slack routing, started after chat-claude-code and slack', () => {
     const { platform } = start(withAcp())
 
     const botSessions = platform.runtime.service(BOT_SESSIONS)
     expect(botSessions).toBeDefined()
-    expect(platform.runtime.service(THREAD_BOTS)).toBe(botSessions)
+    expect(platform.runtime.workspaceAgents.map(contribution => contribution.capabilityId)).toEqual(['bots'])
     expect(platform.runtime.services('bots').has(BOT_WORKTREES)).toBe(true)
     expect(platform.runtime.services('bots').has(BOT_WORKTREE_RECLAIMER)).toBe(true)
     expect(platform.runtime.started.map(s => s.definition.id)).toEqual(['threads', 'overview', 'repository', 'issues', 'slack', 'chat-claude-code', 'chat-codex', 'bots', 'team', 'uptime', 'deployments', 'platform-agent'])
@@ -125,7 +119,7 @@ describe('the bots definition', () => {
 
     expect(platform.runtime.started.map(s => s.definition.id)).toEqual(['threads', 'overview', 'repository', 'issues', 'slack', 'chat-claude-code', 'chat-codex', 'uptime', 'deployments', 'platform-agent'])
     expect(platform.runtime.service(BOT_SESSIONS)).toBeUndefined()
-    expect(platform.runtime.service(THREAD_BOTS)).toBeUndefined()
+    expect(platform.runtime.workspaceAgents).toEqual([])
     expect(platform.runtime.service(THREAD_SESSIONS)).toBeDefined()
     expect(platform.runtime.service(BOT_SLACK_ROUTER)).toBeUndefined()
     for (const [path, method] of [['bots', 'GET'], ['bots/b1/sessions', 'POST'], ['bots/b1/slack', 'GET']] as const) {

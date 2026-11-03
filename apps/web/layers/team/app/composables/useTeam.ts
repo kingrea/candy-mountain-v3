@@ -3,7 +3,7 @@ import {
   workspaceTeamPath,
   type BotListResponse,
   type TeamMemberListResponse,
-} from '@candy-mountain/shared'
+} from '@candy-mountain/platform-sdk'
 
 export function useTeam() {
   const { slug } = useSelectedProject()

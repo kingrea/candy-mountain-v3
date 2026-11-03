@@ -6,7 +6,7 @@ import {
   type Environment,
   type EnvironmentResponse,
   type LiveVersionSourceInfo,
-} from '@candy-mountain/shared'
+} from '@candy-mountain/platform-sdk'
 import type { FormError } from '@nuxt/ui'
 
 const props = defineProps<{

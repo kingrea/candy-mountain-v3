@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Monitor, MonitorStatus } from '@candy-mountain/shared'
+import type { Monitor, MonitorStatus } from '@candy-mountain/platform-sdk'
 
 const props = defineProps<{
   status: MonitorStatus

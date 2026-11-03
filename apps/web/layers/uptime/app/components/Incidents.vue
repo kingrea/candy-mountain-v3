@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { workspaceUptimeIncidentsPath, type IncidentListResponse, type Monitor, type MonitorIncident, type MonitorStatus } from '@candy-mountain/shared'
+import { workspaceUptimeIncidentsPath, type IncidentListResponse, type Monitor, type MonitorIncident, type MonitorStatus } from '@candy-mountain/platform-sdk'
 
 const props = defineProps<{
   statuses: MonitorStatus[]

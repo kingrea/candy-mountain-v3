@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import { DECISION_OPTION_KINDS, DECISION_SURFACES, type AgentSessionEvent, type AnswerDecisionRequest, type Decision, type DecisionExpiryReason, type DecisionOption, type DecisionSurface } from '@candy-mountain/shared'
-import type { Db } from '../db'
+import { DECISION_OPTION_KINDS, DECISION_SURFACES, type AgentSessionEvent, type AnswerDecisionRequest, type Decision, type DecisionExpiryReason, type DecisionOption, type DecisionSurface } from '@candy-mountain/platform-sdk'
+import type { Db } from '@candy-mountain/platform-daemon'
 import type { SessionManager, SessionMessage } from '../sessions/manager'
 import { DEFAULT_DECISION_TIMEOUT, resolveDecisionSettings, type DecisionSettings } from './config'
 import { DecisionError } from './errors'

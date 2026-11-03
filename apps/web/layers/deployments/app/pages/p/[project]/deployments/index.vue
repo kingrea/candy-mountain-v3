@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Environment, RegistryCapability } from '@candy-mountain/shared'
+import type { Environment, RegistryCapability } from '@candy-mountain/platform-sdk'
 
 const { registry } = useProjectRegistry()
 

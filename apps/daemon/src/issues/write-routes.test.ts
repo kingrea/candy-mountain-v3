@@ -15,12 +15,10 @@ import {
   type IssueCommentResponse,
   type IssueListResponse,
   type IssueResponse,
-} from '@candy-mountain/shared'
+} from '@candy-mountain/platform-sdk'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createTestApp } from '../testing/platform'
-import { dataPaths } from '../data-dir'
-import type { PlatformDatabase } from '../db'
-import { setEnabledModules } from '../workspace-modules/enablement'
+import { dataPaths, type PlatformDatabase, setEnabledModules } from '@candy-mountain/platform-daemon'
 import { openTestDatabase } from '../testing'
 import { issuesRoutes } from './definition'
 import { createTempBeadsWorkspace, hasBd, type TempBeadsWorkspace } from './test-workspace'

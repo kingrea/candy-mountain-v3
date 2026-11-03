@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BOT_FAMILY_NAMES } from '@candy-mountain/shared'
+import { BOT_FAMILY_NAMES } from '@candy-mountain/platform-sdk'
 import type { BotsPersonaCheck } from '../utils/bots'
 
 const props = defineProps<{

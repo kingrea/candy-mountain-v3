@@ -6,7 +6,7 @@ import {
   type ClaudeExecutableResponse,
   type PluginInstance,
   type PluginInstanceResponse,
-} from '@candy-mountain/shared'
+} from '@candy-mountain/platform-sdk'
 
 const props = defineProps<PluginFormProps>()
 const emit = defineEmits<PluginFormEmits>()

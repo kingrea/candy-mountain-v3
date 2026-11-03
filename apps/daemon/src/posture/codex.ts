@@ -1,4 +1,4 @@
-import type { BotWriteScope } from '@candy-mountain/shared'
+import type { BotWriteScope } from '@candy-mountain/platform-sdk'
 import type { CodexAgentMode, CodexLaunchOptions } from '../acp/families'
 
 /** Codex has no confirm-each-edit mode: the workspace-write sandbox never asks inside the worktree. */

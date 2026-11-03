@@ -11,7 +11,7 @@ import type {
   IssueComment,
   IssueDetail,
   UpdateIssueRequest,
-} from '@candy-mountain/shared'
+} from '@candy-mountain/platform-sdk'
 import { runBd, type BdRunner } from './bd-runner'
 import { editCommentInDolt, type CommentEditor } from './comment-edit'
 import { IssueError } from './errors'

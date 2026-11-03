@@ -1,6 +1,5 @@
-import type { CreateWorkspaceRequest, Workspace } from '@candy-mountain/shared'
-import type { Db } from '../db'
-import { createWorkspace } from '../workspaces/workspaces'
+import type { CreateWorkspaceRequest, Workspace } from '@candy-mountain/platform-sdk'
+import { createWorkspace, type Db } from '@candy-mountain/platform-daemon'
 import { setRepository } from './service'
 
 export interface CreateWorkspaceWithRepositoryInput extends CreateWorkspaceRequest {

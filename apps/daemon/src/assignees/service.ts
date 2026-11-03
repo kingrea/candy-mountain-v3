@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
-import { ASSIGNEE_NAME_MAX_LENGTH, type ProjectAssignee } from '@candy-mountain/shared'
+import { ASSIGNEE_NAME_MAX_LENGTH, type ProjectAssignee } from '@candy-mountain/platform-sdk'
 import { and, asc, eq, sql } from 'drizzle-orm'
-import type { Db } from '../db'
+import type { Db } from '@candy-mountain/platform-daemon'
 import { projectAssignees } from '../issues/schema'
 import { AssigneeError } from './errors'
 

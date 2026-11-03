@@ -1,4 +1,4 @@
-import type { PluginSecrets } from '@candy-mountain/shared'
+import type { PluginSecrets } from '@candy-mountain/platform-sdk'
 import type { NetlifyConfig } from '../types/netlify'
 import { createNetlifyClient, type NetlifyClientOptions } from './client'
 

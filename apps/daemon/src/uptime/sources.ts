@@ -4,8 +4,8 @@ import {
   MONITOR_SOURCE_ID_PATTERN,
   validateMonitorOptions,
   type MonitorSourceInfo,
-} from '@candy-mountain/shared'
-import { duplicates } from '../capabilities/manifest'
+} from '@candy-mountain/platform-sdk'
+import { duplicates } from '@candy-mountain/platform-daemon'
 import type { MonitorCheck } from './check'
 
 /** Kept out of shared so the checker never reaches the web bundle; monitorSourceInfo strips it from the wire. */

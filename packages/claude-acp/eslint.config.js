@@ -1,4 +1,4 @@
-import root from '../../eslint.config.js'
+import root from '@candy-mountain/platform-config/eslint'
 
 export default [
   ...root,

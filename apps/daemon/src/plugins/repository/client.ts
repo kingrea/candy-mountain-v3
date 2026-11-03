@@ -1,4 +1,4 @@
-import { REPOSITORY_HOST_NAMES, type RepositoryErrorCode, type RepositoryHost } from '@candy-mountain/shared'
+import { REPOSITORY_HOST_NAMES, type RepositoryErrorCode, type RepositoryHost } from '@candy-mountain/platform-sdk'
 
 export class RepositoryHostError extends Error {
   readonly host: RepositoryHost

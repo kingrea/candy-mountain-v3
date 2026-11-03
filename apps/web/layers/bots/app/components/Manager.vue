@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { workspaceBotsPath, type Bot, type BotPersonaCheckResponse, type BotListResponse } from '@candy-mountain/shared'
-import ProjectsConfirmModal from '~/components/projects/ProjectsConfirmModal.vue'
+import { workspaceBotsPath, type Bot, type BotPersonaCheckResponse, type BotListResponse } from '@candy-mountain/platform-sdk'
+import ProjectsConfirmModal from '#layers/platform-web/app/components/projects/ProjectsConfirmModal.vue'
 
 /** `null` opens the editor for a new bot, `undefined` closes it. */
 const editing = defineModel<Bot | null | undefined>('editing')

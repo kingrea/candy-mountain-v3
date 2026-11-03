@@ -1,4 +1,4 @@
-import type { IssueDependency } from '@candy-mountain/shared'
+import type { IssueDependency } from '@candy-mountain/platform-sdk'
 import { describe, expect, it } from 'vitest'
 import {
   ISSUES_GRAPH_COLUMN_GAP,

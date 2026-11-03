@@ -1,4 +1,4 @@
-import type { Issue, IssueComment, IssueDependency, IssueDetail } from '@candy-mountain/shared'
+import type { Issue, IssueComment, IssueDependency, IssueDetail } from '@candy-mountain/platform-sdk'
 import { runBd, type BdRunner } from './bd-runner'
 import { IssueError } from './errors'
 import { asArray, toComment, toDependencies, toDependency, toFields, toLink } from './mapping'

@@ -1,4 +1,4 @@
-import { defineCapabilityDefinition, type CapabilityDefinition, type CapabilityRuntime } from '../capabilities/definition'
+import { defineCapabilityDefinition, type CapabilityDefinition, type CapabilityRuntime } from '@candy-mountain/platform-sdk/daemon'
 import { teamCapability } from './manifest'
 import { teamMemberRoutes } from './routes'
 import { srcPath } from '../package-root'

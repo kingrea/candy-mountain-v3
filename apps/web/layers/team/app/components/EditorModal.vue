@@ -8,7 +8,7 @@ import {
   type CreateTeamMemberRequest,
   type TeamMember,
   type TeamMemberResponse,
-} from '@candy-mountain/shared'
+} from '@candy-mountain/platform-sdk'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import * as z from 'zod'
 

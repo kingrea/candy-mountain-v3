@@ -1,4 +1,4 @@
-import type { AgentSessionEvent } from '@candy-mountain/shared'
+import type { AgentSessionEvent } from '@candy-mountain/platform-sdk'
 import { describe, expect, it } from 'vitest'
 import { createSlackClient } from '../plugins/slack'
 import { createSlackProgress, SLACK_STREAM_MAX_AGE_MS, SLACK_STREAM_TEXT_MAX, type SlackProgressOptions, type SlackTurnMessage } from './progress'

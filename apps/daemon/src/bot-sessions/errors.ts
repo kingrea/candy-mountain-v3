@@ -1,5 +1,6 @@
-import type { BotStartErrorReason } from '@candy-mountain/shared'
+import type { BotStartErrorReason } from '@candy-mountain/platform-sdk'
 import type { ContentfulStatusCode } from 'hono/utils/http-status'
+import { WorkspaceAgentError } from '@candy-mountain/platform-daemon'
 
 const STATUS: Record<BotStartErrorReason, ContentfulStatusCode> = {
   persona_missing: 422,
@@ -14,14 +15,13 @@ const STATUS: Record<BotStartErrorReason, ContentfulStatusCode> = {
 }
 
 /** A bot session that could not start or continue, with a reason the console or Slack can show as is. */
-export class BotStartError extends Error {
+export class BotStartError extends WorkspaceAgentError {
   readonly reason: BotStartErrorReason
-  readonly status: ContentfulStatusCode
 
   constructor(reason: BotStartErrorReason, message: string, options?: { cause?: unknown }) {
-    super(message, options)
+    // A released worktree ends the session; the thread service starts a fresh one in its place.
+    super(reason, STATUS[reason], message, { ended: reason === 'worktree_released', cause: options?.cause })
     this.name = 'BotStartError'
     this.reason = reason
-    this.status = STATUS[reason]
   }
 }

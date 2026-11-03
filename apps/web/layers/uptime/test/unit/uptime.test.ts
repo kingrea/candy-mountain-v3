@@ -1,4 +1,4 @@
-import type { Monitor, MonitorCheckRecord, MonitorSourceInfo } from '@candy-mountain/shared'
+import type { Monitor, MonitorCheckRecord, MonitorSourceInfo } from '@candy-mountain/platform-sdk'
 import { describe, expect, it } from 'vitest'
 import {
   uptimeCreateBody,

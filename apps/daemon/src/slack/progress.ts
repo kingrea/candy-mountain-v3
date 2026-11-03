@@ -1,4 +1,4 @@
-import type { AcpObject, AgentSessionEvent } from '@candy-mountain/shared'
+import type { AcpObject, AgentSessionEvent } from '@candy-mountain/platform-sdk'
 import { SlackApiError, type SlackClient } from '../plugins/slack'
 import { SLACK_TEXT_MAX, splitSlackText } from './post'
 

@@ -1,8 +1,7 @@
-import type { PluginInstance, PluginTypeId } from '@candy-mountain/shared'
+import type { PluginInstance, PluginTypeId } from '@candy-mountain/platform-sdk'
 import { createHerokuOperations, herokuConfig, herokuPluginType } from '../plugins/heroku'
-import { resolvePluginInstance, type PluginInstanceDeps } from '../plugins/instances/instances'
+import { createPluginSecrets, type PluginInstanceDeps, resolvePluginInstance } from '@candy-mountain/platform-daemon'
 import { createNetlifyOperations, netlifyConfig, netlifyPluginType } from '../plugins/netlify'
-import { createPluginSecrets } from '../plugins/secrets'
 import { defineLiveVersionSource, type LiveVersionValidateContext } from './sources'
 
 type Resolved = { instance: PluginInstance, problem?: undefined } | { instance?: undefined, problem: string }

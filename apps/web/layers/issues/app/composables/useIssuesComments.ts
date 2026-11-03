@@ -1,4 +1,4 @@
-import type { IssueComment } from '@candy-mountain/shared'
+import type { IssueComment } from '@candy-mountain/platform-sdk'
 
 export function useIssuesComments(slug: MaybeRefOrGetter<string>, issueId: MaybeRefOrGetter<string>) {
   const api = useIssuesApi()

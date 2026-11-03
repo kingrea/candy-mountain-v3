@@ -1,19 +1,15 @@
-import { BOT_FAMILIES, REPOSITORY_CAPABILITY_ID, type Workspace } from '@candy-mountain/shared'
-import type { ActivityEventTypeDeclaration } from '../activity/types'
-import { botSessionRoutes, createBotSessionService, type BotSessionService } from '../bot-sessions'
-import { bindService, CapabilityDefinitionError, defineCapabilityDefinition, serviceKey, type CapabilityDefinition, type CapabilityRuntime } from '../capabilities/definition'
+import { BOT_FAMILIES, REPOSITORY_CAPABILITY_ID, type Workspace } from '@candy-mountain/platform-sdk'
+import { bindService, CapabilityDefinitionError, defineCapabilityDefinition, serviceKey, type ActivityEventTypeDeclaration, type CapabilityDefinition, type CapabilityRuntime, type WorkspaceFactDeclaration } from '@candy-mountain/platform-sdk/daemon'
+import { botSessionRoutes, botWorkspaceAgents, createBotSessionService, type BotSessionService } from '../bot-sessions'
 import { ACP_DECISIONS, ACP_SESSIONS } from '../chat-claude-code/definition'
 import { chatCodexCapability } from '../chat-codex/manifest'
-import type { Db } from '../db'
-import type { WorkspaceFactDeclaration } from '../registry/facts'
-import type { SecretsStore } from '../secrets'
+import { type Db, type SecretsStore } from '@candy-mountain/platform-daemon'
 import { startSlackDecisions, type SlackDecisions, type SlackDecisionsOptions } from '../slack/decisions'
 import { SLACK_CAPABILITY_ID, SLACK_CONNECTIONS } from '../slack/definition'
 import { startSlackHandoffs, type SlackHandoffs, type SlackHandoffsOptions } from '../slack/handoffs'
 import { startSlackRouter, type SlackRouter, type SlackRouterOptions, type SlackTurnEnd } from '../slack/router'
 import { REPOSITORY_PATHS } from '../repository/definition'
 import { slackRoutes } from '../slack/routes'
-import { THREAD_BOTS } from '../threads/bots'
 import { createWorktreePool, startWorktreeReclaimer, type WorktreePool, type WorktreePoolOptions, type WorktreeReclaimer, type WorktreeReclaimerOptions } from '../worktrees'
 import { deleteProjectBots, hasWorkspaceBots } from './bots'
 import { botsCapability } from './manifest'
@@ -21,7 +17,7 @@ import { botRoutes } from './routes'
 import { srcPath } from '../package-root'
 import * as botsSchema from './schema'
 
-/** The full bot session service; the thread service reads the narrower `THREAD_BOTS`. */
+/** The bot session service; the thread service reaches bots through the definition's `workspaceAgents` instead. */
 export const BOT_SESSIONS = serviceKey<BotSessionService>('bots.sessions')
 /** Worktrees exist only for bots, so the pool and its reclaimer are this definition's and readable from it. */
 export const BOT_WORKTREES = serviceKey<WorktreePool>('bots.worktrees')
@@ -70,7 +66,7 @@ export function botsDefinition(options: BotsOptions = {}): CapabilityDefinition 
     schema: { schema: botsSchema, migrationsFolder: srcPath('bots', 'migrations') },
     // No codex service is read, but codex bots need the family and plugin type chat-codex brings.
     dependsOn: [REPOSITORY_CAPABILITY_ID, 'chat-claude-code', chatCodexCapability.id, SLACK_CAPABILITY_ID],
-    provides: [BOT_SESSIONS, THREAD_BOTS, BOT_WORKTREES, BOT_WORKTREE_RECLAIMER, BOT_SLACK_ROUTER, BOT_SLACK_DECISIONS, BOT_SLACK_HANDOFFS],
+    provides: [BOT_SESSIONS, BOT_WORKTREES, BOT_WORKTREE_RECLAIMER, BOT_SLACK_ROUTER, BOT_SLACK_DECISIONS, BOT_SLACK_HANDOFFS],
     activityEventTypes: BOT_ACTIVITY_EVENT_TYPES,
     workspaceFacts: BOT_WORKSPACE_FACTS,
     start({ db, paths, secrets, pluginTypes, families, scopeUrlPrefix, service }) {
@@ -95,7 +91,6 @@ export function botsDefinition(options: BotsOptions = {}): CapabilityDefinition 
       return {
         services: [
           bindService(BOT_SESSIONS, botSessions),
-          bindService(THREAD_BOTS, botSessions),
           bindService(BOT_WORKTREES, worktrees),
           bindService(BOT_WORKTREE_RECLAIMER, reclaimer),
           bindService(BOT_SLACK_ROUTER, slackRouter),
@@ -103,6 +98,7 @@ export function botsDefinition(options: BotsOptions = {}): CapabilityDefinition 
           bindService(BOT_SLACK_HANDOFFS, slackHandoffs),
         ],
         ...routes,
+        workspaceAgents: botWorkspaceAgents({ db, pluginTypes, secrets: secrets.writeOnly }, botSessions),
         // Ahead of the bot routes, as when the slack definition mounted it.
         workspaceRoutes: [slackRoutes(slack), ...routes.workspaceRoutes ?? []],
         close() {

@@ -1,4 +1,4 @@
-import type { LiveVersionSettings } from '@candy-mountain/shared'
+import type { LiveVersionSettings } from '@candy-mountain/platform-sdk'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { readCustomEndpoint, validateCustomEndpoint } from './custom-endpoint'
 import { json, startFakeEndpoint, unreachableUrl, type FakeEndpoint } from './fake-endpoint'

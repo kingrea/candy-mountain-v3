@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { BOT_FAMILIES, BOT_WRITE_SCOPES, type BotFamily, type BotWriteScope } from '@candy-mountain/shared'
+import { BOT_FAMILIES, BOT_WRITE_SCOPES, type BotFamily, type BotWriteScope } from '@candy-mountain/platform-sdk'
 import { afterEach, describe, expect, it } from 'vitest'
 import { resolveFamilyLaunch } from '../acp/families'
 import { CLAUDE_BASELINE_ALLOWED_TOOLS, CLAUDE_PUSH_ASK_RULES } from './claude'

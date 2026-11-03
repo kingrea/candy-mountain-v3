@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ISSUE_TITLE_MAX_LENGTH, MAX_BULK_ISSUE_IDS, type Issue } from '@candy-mountain/shared'
+import { ISSUE_TITLE_MAX_LENGTH, MAX_BULK_ISSUE_IDS, type Issue } from '@candy-mountain/platform-sdk'
 
 const props = defineProps<{ slug: string }>()
 

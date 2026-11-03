@@ -39,9 +39,14 @@
 </template>
 
 <script setup lang="ts">
+import { chatThreadBot, registryAgentBot } from '@candy-mountain/platform-sdk'
+
 const props = defineProps<{ thread: ChatFamilyThread }>()
 
-const isBot = computed(() => props.thread.agent.value?.kind === 'bot')
+const isBot = computed(() => {
+  const agent = props.thread.agent.value
+  return agent !== null && registryAgentBot(agent) !== null
+})
 const { bot: state, close } = useBotsThread(() => props.thread.slug.value, () => props.thread.threadId.value)
 const bot = computed(() => (isBot.value ? state.value : null))
 const toast = useToast()
@@ -51,7 +56,7 @@ async function closeThread() {
   closing.value = true
   try {
     const result = await close()
-    if (result.released) toast.add({ title: 'Worktree released', description: `Branch ${result.bot.branch ?? ''} is kept.`, color: 'success', icon: 'i-lucide-archive' })
+    if (result.released) toast.add({ title: 'Worktree released', description: `Branch ${chatThreadBot(result)?.branch ?? ''} is kept.`, color: 'success', icon: 'i-lucide-archive' })
     void props.thread.refresh()
   }
   catch (cause) {

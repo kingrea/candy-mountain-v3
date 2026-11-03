@@ -1,6 +1,6 @@
-import type { TeamBotScope } from '@candy-mountain/shared'
+import type { TeamBotScope } from '@candy-mountain/platform-sdk'
 import { index, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
-import { workspaces } from '../../capabilities/definition'
+import { workspaces } from '@candy-mountain/platform-daemon'
 
 export const teamMembers = sqliteTable('team_members', {
   id: text('id').primaryKey(),

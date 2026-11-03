@@ -1,7 +1,7 @@
 import { spawn, type ChildProcess } from 'node:child_process'
 import { chmodSync, lstatSync, mkdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
-import type { DataPaths } from '../../data-dir'
+import type { DataPaths } from '@candy-mountain/platform-daemon'
 
 export const CLAUDE_COMMAND = 'claude'
 export const CLAUDE_CONFIG_DIR_ENV = 'CLAUDE_CONFIG_DIR'

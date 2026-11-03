@@ -1,4 +1,4 @@
-import { defineCapabilityDefinition, type CapabilityDefinition } from '../capabilities/definition'
+import { defineCapabilityDefinition, type CapabilityDefinition } from '@candy-mountain/platform-sdk/daemon'
 import { ACP_SESSIONS } from '../chat-claude-code/definition'
 import { chatClaudeCodeCapability } from '../chat-claude-code/manifest'
 import { codexLoginAttempts } from '../plugins/codex/attempts'

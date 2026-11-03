@@ -8,7 +8,7 @@ import {
   type BotSlackConnection,
   type BotSlackConnectionResponse,
   type PluginInstanceListResponse,
-} from '@candy-mountain/shared'
+} from '@candy-mountain/platform-sdk'
 
 export function useBots() {
   const { slug } = useSelectedProject()

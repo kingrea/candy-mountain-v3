@@ -10,10 +10,9 @@ import {
   type BotFamily,
   type BotPersonaCheckResponse,
   type BotPersonaFiles,
-} from '@candy-mountain/shared'
-import { resolvePluginInstance } from '../plugins/instances/instances'
+} from '@candy-mountain/platform-sdk'
+import { createPluginSecrets, resolvePluginInstance } from '@candy-mountain/platform-daemon'
 import { createRepositoryOperations, repositoryConfig, repositoryPluginType, RepositoryHostError } from '../plugins/repository'
-import { createPluginSecrets } from '../plugins/secrets'
 import { getBot, recordBotPersonaCheck, type BotReadDeps, type BotReadOptions } from './bots'
 import { BotError } from './errors'
 

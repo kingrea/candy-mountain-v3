@@ -1,4 +1,4 @@
-import { defineCapability } from '../capabilities/manifest'
+import { defineCapability } from '@candy-mountain/platform-sdk/daemon'
 
 export const chatClaudeCodeCapability = defineCapability({
   id: 'chat-claude-code',

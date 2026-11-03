@@ -1,4 +1,4 @@
-import { ISSUE_CHANGED_EVENT, workspaceIssueEventsPath, type IssueChangedEvent } from '@candy-mountain/shared'
+import { ISSUE_CHANGED_EVENT, workspaceIssueEventsPath, type IssueChangedEvent } from '@candy-mountain/platform-sdk'
 
 /** Opens on mount, never during SSR, and closes with the caller's scope. */
 export function useIssuesEvents(slug: MaybeRefOrGetter<string | null | undefined>, onChanged: (event: IssueChangedEvent) => void) {

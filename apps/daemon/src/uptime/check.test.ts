@@ -1,6 +1,6 @@
 import { createServer, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
-import type { MonitorOptions } from '@candy-mountain/shared'
+import type { MonitorOptions } from '@candy-mountain/platform-sdk'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { HTTP_SOURCE, MONITOR_SOURCE_REGISTRY, STATPING_SOURCE, STATUSIO_SOURCE, STATUSPAGE_SOURCE } from './builtin-sources'
 import type { MonitorCheckResult } from './check'

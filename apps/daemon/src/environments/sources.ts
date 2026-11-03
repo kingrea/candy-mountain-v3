@@ -9,9 +9,8 @@ import {
   type LiveVersionSettings,
   type LiveVersionSourceInfo,
   type Workspace,
-} from '@candy-mountain/shared'
-import { duplicates } from '../capabilities/manifest'
-import type { PluginInstanceDeps, SecretsReader } from '../plugins/instances/instances'
+} from '@candy-mountain/platform-sdk'
+import { duplicates, type PluginInstanceDeps, type SecretsReader } from '@candy-mountain/platform-daemon'
 
 /** Enough to resolve the project's plugin instance and its secrets, for sources that read a vendor plugin. */
 export type LiveVersionDeps = PluginInstanceDeps & { secretsReader: SecretsReader }

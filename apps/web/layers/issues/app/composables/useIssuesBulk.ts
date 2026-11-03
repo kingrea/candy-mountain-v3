@@ -1,4 +1,4 @@
-import type { BulkIssueChanges, BulkUpdateIssuesResponse } from '@candy-mountain/shared'
+import type { BulkIssueChanges, BulkUpdateIssuesResponse } from '@candy-mountain/platform-sdk'
 import type { IssuesBulkAction } from '#layers/issues/app/utils/issues-bulk'
 
 export function useIssuesBulk(slug: string) {

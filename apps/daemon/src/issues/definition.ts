@@ -1,6 +1,6 @@
-import { REPOSITORY_CAPABILITY_ID } from '@candy-mountain/shared'
+import { REPOSITORY_CAPABILITY_ID } from '@candy-mountain/platform-sdk'
+import { bindService, defineCapabilityDefinition, serviceKey, type CapabilityDefinition, type CapabilityRuntime } from '@candy-mountain/platform-sdk/daemon'
 import { assigneeRoutes } from '../assignees/routes'
-import { bindService, defineCapabilityDefinition, serviceKey, type CapabilityDefinition, type CapabilityRuntime } from '../capabilities/definition'
 import { REPOSITORY_PATHS } from '../repository/definition'
 import type { RepositoryPaths } from '../repository/service'
 import { issueEventRoutes } from './events-routes'

@@ -1,4 +1,4 @@
-import type { Issue } from '@candy-mountain/shared'
+import type { Issue } from '@candy-mountain/platform-sdk'
 import { issuesSortSiblings } from './issues-order'
 
 export type IssuesTreeItem = Pick<Issue, 'id' | 'title' | 'type' | 'status' | 'parentId' | 'dependencies'>

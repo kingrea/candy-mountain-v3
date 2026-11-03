@@ -12,12 +12,11 @@ import {
   type ClaudeCodeSubmitCodeResponse,
   type PluginInstance,
   type PluginInstanceResponse,
-} from '@candy-mountain/shared'
+} from '@candy-mountain/platform-sdk'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
-import { dataPaths } from '../../data-dir'
+import { dataPaths, type InstanceHarness } from '@candy-mountain/platform-daemon'
 import { startTestPlatform } from '../../testing/platform'
-import { createTempDataDir } from '../../testing'
-import { instanceHarness, type InstanceHarness } from '../instances/test-support'
+import { createTempDataDir, instanceHarness } from '../../testing'
 import { claudeCodePluginType } from '../types/claude-code'
 import { claudeConfigDir } from './cli'
 import { claudeCodeLaunchContext, ClaudeCodeLaunchError } from './launch'

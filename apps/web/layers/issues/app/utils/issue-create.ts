@@ -5,7 +5,7 @@ import type {
   Issue,
   IssueType,
   RegistryResponse,
-} from '@candy-mountain/shared'
+} from '@candy-mountain/platform-sdk'
 
 export interface IssuesAgentCreateOption {
   capabilityId: CapabilityId

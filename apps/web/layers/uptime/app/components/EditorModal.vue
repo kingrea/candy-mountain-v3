@@ -9,7 +9,7 @@ import {
   type Monitor,
   type MonitorResponse,
   type MonitorSourceInfo,
-} from '@candy-mountain/shared'
+} from '@candy-mountain/platform-sdk'
 import type { FormError } from '@nuxt/ui'
 
 const props = defineProps<{

@@ -1,7 +1,6 @@
-import { clampBranchListLimit, validatePluginConfig, type PluginConfigOf, type RepositoryBranchList, type RepositoryErrorCode } from '@candy-mountain/shared'
+import { clampBranchListLimit, validatePluginConfig, type PluginConfigOf, type RepositoryBranchList, type RepositoryErrorCode } from '@candy-mountain/platform-sdk'
 import type { ContentfulStatusCode } from 'hono/utils/http-status'
-import { PluginActionError } from '../actions'
-import { definePluginType } from '../definition'
+import { definePluginType, PluginActionError } from '@candy-mountain/platform-daemon'
 import { RepositoryHostError } from '../repository/client'
 import { createRepositoryOperations, listRepositoryBranches } from '../repository/operations'
 

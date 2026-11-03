@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Issue } from '@candy-mountain/shared'
+import type { Issue } from '@candy-mountain/platform-sdk'
 
 const props = defineProps<{
   slug: string

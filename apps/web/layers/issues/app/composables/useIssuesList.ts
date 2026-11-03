@@ -1,4 +1,4 @@
-import type { Issue } from '@candy-mountain/shared'
+import type { Issue } from '@candy-mountain/platform-sdk'
 
 export function useIssuesList(slug: string) {
   const api = useIssuesApi()

@@ -1,4 +1,4 @@
-import { ENVIRONMENT_NAME_MAX_LENGTH, type CreateEnvironmentRequest, type UpdateEnvironmentRequest } from '@candy-mountain/shared'
+import { ENVIRONMENT_NAME_MAX_LENGTH, type CreateEnvironmentRequest, type UpdateEnvironmentRequest } from '@candy-mountain/platform-sdk'
 import { EnvironmentError } from './errors'
 
 const invalid = (message: string) => new EnvironmentError('invalid_request', message)

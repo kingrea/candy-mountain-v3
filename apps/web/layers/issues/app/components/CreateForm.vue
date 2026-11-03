@@ -5,7 +5,7 @@ import {
   KNOWN_ISSUE_TYPES,
   type CreateIssueResponse,
   type Issue,
-} from '@candy-mountain/shared'
+} from '@candy-mountain/platform-sdk'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import * as z from 'zod'
 import type { IssuesCreateFormData } from '#layers/issues/app/utils/issue-create'

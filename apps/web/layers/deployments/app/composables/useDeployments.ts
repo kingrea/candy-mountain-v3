@@ -6,7 +6,7 @@ import {
   type EnvironmentListResponse,
   type LiveVersionSourceListResponse,
   type LiveVersionsResponse,
-} from '@candy-mountain/shared'
+} from '@candy-mountain/platform-sdk'
 
 export function useDeploymentsSources() {
   const request = useApi<LiveVersionSourceListResponse>(LIVE_VERSION_SOURCES_PATH, { key: DEPLOYMENTS_SOURCES_DATA_KEY })

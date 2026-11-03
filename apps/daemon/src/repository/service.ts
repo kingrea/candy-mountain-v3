@@ -1,6 +1,6 @@
-import type { Repository, RepositorySource, RepositoryVerification } from '@candy-mountain/shared'
+import type { Repository, RepositorySource, RepositoryVerification } from '@candy-mountain/platform-sdk'
 import { eq } from 'drizzle-orm'
-import type { Db } from '../db'
+import type { Db } from '@candy-mountain/platform-daemon'
 import { repositories } from './schema'
 import { RepositoryError } from './errors'
 import { normaliseRepositoryPath, requireExistingDirectory, verifyPath } from './verification'

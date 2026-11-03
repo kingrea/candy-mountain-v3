@@ -1,9 +1,8 @@
-import { pluginTypeInfo, PLUGIN_SCOPES } from '@candy-mountain/shared'
+import { pluginTypeInfo, PLUGIN_SCOPES } from '@candy-mountain/platform-sdk'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { startTestPlatform } from '../../testing/platform'
 import { createTempDataDir } from '../../testing'
-import { checkPluginHealth } from '../health'
-import { createPluginTypeRegistry } from '../registry'
+import { checkPluginHealth, createPluginTypeRegistry } from '@candy-mountain/platform-daemon'
 import { PLUGIN_TYPES } from '../types'
 import { createSlackOperations, slackConfig, slackPluginType, SlackApiError, type SlackConfig } from '.'
 

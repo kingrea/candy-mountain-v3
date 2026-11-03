@@ -1,4 +1,4 @@
-import { repositoryPath, repositoryVerifyPath, type Workspace, type Repository, type RepositoryResponse, type RepositoryVerification } from '@candy-mountain/shared'
+import { repositoryPath, repositoryVerifyPath, type Workspace, type Repository, type RepositoryResponse, type RepositoryVerification } from '@candy-mountain/platform-sdk'
 import type { Component } from 'vue'
 import * as z from 'zod'
 

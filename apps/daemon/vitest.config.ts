@@ -1,8 +1,3 @@
-import { defineConfig } from 'vitest/config'
+import { definePackageTestConfig } from '@candy-mountain/platform-config/vitest'
 
-export default defineConfig({
-  test: {
-    name: 'daemon',
-    include: ['src/**/*.test.ts'],
-  },
-})
+export default definePackageTestConfig('daemon')

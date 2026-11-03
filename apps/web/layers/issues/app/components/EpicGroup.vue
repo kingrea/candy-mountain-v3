@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Issue } from '@candy-mountain/shared'
+import type { Issue } from '@candy-mountain/platform-sdk'
 import type { IssuesEpicNode } from '#layers/issues/app/utils/issues-tree'
 
 const props = defineProps<{

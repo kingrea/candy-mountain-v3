@@ -9,11 +9,13 @@
   "scripts": {
     "build": "tsdown",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
     "test": "vitest run"
   },
   "dependencies": {
-    "@candy-mountain/config": "workspace:*",
-    "@candy-mountain/shared": "workspace:*"
+    "@candy-mountain/platform-cli": "workspace:*",
+    "@candy-mountain/platform-config": "workspace:*",
+    "@candy-mountain/platform-sdk": "workspace:*"
   },
   "devDependencies": {
     "tsdown": "^0.23.2"

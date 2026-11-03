@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { isAbsolute, join, resolve } from 'node:path'
-import type { BotWriteScope } from '@candy-mountain/shared'
+import type { BotWriteScope } from '@candy-mountain/platform-sdk'
 import { CLAUDE_BASELINE_ALLOWED_TOOLS } from './claude'
 import { PostureError } from './errors'
 

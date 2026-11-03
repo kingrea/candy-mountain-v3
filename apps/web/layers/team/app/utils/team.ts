@@ -1,4 +1,4 @@
-import type { Bot, TeamBotScope } from '@candy-mountain/shared'
+import type { Bot, TeamBotScope } from '@candy-mountain/platform-sdk'
 
 export const TEAM_DATA_KEY_PREFIX = 'team:'
 export const TEAM_BOTS_DATA_KEY_PREFIX = 'team-bots:'

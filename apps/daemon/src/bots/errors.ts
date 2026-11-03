@@ -1,4 +1,4 @@
-import type { BotErrorCode } from '@candy-mountain/shared'
+import type { BotErrorCode } from '@candy-mountain/platform-sdk'
 import type { ContentfulStatusCode } from 'hono/utils/http-status'
 
 const STATUS: Record<BotErrorCode, ContentfulStatusCode> = {

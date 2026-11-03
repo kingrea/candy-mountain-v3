@@ -16,7 +16,7 @@ import {
   type IssueListResponse,
   type IssueResponse,
   type UpdateIssueRequest,
-} from '@candy-mountain/shared'
+} from '@candy-mountain/platform-sdk'
 
 export type IssuesApi = ReturnType<typeof useIssuesApi>
 

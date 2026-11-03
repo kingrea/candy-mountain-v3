@@ -6,8 +6,8 @@ import {
   type CodexRevokeResponse,
   type PluginInstance,
   type PluginTypeInfo,
-} from '@candy-mountain/shared'
-import ProjectsConfirmModal from '~/components/projects/ProjectsConfirmModal.vue'
+} from '@candy-mountain/platform-sdk'
+import ProjectsConfirmModal from '#layers/platform-web/app/components/projects/ProjectsConfirmModal.vue'
 
 const props = defineProps<{
   instance: PluginInstance

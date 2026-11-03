@@ -1,6 +1,6 @@
 import type { ChildProcess } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
-import type { CodexLoginAttempt } from '@candy-mountain/shared'
+import type { CodexLoginAttempt } from '@candy-mountain/platform-sdk'
 import { CODEX_LOGIN_ARGS, parseDeviceAuthPrompt, readCodexLoginState, spawnCodex, stripAnsi, terminate } from './cli'
 import { ensureCodexHome } from './home'
 

@@ -1,11 +1,8 @@
-import { resolveDaemonAddress, resolveDataDir } from '@candy-mountain/config'
-import { resolveAuthConfig, type AuthConfig } from './auth/config'
-import { ADMIN_PASSWORD_ENV } from './auth/passwords'
-import { MasterKey } from './secrets/master-key'
+import { resolveDaemonAddress, resolveDataDir, type DataDirProduct } from '@candy-mountain/platform-config'
+import { ADMIN_PASSWORD_ENV, type AuthConfig, MasterKey, type NotificationSettings, resolveAuthConfig, resolveNotificationSettings } from '@candy-mountain/platform-daemon'
 import { resolveDecisionSettings, type DecisionSettings } from './decisions/config'
 import { resolveSessionSettings, type SessionSettings } from './sessions/config'
 import { resolveWorktreeSettings, type WorktreeSettings } from './worktrees/config'
-import { resolveNotificationSettings, type NotificationSettings } from './notifications/config'
 import { resolveUptimeSettings, type UptimeSettings } from './uptime/config'
 
 export { resolveDataDir }
@@ -24,10 +21,10 @@ export interface DaemonConfig {
   uptime: UptimeSettings
 }
 
-export function loadConfig(env: NodeJS.ProcessEnv = process.env): DaemonConfig {
+export function loadConfig(product: DataDirProduct, env: NodeJS.ProcessEnv = process.env): DaemonConfig {
   return {
     ...resolveDaemonAddress(env),
-    dataDir: resolveDataDir(env),
+    dataDir: resolveDataDir(product, env),
     secretsKey: env.CM_SECRETS_KEY ? MasterKey.parse(env.CM_SECRETS_KEY) : undefined,
     auth: resolveAuthConfig(env),
     adminPassword: env[ADMIN_PASSWORD_ENV] || undefined,

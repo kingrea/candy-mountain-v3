@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-import { main } from './main'
+import { runCli } from '@candy-mountain/platform-cli'
+import { candyMountain } from './distribution'
 import { REPO_ROOT } from './repo-root'
 
-process.exitCode = await main(process.argv.slice(2), { repoRoot: REPO_ROOT })
+process.exitCode = await runCli(process.argv.slice(2), candyMountain(REPO_ROOT))

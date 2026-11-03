@@ -1,4 +1,4 @@
-import type { IssueDetail } from '@candy-mountain/shared'
+import type { IssueDetail } from '@candy-mountain/platform-sdk'
 import type { IssuesEditDraft, IssuesEditField, IssuesEditableValues } from '#layers/issues/app/utils/issues-edit'
 
 export type IssuesEditTarget = IssuesEditField | 'close'

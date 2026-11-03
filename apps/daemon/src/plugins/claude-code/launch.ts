@@ -1,7 +1,5 @@
-import type { PluginInstance } from '@candy-mountain/shared'
-import type { DataPaths } from '../../data-dir'
-import { resolvePluginInstance, type PluginInstanceDeps, type SecretsReader } from '../instances/instances'
-import { createPluginSecrets } from '../secrets'
+import type { PluginInstance } from '@candy-mountain/platform-sdk'
+import { createPluginSecrets, type DataPaths, type PluginInstanceDeps, resolvePluginInstance, type SecretsReader } from '@candy-mountain/platform-daemon'
 import { claudeCodeConfig, claudeCodePluginType, type ClaudeCodeConfig } from '../types/claude-code'
 import { CLAUDE_OAUTH_TOKEN_ENV, claudeConfigDir, ensureConfigDir } from './cli'
 

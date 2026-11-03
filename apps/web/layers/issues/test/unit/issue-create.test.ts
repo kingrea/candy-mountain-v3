@@ -1,4 +1,4 @@
-import type { Issue, RegistryCapability, RegistryResponse } from '@candy-mountain/shared'
+import type { Issue, RegistryCapability, RegistryResponse } from '@candy-mountain/platform-sdk'
 import { describe, expect, it } from 'vitest'
 import {
   issuesAgentCreateOptions,

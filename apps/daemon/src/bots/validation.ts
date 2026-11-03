@@ -13,7 +13,7 @@ import {
   type BotSecretName,
   type BotSecretValues,
   type BotWriteScope,
-} from '@candy-mountain/shared'
+} from '@candy-mountain/platform-sdk'
 import { BotError } from './errors'
 
 export interface BotFields {

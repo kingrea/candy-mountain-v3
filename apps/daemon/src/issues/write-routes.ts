@@ -3,10 +3,9 @@ import type {
   CreateIssueResponse,
   IssueCommentResponse,
   IssueResponse,
-} from '@candy-mountain/shared'
+} from '@candy-mountain/platform-sdk'
 import { Hono, type Context } from 'hono'
-import type { AppEnv } from '../app'
-import { requireCapability } from '../registry/gate'
+import { type AppEnv, requireCapability } from '@candy-mountain/platform-daemon'
 import type { RepositoryPaths } from '../repository/service'
 import { IssueError } from './errors'
 import { issueProject, onIssueError } from './routes'

@@ -1,6 +1,6 @@
 import { index, integer, primaryKey, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 import { bots } from './bots'
-import { agentSessions, workspaces } from '../../capabilities/definition'
+import { agentSessions, workspaces } from '@candy-mountain/platform-daemon'
 
 export type SlackThreadState = 'open' | 'closed'
 

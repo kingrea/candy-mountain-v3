@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { CLAUDE_CODE_ACTIONS, type ClaudeCodeRevokeResponse, type PluginInstance, type PluginTypeInfo } from '@candy-mountain/shared'
-import ProjectsConfirmModal from '~/components/projects/ProjectsConfirmModal.vue'
+import { CLAUDE_CODE_ACTIONS, type ClaudeCodeRevokeResponse, type PluginInstance, type PluginTypeInfo } from '@candy-mountain/platform-sdk'
+import ProjectsConfirmModal from '#layers/platform-web/app/components/projects/ProjectsConfirmModal.vue'
 
 const props = defineProps<{
   instance: PluginInstance

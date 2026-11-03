@@ -13,6 +13,7 @@
   "scripts": {
     "build": "tsdown",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
     "test": "vitest run",
     "acp-client": "tsx scripts/acp-client.ts"
   },
@@ -21,6 +22,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@candy-mountain/platform-config": "workspace:*",
     "tsdown": "^0.23.2",
     "tsx": "^4.23.15"
   }

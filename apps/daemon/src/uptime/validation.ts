@@ -1,7 +1,7 @@
 import {
   MONITOR_INTERVAL_MAX_SECONDS, MONITOR_INTERVAL_MIN_SECONDS, MONITOR_NAME_MAX_LENGTH, MONITOR_TARGET_MAX_LENGTH,
   type CreateMonitorRequest, type UpdateMonitorRequest,
-} from '@candy-mountain/shared'
+} from '@candy-mountain/platform-sdk'
 import { MonitorError } from './errors'
 
 const invalid = (message: string) => new MonitorError('invalid_request', message)

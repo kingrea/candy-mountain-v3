@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Bot } from '@candy-mountain/shared'
+import type { Bot } from '@candy-mountain/platform-sdk'
 
 const editing = ref<Bot | null | undefined>()
 </script>

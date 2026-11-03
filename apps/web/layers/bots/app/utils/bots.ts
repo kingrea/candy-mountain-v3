@@ -11,7 +11,7 @@ import {
   type BotSlackConnection,
   type BotStatus,
   type PluginInstance,
-} from '@candy-mountain/shared'
+} from '@candy-mountain/platform-sdk'
 
 export const BOTS_DATA_KEY_PREFIX = 'bots:'
 export const BOTS_PLUGINS_DATA_KEY_PREFIX = 'bots-plugins:'

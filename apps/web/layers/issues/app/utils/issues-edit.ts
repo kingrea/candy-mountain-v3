@@ -6,7 +6,7 @@ import {
   type IssueFields,
   type IssueType,
   type UpdateIssueRequest,
-} from '@candy-mountain/shared'
+} from '@candy-mountain/platform-sdk'
 import { issuesTypeMeta } from './issues-display'
 
 export type IssuesEditableValues = Pick<

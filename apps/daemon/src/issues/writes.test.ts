@@ -1,4 +1,4 @@
-import type { IssueDetail } from '@candy-mountain/shared'
+import type { IssueDetail } from '@candy-mountain/platform-sdk'
 import { describe, expect, it, vi } from 'vitest'
 import type { BdRunner } from './bd-runner'
 import { createDoltCommentEditor, type CommentEditor } from './comment-edit'

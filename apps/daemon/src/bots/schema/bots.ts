@@ -1,6 +1,6 @@
-import type { BotAnswersIn, BotFamily, BotPersonaStatus, BotWriteScope } from '@candy-mountain/shared'
+import type { BotAnswersIn, BotFamily, BotPersonaStatus, BotWriteScope } from '@candy-mountain/platform-sdk'
 import { index, sqliteTable, text } from 'drizzle-orm/sqlite-core'
-import { workspaces } from '../../capabilities/definition'
+import { workspaces } from '@candy-mountain/platform-daemon'
 
 export const bots = sqliteTable('bots', {
   id: text('id').primaryKey(),

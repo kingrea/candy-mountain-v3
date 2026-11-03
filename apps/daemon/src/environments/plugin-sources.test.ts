@@ -1,9 +1,9 @@
-import type { ApiErrorBody, Environment, LiveVersionsResponse, Workspace } from '@candy-mountain/shared'
+import type { ApiErrorBody, Environment, LiveVersionsResponse, Workspace } from '@candy-mountain/platform-sdk'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DEPLOYMENTS_PLUGIN_TYPES, deploymentsRoutes } from '../deployments/definition'
 import { PLUGIN_TYPES } from '../plugins'
-import { createPluginInstance, deletePluginInstance, testPluginInstance, updatePluginInstance } from '../plugins/instances/instances'
-import { instanceHarness, type InstanceHarness } from '../plugins/instances/test-support'
+import { createPluginInstance, deletePluginInstance, type InstanceHarness, testPluginInstance, updatePluginInstance } from '@candy-mountain/platform-daemon'
+import { instanceHarness } from '../testing'
 
 const NETLIFY_TOKEN = 'nfp_good-token-123'
 const SITE_ID = 'candy-site'

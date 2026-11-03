@@ -1,5 +1,5 @@
-import { MONITOR_DOWN_THRESHOLD, MONITOR_SLOW_LATENCY_MS, type Monitor, type MonitorState, type MonitorStatus } from '@candy-mountain/shared'
-import type { Db } from '../db'
+import { MONITOR_DOWN_THRESHOLD, MONITOR_SLOW_LATENCY_MS, type Monitor, type MonitorState, type MonitorStatus } from '@candy-mountain/platform-sdk'
+import type { Db } from '@candy-mountain/platform-daemon'
 import { listMonitorChecks, type UptimeCheck } from './checks'
 import { closeIncident, findOpenIncident, openIncident } from './incidents'
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { REPOSITORY_CHECK_PATH, type RepositoryCheckResponse, type RepositoryVerification } from '@candy-mountain/shared'
+import { REPOSITORY_CHECK_PATH, type RepositoryCheckResponse, type RepositoryVerification } from '@candy-mountain/platform-sdk'
 
 const props = defineProps<ProjectFormFieldProps>()
 

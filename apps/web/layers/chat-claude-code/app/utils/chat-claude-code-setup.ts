@@ -1,4 +1,4 @@
-import type { ClaudeCodeAuthMode, ClaudeExecutableResponse } from '@candy-mountain/shared'
+import type { ClaudeCodeAuthMode, ClaudeExecutableResponse } from '@candy-mountain/platform-sdk'
 
 export type ChatClaudeCodeExecutableState =
   | { status: 'checking' }

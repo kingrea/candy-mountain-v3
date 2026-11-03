@@ -6,11 +6,9 @@ import {
   type IssueDependencyListResponse,
   type IssueListResponse,
   type IssueResponse,
-} from '@candy-mountain/shared'
+} from '@candy-mountain/platform-sdk'
 import { Hono, type Context } from 'hono'
-import type { AppEnv } from '../app'
-import type { Db } from '../db'
-import { getWorkspaceBySlug, WorkspaceError } from '../workspaces'
+import { type AppEnv, type Db, getWorkspaceBySlug, WorkspaceError } from '@candy-mountain/platform-daemon'
 import { RepositoryError } from '../repository/errors'
 import type { RepositoryPaths } from '../repository/service'
 import { IssueError } from './errors'

@@ -1,4 +1,4 @@
-import type { MonitorOptions } from '@candy-mountain/shared'
+import type { MonitorOptions } from '@candy-mountain/platform-sdk'
 
 export const MONITOR_CHECK_TIMEOUT_MS = 5000
 export const MONITOR_MAX_REDIRECTS = 5

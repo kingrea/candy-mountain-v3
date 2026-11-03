@@ -1,4 +1,4 @@
-import type { PluginInstance, PluginTypeInfo, RegistryCapability, RegistryResponse } from '@candy-mountain/shared'
+import type { PluginInstance, PluginTypeInfo, RegistryCapability, RegistryResponse } from '@candy-mountain/platform-sdk'
 import { describe, expect, it } from 'vitest'
 import {
   issuesRunAvailability,

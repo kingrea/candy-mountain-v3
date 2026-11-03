@@ -1,5 +1,5 @@
 import type { BadgeProps } from '@nuxt/ui'
-import type { IssueLink, IssueStatus, IssueType } from '@candy-mountain/shared'
+import type { IssueLink, IssueStatus, IssueType } from '@candy-mountain/platform-sdk'
 
 type IssuesColor = NonNullable<BadgeProps['color']>
 

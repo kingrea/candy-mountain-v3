@@ -1,5 +1,5 @@
-import { BOTS_CAPABILITY_ID } from '@candy-mountain/shared'
-import { bindService, defineCapabilityDefinition, serviceKey, type CapabilityDefinition } from '../capabilities/definition'
+import { BOTS_CAPABILITY_ID } from '@candy-mountain/platform-sdk'
+import { bindService, defineCapabilityDefinition, serviceKey, type CapabilityDefinition } from '@candy-mountain/platform-sdk/daemon'
 import { slackPluginType } from '../plugins/types/slack'
 import { startSlackConnections, type SlackConnections, type SlackConnectionsOptions } from './manager'
 import { slackMcpServer } from './mcp'
@@ -24,7 +24,7 @@ export function slackDefinition(options: SlackOptions = {}): CapabilityDefinitio
     id: SLACK_CAPABILITY_ID,
     pluginTypes: [slackPluginType],
     provides: [SLACK_CONNECTIONS],
-    start({ db, secrets, pluginTypes, capabilities }) {
+    start({ db, secrets, pluginTypes, capabilities, scopeUrlPrefix, scopeLabel }) {
       // Bots depend on slack, so slack can boot without them; their table is then absent.
       const botsBooted = capabilities.has(BOTS_CAPABILITY_ID)
       const connections = startSlackConnections({ db, pluginTypes, secrets: secrets.writeOnly, secretsReader: secrets, botsBooted }, options.connections)
@@ -32,7 +32,7 @@ export function slackDefinition(options: SlackOptions = {}): CapabilityDefinitio
       return {
         services: [bindService(SLACK_CONNECTIONS, connections)],
         mcpServers: [slackMcpServer({ db, slack: web }, { fetch: options.fetch })],
-        notificationChannels: [slackNotificationChannel({ db, pluginTypes, secrets: secrets.writeOnly, secretsReader: secrets, slack: web, botsBooted }, { fetch: options.fetch })],
+        notificationChannels: [slackNotificationChannel({ db, pluginTypes, secrets: secrets.writeOnly, secretsReader: secrets, slack: web, botsBooted, scopeUrlPrefix, scopeLabel }, { fetch: options.fetch })],
         close: () => connections.close(),
       }
     },

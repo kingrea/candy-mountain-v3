@@ -1,4 +1,4 @@
-import type { Issue, IssueDependency } from '@candy-mountain/shared'
+import type { Issue, IssueDependency } from '@candy-mountain/platform-sdk'
 import { describe, expect, it } from 'vitest'
 import { type IssuesEpicNode, issuesGroupTree, issuesParentId } from '../app/utils/issues-tree'
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { MonitorIncident } from '@candy-mountain/shared'
+import type { MonitorIncident } from '@candy-mountain/platform-sdk'
 
 const props = defineProps<{
   incident: MonitorIncident

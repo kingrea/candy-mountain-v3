@@ -9,12 +9,11 @@ import {
   type ClaudeExecutableResponse,
   type PluginConfigOf,
   type PluginHealth,
-} from '@candy-mountain/shared'
-import { PluginActionError } from '../actions'
+} from '@candy-mountain/platform-sdk'
+import { definePluginType, PluginActionError } from '@candy-mountain/platform-daemon'
 import { claudeConfigDir, configDirExists, ensureConfigDir, readClaudeAuthStatus, removeConfigDir, type ClaudeAuthStatus } from '../claude-code/cli'
 import { probeClaudeExecutable } from '../claude-code/executable'
 import { claudeLoginAttempts, LOGIN_FAILURES, type LoginAttemptView } from '../claude-code/login-attempts'
-import { definePluginType } from '../definition'
 
 const NOT_LOGGED_IN = 'Not logged in; start the browser login.'
 const TOKEN_REJECTED = 'Claude does not accept the stored token; generate a new one with `claude setup-token`.'

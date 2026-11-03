@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { UPTIME_MANAGE_TOOL, type Monitor, type RegistryCapability } from '@candy-mountain/shared'
+import { UPTIME_MANAGE_TOOL, type Monitor, type RegistryCapability } from '@candy-mountain/platform-sdk'
 
 const { registry } = useProjectRegistry()
 

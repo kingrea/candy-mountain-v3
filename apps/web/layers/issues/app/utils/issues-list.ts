@@ -1,4 +1,4 @@
-import type { Issue } from '@candy-mountain/shared'
+import type { Issue } from '@candy-mountain/platform-sdk'
 import type { IssuesEpicNode, IssuesTree } from './issues-tree'
 
 export type IssuesStateFilter = 'ready' | 'blocked' | null

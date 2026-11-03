@@ -1,7 +1,7 @@
 import { accessSync, constants, mkdtempSync, rmSync, statSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
 import { delimiter, isAbsolute, join } from 'node:path'
-import type { ClaudeExecutableResponse } from '@candy-mountain/shared'
+import type { ClaudeExecutableResponse } from '@candy-mountain/platform-sdk'
 import { CLAUDE_COMMAND, claudeCliEnv, runClaude } from './cli'
 
 export const CLAUDE_VERSION_ARGS = ['--version'] as const

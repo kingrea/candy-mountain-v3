@@ -5,7 +5,7 @@ import {
   BOT_SECRET_NAMES,
   BOT_WRITE_SCOPE_NAMES,
   type Bot,
-} from '@candy-mountain/shared'
+} from '@candy-mountain/platform-sdk'
 import type { BadgeProps } from '@nuxt/ui'
 
 const props = defineProps<{

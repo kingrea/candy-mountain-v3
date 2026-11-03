@@ -1,4 +1,4 @@
-import { defineCapability } from '../capabilities/manifest'
+import { defineCapability } from '@candy-mountain/platform-sdk/daemon'
 
 export const uptimeCapability = defineCapability({
   id: 'uptime',

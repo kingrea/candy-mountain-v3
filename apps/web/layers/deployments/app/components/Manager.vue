@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { workspaceEnvironmentPath, type Environment } from '@candy-mountain/shared'
-import ProjectsConfirmModal from '~/components/projects/ProjectsConfirmModal.vue'
+import { workspaceEnvironmentPath, type Environment } from '@candy-mountain/platform-sdk'
+import ProjectsConfirmModal from '#layers/platform-web/app/components/projects/ProjectsConfirmModal.vue'
 
 defineProps<{
   canManage: boolean

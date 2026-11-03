@@ -1,4 +1,4 @@
-import { clampBranchListLimit, type RepositoryBranch } from '@candy-mountain/shared'
+import { clampBranchListLimit, type RepositoryBranch } from '@candy-mountain/platform-sdk'
 import { createHostClient, encodePath } from './client'
 import type { HostOperations, HostOperationsOptions } from './operations'
 

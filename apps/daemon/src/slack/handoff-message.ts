@@ -1,4 +1,4 @@
-import type { Handoff, HandoffOutcome } from '@candy-mountain/shared'
+import type { Handoff, HandoffOutcome } from '@candy-mountain/platform-sdk'
 import { escapeSlackText } from './decision-message'
 
 /** The "mark done" button; its value is the slack_turns id of the turn the card ended. */

@@ -3,11 +3,10 @@ import {
   validateLiveVersionSettings,
   type CreateEnvironmentRequest, type Environment, type EnvironmentLiveVersion, type LiveVersionResult,
   type LiveVersionSettings, type Workspace, type UpdateEnvironmentRequest,
-} from '@candy-mountain/shared'
+} from '@candy-mountain/platform-sdk'
 import { and, asc, eq, ne, sql } from 'drizzle-orm'
-import type { Db } from '../db'
+import { type Db, type PluginInstanceDeps } from '@candy-mountain/platform-daemon'
 import { environments } from '../deployments/schema'
-import type { PluginInstanceDeps } from '../plugins/instances/instances'
 import { LIVE_VERSION_SOURCE_REGISTRY } from './builtin-sources'
 import { EnvironmentError } from './errors'
 import { normaliseLiveVersion } from './live-version'

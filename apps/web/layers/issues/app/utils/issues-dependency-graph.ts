@@ -1,4 +1,4 @@
-import type { Issue, IssueDependency } from '@candy-mountain/shared'
+import type { Issue, IssueDependency } from '@candy-mountain/platform-sdk'
 import { issuesSortSiblings } from './issues-order'
 import { issuesParentId } from './issues-tree'
 

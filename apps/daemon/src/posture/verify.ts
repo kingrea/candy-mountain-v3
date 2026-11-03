@@ -1,6 +1,6 @@
-import type { BotFamily, BotWriteScope } from '@candy-mountain/shared'
+import type { BotFamily, BotWriteScope } from '@candy-mountain/platform-sdk'
 import { basename, isAbsolute, normalize } from 'node:path'
-import { WRAPPED_MCP_TOOL_RULES } from '../agent-mcp/tools'
+import { WRAPPED_MCP_TOOL_RULES } from '@candy-mountain/platform-daemon'
 import { CODEX_AGENT_MODES, CODEX_LAUNCHER_ENV, type CodexLaunchOptions } from '../acp/families'
 import { CLAUDE_BASELINE_ALLOWED_TOOLS, CLAUDE_DENIED_TOOLS, CLAUDE_EDIT_TOOLS, CLAUDE_PERMISSION_MODES, CLAUDE_PUSH_ASK_RULES } from './claude'
 import { CODEX_MODES } from './codex'

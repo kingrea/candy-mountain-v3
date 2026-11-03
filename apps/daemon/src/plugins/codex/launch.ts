@@ -1,6 +1,5 @@
-import type { PluginInstanceHealth } from '@candy-mountain/shared'
-import type { DataPaths } from '../../data-dir'
-import { resolvePluginInstance, type PluginInstanceDeps } from '../instances/instances'
+import type { PluginInstanceHealth } from '@candy-mountain/platform-sdk'
+import { type DataPaths, type PluginInstanceDeps, resolvePluginInstance } from '@candy-mountain/platform-daemon'
 import { codexConfig } from '../types/codex'
 import { codexHome } from './home'
 

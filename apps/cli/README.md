@@ -2,6 +2,12 @@
 
 `candy-mountain` runs the built daemon (`apps/daemon/dist`) and web server (`apps/web/.output`) like an app: in the background, or as a systemd user service that starts at boot.
 
+## How it is split
+
+The commands, the supervisor, systemd unit generation and the log and pid handling live in `@candy-mountain/platform-cli` (`packages/platform-cli`), which knows no product. This app is only the `candy-mountain` bin: `src/distribution.ts` hands `runCli` Candy Mountain's product configuration, this repository's paths (the bin itself at `apps/cli/dist/index.mjs`, the daemon at `apps/daemon/dist/index.mjs`, the web server at `apps/web/.output/server/index.mjs`) and the data directory resolution from `@candy-mountain/platform-config`.
+
+The package names everything after the product: `Candy Mountain` becomes the command `candy-mountain`, the unit `candy-mountain.service` and the folder `~/.config/candy-mountain`. Another distribution writes its own bin the same way and gets its own unit, environment file and messages; the `CM_*` variables stay the same.
+
 ## Setup
 
 ```bash

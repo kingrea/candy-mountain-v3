@@ -1,11 +1,8 @@
-import type { ApiErrorBody, BotSlackConnectionResponse } from '@candy-mountain/shared'
+import type { ApiErrorBody, BotSlackConnectionResponse } from '@candy-mountain/platform-sdk'
 import { Hono } from 'hono'
-import type { AppEnv } from '../app'
-import { requireAdmin } from '../auth/admin'
+import { type AppEnv, getWorkspaceBySlug, requireAdmin, WorkspaceError } from '@candy-mountain/platform-daemon'
 import { botProjectId } from '../bots/bots'
 import { BotError } from '../bots/errors'
-import { WorkspaceError } from '../workspaces/errors'
-import { getWorkspaceBySlug } from '../workspaces/workspaces'
 import type { SlackConnections } from './manager'
 
 /** Admin only, like the bot routes it sits beside. */

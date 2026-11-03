@@ -1,6 +1,6 @@
 export * from './access'
 export * from './config'
-export * from './errors'
+export { SessionError } from '@candy-mountain/platform-daemon'
 export * from './manager'
 export { SESSION_EVENTS_HEARTBEAT_MS, sessionRoutes, type SessionRoutesOptions } from './routes'
-export { listSessionEvents } from './store'
+export { listSessionEvents } from '@candy-mountain/platform-daemon'

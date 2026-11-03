@@ -1,4 +1,4 @@
-import type { LiveVersion } from '@candy-mountain/shared'
+import type { LiveVersion } from '@candy-mountain/platform-sdk'
 
 const text = (value: unknown): string | undefined => {
   if (typeof value !== 'string') return undefined

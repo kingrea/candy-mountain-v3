@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Environment } from '@candy-mountain/shared'
+import type { Environment } from '@candy-mountain/platform-sdk'
 
 const props = defineProps<{
   environment: Environment

@@ -1,4 +1,4 @@
-import type { LiveVersion, LiveVersionField, LiveVersionSettingError, LiveVersionSettings } from '@candy-mountain/shared'
+import type { LiveVersion, LiveVersionField, LiveVersionSettingError, LiveVersionSettings } from '@candy-mountain/platform-sdk'
 import { parseJsonPath, readJsonPath, type JsonPathSegment } from './json-path'
 import { toHttpLink, toIsoTime } from './live-version'
 import { defineLiveVersionSource } from './sources'
