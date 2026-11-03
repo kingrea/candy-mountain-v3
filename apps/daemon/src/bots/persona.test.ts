@@ -1,4 +1,4 @@
-import { projectBotsPath, type Bot, type BotPersonaCheckResponse, type BotPersonaPreviewResponse, type BotResponse, type Project } from '@candy-mountain/shared'
+import { workspaceBotsPath, type Bot, type BotPersonaCheckResponse, type BotPersonaPreviewResponse, type BotResponse, type Workspace } from '@candy-mountain/shared'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fixturePluginType } from '../plugins/fixtures'
 import { createPluginInstance, testPluginInstance } from '../plugins/instances/instances'
@@ -22,13 +22,13 @@ afterEach(() => {
 })
 
 /** jack/candy (default `main`) holds `.claude/agents/ana.md` but no `.agents/ana.md`; paths in `deleted` answer 404. */
-async function setup({ host = 'github', token = GOOD_TOKEN } = {}): Promise<{ project: Project, deleted: Set<string> }> {
+async function setup({ host = 'github', token = GOOD_TOKEN } = {}): Promise<{ project: Workspace, deleted: Set<string> }> {
   h = instanceHarness([repositoryPluginType, fixturePluginType('claude-code'), fixturePluginType('codex')])
   const deleted = new Set<string>()
   stubHosts(({ url }) => ([...deleted].some(path => decodeURIComponent(url.pathname).endsWith(`/${path}`)) ? json(404, { message: 'Not Found' }) : undefined))
-  const project = await h.createProject('alpha')
+  const project = await h.createWorkspace('alpha')
   const add = (type: string, config: Record<string, unknown>, secrets: Record<string, string>) =>
-    createPluginInstance(h.deps, { type, scope: 'project', projectId: project.id, config, secrets })
+    createPluginInstance(h.deps, { type, scope: 'workspace', workspaceId: project.id, config, secrets })
   add('repository', { host, owner: 'jack', repo: 'candy' }, { token })
   await testPluginInstance(h.deps, add('claude-code', { account: 'jack' }, { token: 't' }).id)
   await testPluginInstance(h.deps, add('codex', { account: 'jack' }, { token: 't' }).id)
@@ -41,7 +41,7 @@ function call(method: string, path: string, body?: unknown, roles?: string[]) {
     init.headers = { 'content-type': 'application/json' }
     init.body = JSON.stringify(body)
   }
-  return app(roles).request(`${projectBotsPath('alpha')}${path}`, init)
+  return app(roles).request(`${workspaceBotsPath('alpha')}${path}`, init)
 }
 
 async function created(body: unknown): Promise<Bot> {
@@ -142,8 +142,8 @@ describe('persona check', () => {
   it('is admin only and scoped to the project', async () => {
     await setup()
     const bot = await created({ name: 'Ana', family: 'claude-code', personaName: 'ana' })
-    await h.createProject('beta')
-    expect((await app().request(`${projectBotsPath('beta')}/${bot.id}/check-persona`, { method: 'POST' })).status).toBe(404)
+    await h.createWorkspace('beta')
+    expect((await app().request(`${workspaceBotsPath('beta')}/${bot.id}/check-persona`, { method: 'POST' })).status).toBe(404)
     expect(await errorOf(await call('POST', `/${bot.id}/check-persona`, undefined, ['member']))).toMatchObject({ status: 403, code: 'forbidden' })
     expect(await errorOf(await call('POST', '/check-persona', { personaName: 'ana' }, ['member']))).toMatchObject({ status: 403, code: 'forbidden' })
   })

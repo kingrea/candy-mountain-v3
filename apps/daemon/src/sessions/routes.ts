@@ -2,8 +2,8 @@ import { CODEX_SESSION_MODES, SESSION_EVENT_NAME, SESSION_PROMPT_MAX_LENGTH, SES
 import { Hono, type Context } from 'hono'
 import { streamSSE } from 'hono/streaming'
 import type { AppEnv } from '../app'
-import { ProjectError } from '../projects/errors'
-import { getProjectBySlug, sourcePath } from '../projects/projects'
+import { WorkspaceError } from '../workspaces/errors'
+import { getWorkspaceBySlug } from '../workspaces/workspaces'
 import type { GateRefusal } from '../registry'
 import { canAccessSession, gateSessionFamily, requireSessionAccess } from './access'
 import { SessionError } from './errors'
@@ -84,18 +84,18 @@ export function sessionRoutes(sessions: SessionManager, options: SessionRoutesOp
   const heartbeatMs = options.heartbeatMs ?? SESSION_EVENTS_HEARTBEAT_MS
   const app = new Hono<AppEnv>()
   app.onError((error, c) => {
-    if (error instanceof SessionError || error instanceof ProjectError) {
+    if (error instanceof SessionError || error instanceof WorkspaceError) {
       return c.json<ApiErrorBody>({ error: { code: error.code, message: error.message } }, error.status)
     }
     throw error
   })
 
-  const projectOf = (c: Context<AppEnv>) => getProjectBySlug(c.var.db, c.req.param('slug')!)
+  const workspaceOf = (c: Context<AppEnv>) => getWorkspaceBySlug(c.var.db, c.req.param('slug')!)
 
   function sessionOf(c: Context<AppEnv>): AgentSession {
     const id = c.req.param('id')!
     const session = sessions.get(id)
-    if (!session || session.projectId !== projectOf(c).id) throw new SessionError('not_found', `No session with id "${id}" in this project`)
+    if (!session || session.workspaceId !== workspaceOf(c).id) throw new SessionError('not_found', `No session with id "${id}" in this project`)
     return session
   }
 
@@ -103,12 +103,12 @@ export function sessionRoutes(sessions: SessionManager, options: SessionRoutesOp
   const access = requireSessionAccess(sessions)
 
   app.get('/:slug/sessions', (c) => {
-    const project = projectOf(c)
-    const visible = sessions.list(project.id).filter(session => canAccessSession(c.var.actor, session))
+    const workspace = workspaceOf(c)
+    const visible = sessions.list(workspace.id).filter(session => canAccessSession(c.var.actor, session))
     const allowed = new Set<AgentSessionFamily>()
     let firstRefusal: GateRefusal | undefined
     for (const family of c.var.families.ids()) {
-      const result = gateSessionFamily(c.var, c.var.actor, project, family)
+      const result = gateSessionFamily(c.var, c.var.actor, workspace, family)
       if (result.allowed) allowed.add(family)
       else firstRefusal ??= result
     }
@@ -117,11 +117,11 @@ export function sessionRoutes(sessions: SessionManager, options: SessionRoutesOp
   })
 
   app.post('/:slug/sessions', async (c) => {
-    const project = projectOf(c)
+    const workspace = workspaceOf(c)
     const input = parseCreateSession(await readJson(c), c.var.families)
-    const result = gateSessionFamily(c.var, c.var.actor, project, input.family)
+    const result = gateSessionFamily(c.var, c.var.actor, workspace, input.family)
     if (!result.allowed) return refusal(c, result)
-    const session = sessions.create({ projectId: project.id, family: input.family, actorId: c.var.actor.id, cwd: sourcePath(project.source), posture: input.posture })
+    const session = sessions.create({ workspaceId: workspace.id, family: input.family, actorId: c.var.actor.id, posture: input.posture })
     return c.json<SessionResponse>({ session }, 201)
   })
 

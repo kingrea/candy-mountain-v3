@@ -2,7 +2,7 @@ import type { AgentSessionEvent, BotAnswersIn, BotSessionHolder } from '@candy-m
 import { eq } from 'drizzle-orm'
 import { BotStartError, type BotSessionService } from '../bot-sessions'
 import type { Db } from '../db'
-import { bots } from '../db/schema'
+import { bots } from '../bots/schema'
 import type { SlackClient } from '../plugins/slack'
 import { SessionError, type SessionManager } from '../sessions'
 import { findTeamMemberBySlackId, mayMemberTalkToBot, touchMemberActivity } from '../team'

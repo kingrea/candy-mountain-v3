@@ -8,7 +8,7 @@ import {
 import { Hono, type Context } from 'hono'
 import type { AppEnv } from '../../app'
 import { requireAdmin } from '../../auth/admin'
-import { findProjectBySlug } from '../../projects/projects'
+import { findWorkspaceBySlug } from '../../workspaces/workspaces'
 import { SecretsLockedError } from '../../secrets'
 import { PluginActionError } from '../actions'
 import { createPluginSecrets } from '../secrets'
@@ -28,10 +28,10 @@ import {
 } from './instances'
 import { parseCreatePluginInstance, parseUpdatePluginInstance } from './validation'
 
-function projectIdOf(c: Context<AppEnv>, slug: string): string {
-  const project = findProjectBySlug(c.var.db, slug)
-  if (!project) throw new PluginInstanceError('project_not_found', `No project with slug "${slug}"`)
-  return project.id
+function workspaceIdOf(c: Context<AppEnv>, slug: string): string {
+  const workspace = findWorkspaceBySlug(c.var.db, slug)
+  if (!workspace) throw new PluginInstanceError('workspace_not_found', `No project with slug "${slug}"`)
+  return workspace.id
 }
 
 async function readJson(c: Context): Promise<unknown> {
@@ -79,13 +79,13 @@ export function pluginInstanceRoutes(secretsReader: SecretsReader) {
   app.onError(onError)
 
   app.get('/', (c) => {
-    const slug = c.req.query('project')
-    return c.json<PluginInstanceListResponse>({ instances: listPluginInstances(c.var, { projectId: slug ? projectIdOf(c, slug) : undefined }) })
+    const slug = c.req.query('workspace')
+    return c.json<PluginInstanceListResponse>({ instances: listPluginInstances(c.var, { workspaceId: slug ? workspaceIdOf(c, slug) : undefined }) })
   })
 
   app.post('/', async (c) => {
-    const { project, ...request } = parseCreatePluginInstance(await readJson(c), c.var.pluginTypes)
-    const instance = createPluginInstance(c.var, { ...request, projectId: project ? projectIdOf(c, project) : null })
+    const { workspace, ...request } = parseCreatePluginInstance(await readJson(c), c.var.pluginTypes)
+    const instance = createPluginInstance(c.var, { ...request, workspaceId: workspace ? workspaceIdOf(c, workspace) : null })
     return c.json<PluginInstanceResponse>({ instance }, 201)
   })
 

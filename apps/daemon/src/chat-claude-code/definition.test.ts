@@ -1,4 +1,4 @@
-import { PROJECTS_PATH, type ApiErrorBody } from '@candy-mountain/shared'
+import { WORKSPACES_PATH, type ApiErrorBody } from '@candy-mountain/shared'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fakeBins } from '../acp/test-support'
@@ -54,15 +54,15 @@ describe('the chat-claude-code definition', () => {
     const { app } = start(withAcp())
 
     for (const path of ['sessions', 'sessions/s1/decisions', 'threads']) {
-      const res = await app.request(`${PROJECTS_PATH}/nope/${path}`)
+      const res = await app.request(`${WORKSPACES_PATH}/nope/${path}`)
       expect(res.status, path).toBe(404)
       expect(((await res.json()) as ApiErrorBody).error.code, path).toBe('not_found')
     }
   })
 
   it('boots without it: those routes answer not found, nothing claude-code is registered, threads are still served, and bots and Slack routing stay off', async () => {
-    // Bots and chat-codex depend on chat-claude-code, so a product without it leaves them out too.
-    const { platform, app } = start(withoutCapabilities('chat-claude-code', 'bots', 'chat-codex'))
+    // Bots and chat-codex depend on chat-claude-code, and team on the hasBots fact bots declares, so a product without it leaves them out too.
+    const { platform, app } = start(withoutCapabilities('chat-claude-code', 'bots', 'chat-codex', 'team'))
 
     expect(platform.runtime.service(ACP_SESSIONS)).toBeUndefined()
     expect(platform.runtime.service(THREAD_SESSIONS)).toBeDefined()
@@ -72,14 +72,14 @@ describe('the chat-claude-code definition', () => {
     expect(platform.runtime.service(BOT_SESSIONS)).toBeUndefined()
     expect(platform.runtime.service(BOT_SLACK_ROUTER)).toBeUndefined()
     for (const path of ['sessions', 'sessions/s1/decisions']) {
-      const res = await app.request(`${PROJECTS_PATH}/nope/${path}`)
+      const res = await app.request(`${WORKSPACES_PATH}/nope/${path}`)
       expect(res.status, path).toBe(404)
       expect(await res.text(), path).toBe('404 Not Found')
     }
-    const threads = await app.request(`${PROJECTS_PATH}/nope/threads`)
+    const threads = await app.request(`${WORKSPACES_PATH}/nope/threads`)
     expect(threads.status).toBe(404)
     expect(((await threads.json()) as ApiErrorBody).error.code).toBe('not_found')
-    expect((await app.request(PROJECTS_PATH)).status).toBe(200)
+    expect((await app.request(WORKSPACES_PATH)).status).toBe(200)
   })
 
   it('refuses a product that already supplies the claude-code family or plugin type', () => {

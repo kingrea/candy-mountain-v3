@@ -9,7 +9,7 @@ const agent = (id: string, extra: Partial<RegistryAgent> = {}): RegistryAgent =>
 
 function thread(agentId: string, flags: Partial<ChatThread> = {}): ChatThread {
   return {
-    id: `${agentId}-thread`, projectId: 'p1', actorId: 'a1', agentId, currentSessionId: 's1', title: null, model: null, effort: null,
+    id: `${agentId}-thread`, workspaceId: 'p1', actorId: 'a1', agentId, currentSessionId: 's1', title: null, model: null, effort: null,
     unread: false, working: false, lastReadAt: null, lastActivityAt: '2026-10-28T10:00:00.000Z', createdAt: '2026-10-28T10:00:00.000Z', updatedAt: '2026-10-28T10:00:00.000Z',
     ...flags,
   }

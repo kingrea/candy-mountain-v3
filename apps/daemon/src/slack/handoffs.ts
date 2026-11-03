@@ -1,9 +1,10 @@
-import { parseHandoff, projectViewRoute, stripHandoff, type AgentSessionEvent, type Handoff } from '@candy-mountain/shared'
+import { parseHandoff, workspaceViewRoute, stripHandoff, type AgentSessionEvent, type Handoff } from '@candy-mountain/shared'
 import { and, eq, sql } from 'drizzle-orm'
 import { ActivityError, appendActivityEvent } from '../activity'
 import type { BotSessionService } from '../bot-sessions'
 import type { Db } from '../db'
-import { activityEvents, bots, platformMeta, projects } from '../db/schema'
+import { activityEvents, platformMeta, workspaces } from '../db/schema'
+import { bots } from '../bots/schema'
 import type { SlackClient } from '../plugins/slack'
 import type { SessionManager } from '../sessions'
 import { mayMemberTalkToBot, touchMemberActivity } from '../team'
@@ -125,7 +126,7 @@ export function startSlackHandoffs({ db, slack, botSessions, sessions, scopeUrlP
 
   function recorded(projectId: string, turnId: string): boolean {
     return db.select({ id: activityEvents.id }).from(activityEvents)
-      .where(and(eq(activityEvents.projectId, projectId), eq(activityEvents.type, 'bot.handoff'), sql`json_extract(${activityEvents.payload}, '$.turnId') = ${turnId}`))
+      .where(and(eq(activityEvents.workspaceId, projectId), eq(activityEvents.type, 'bot.handoff'), sql`json_extract(${activityEvents.payload}, '$.turnId') = ${turnId}`))
       .get() !== undefined
   }
 
@@ -133,15 +134,15 @@ export function startSlackHandoffs({ db, slack, botSessions, sessions, scopeUrlP
     const { thread } = end
     if (end.turnId && recorded(thread.projectId, end.turnId)) return
     const bot = db.select({ name: bots.name }).from(bots).where(eq(bots.id, thread.botId)).get()
-    const project = db.select({ slug: projects.slug }).from(projects).where(eq(projects.id, thread.projectId)).get()
+    const project = db.select({ slug: workspaces.slug }).from(workspaces).where(eq(workspaces.id, thread.projectId)).get()
     const turn = end.turnId ? findSlackTurn(db, end.turnId) : null
     const headline = handoff?.summary ?? firstLine(finalMessage(turnEvents(turn))) ?? firstLine(end.text) ?? (end.outcome === 'failed' ? 'could not finish' : 'finished without a reply')
     const slackUrl = await permalink(end.client, shown ?? { channel: thread.channelId, ts: thread.threadTs })
     // A Slack session has no chat panel thread, so the Slack thread is the conversation to open; the bots page if Slack did not say where it is.
-    const link = slackUrl ?? (project ? projectViewRoute(scopeUrlPrefix, encodeURIComponent(project.slug), 'bots') : undefined)
+    const link = slackUrl ?? (project ? workspaceViewRoute(scopeUrlPrefix, encodeURIComponent(project.slug), 'bots') : undefined)
     try {
       appendActivityEvent(db, {
-        projectId: thread.projectId,
+        workspaceId: thread.projectId,
         type: 'bot.handoff',
         title: clip(`${bot?.name ?? 'Bot'}: ${headline}`, TITLE_MAX),
         link,

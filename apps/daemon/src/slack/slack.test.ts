@@ -1,10 +1,11 @@
 import { randomUUID } from 'node:crypto'
-import { botSlackConnectionPath, type Actor, type BotSlackConnectionResponse, type BotPersonaStatus, type Project } from '@candy-mountain/shared'
+import { botSlackConnectionPath, type Actor, type BotSlackConnectionResponse, type BotPersonaStatus, type Workspace } from '@candy-mountain/shared'
 import { eq } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createTestApp } from '../testing/platform'
 import { botSecretOwner } from '../bots'
-import { bots, projects } from '../db/schema'
+import { bots } from '../bots/schema'
+import { workspaces } from '../db/schema'
 import { fixturePluginType } from '../plugins/fixtures'
 import { createPluginInstance, testPluginInstance } from '../plugins/instances/instances'
 import { instanceHarness, type InstanceHarness } from '../plugins/instances/test-support'
@@ -37,13 +38,13 @@ async function until(check: () => boolean, what: string, timeoutMs = 3000) {
   }
 }
 
-async function setup(): Promise<Project> {
+async function setup(): Promise<Workspace> {
   h = instanceHarness([fixturePluginType('claude-code')])
   fake = await startFakeSocketMode()
   fake.validAppTokens.add(APP_TOKEN)
   fake.validBotTokens.add(BOT_TOKEN)
-  const project = await h.createProject('alpha')
-  const instance = createPluginInstance(h.deps, { type: 'claude-code', scope: 'project', projectId: project.id, config: { account: 'jack' }, secrets: { token: 't' } })
+  const project = await h.createWorkspace('alpha')
+  const instance = createPluginInstance(h.deps, { type: 'claude-code', scope: 'workspace', workspaceId: project.id, config: { account: 'jack' }, secrets: { token: 't' } })
   await testPluginInstance(h.deps, instance.id)
   return project
 }
@@ -58,7 +59,7 @@ function start(options: SlackConnectionsOptions = {}) {
   return manager
 }
 
-function addBot(project: Project, { app = APP_TOKEN as string | null, bot = BOT_TOKEN as string | null, persona = 'verified' as BotPersonaStatus } = {}) {
+function addBot(project: Workspace, { app = APP_TOKEN as string | null, bot = BOT_TOKEN as string | null, persona = 'verified' as BotPersonaStatus } = {}) {
   const id = randomUUID()
   const at = new Date().toISOString()
   h.database.db.insert(bots).values({
@@ -93,7 +94,7 @@ describe('Slack Socket Mode connections', () => {
 
     h.store.set(botSecretOwner(id), 'slackAppToken', APP_TOKEN)
     await until(() => slack.status(id).state === 'connected', 'reconnected')
-    h.database.db.update(projects).set({ archivedAt: new Date().toISOString() }).where(eq(projects.id, project.id)).run()
+    h.database.db.update(workspaces).set({ archivedAt: new Date().toISOString() }).where(eq(workspaces.id, project.id)).run()
     await until(() => fake.open().length === 0, 'the archived link to close')
     expect(slack.status(id)).toMatchObject({ state: 'disconnected', reasonCode: 'archived' })
     expect(fake.links).toHaveLength(2)
@@ -205,7 +206,7 @@ describe('Slack Socket Mode connections', () => {
   it('serves the connection state to admins only', async () => {
     const project = await setup()
     const id = addBot(project)
-    const other = await h.createProject('beta')
+    const other = await h.createWorkspace('beta')
     const foreign = addBot(other)
     const slack = start()
     await until(() => slack.status(id).state === 'connected', 'connected')

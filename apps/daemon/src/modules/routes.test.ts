@@ -20,7 +20,7 @@ const as = (roles: string[]): AuthStrategy => ({
 })
 
 function app(roles: string[]) {
-  const issues = { ...fixtureCapability('issues', ['repository']), requiresProjectFacts: ['hasBeads'] as const }
+  const issues = { ...fixtureCapability('issues', ['repository']), requiresWorkspaceFacts: ['hasBeads'] as const }
   const bots = { ...fixtureCapability('bots'), requiresAnyPlugins: [['claude-code', 'codex']] as const }
   const capabilities = createCapabilityRegistry([issues, bots])
   const modules = createModuleRegistry([
@@ -45,9 +45,9 @@ describe('module routes', () => {
         description: 'Test fixture for issues.',
         requiresPlugins: ['repository'],
         requiresAnyPlugins: [],
-        requiresProjectFacts: ['hasBeads'],
+        requiresWorkspaceFacts: ['hasBeads'],
       }])
-      expect(modules[1]!.capabilities[0]).toMatchObject({ requiresPlugins: [], requiresAnyPlugins: [['claude-code', 'codex']], requiresProjectFacts: [] })
+      expect(modules[1]!.capabilities[0]).toMatchObject({ requiresPlugins: [], requiresAnyPlugins: [['claude-code', 'codex']], requiresWorkspaceFacts: [] })
       expect(modules[2]!.capabilities).toEqual([])
     }
   })

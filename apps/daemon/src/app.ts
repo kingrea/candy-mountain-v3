@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { ACTIVITY_PATH, AUTH_PATH, CAPABILITY_CATALOG_PATH, GRANTS_PATH, HEALTH_PATH, INFO_PATH, MODULES_PATH, ORGANISATIONS_PATH, PLATFORM_SETTINGS_PATH, PLUGIN_TYPES_PATH, PLUGINS_PATH, PROJECTS_PATH, type Actor, type AuthStrategyName, type HealthResponse, type ScopeLabel } from '@candy-mountain/shared'
+import { ACTIVITY_PATH, AUTH_PATH, CAPABILITY_CATALOG_PATH, GRANTS_PATH, HEALTH_PATH, INFO_PATH, MODULES_PATH, ORGANISATIONS_PATH, PLATFORM_SETTINGS_PATH, PLUGIN_TYPES_PATH, PLUGINS_PATH, WORKSPACES_PATH, type Actor, type AuthStrategyName, type HealthResponse, type ScopeLabel } from '@candy-mountain/shared'
 import { activityRoutes, allActivityRoutes } from './activity'
 import { authMiddleware, authRoutes, developmentStrategy, type AuthStrategy } from './auth'
 import { capabilityRoutes, type CapabilityRegistry, type StartedCapabilities } from './capabilities'
@@ -12,9 +12,10 @@ import { notificationRoutes } from './notifications'
 import { createPluginTypeRegistry, type PluginTypeRegistry } from './plugins/registry'
 import { pluginInstanceRoutes, pluginTypeRoutes, type SecretsReader } from './plugins/instances'
 import { productCapabilityRegistry, type Product } from './product'
-import { projectModuleRoutes } from './project-modules'
+import { workspaceModuleRoutes } from './workspace-modules'
 import { registryRoutes } from './registry'
-import { organisationRoutes, projectRoutes } from './projects'
+import { createWorkspaceFactRegistry, declaredWorkspaceFacts, type WorkspaceFactRegistry } from './registry/facts'
+import { organisationRoutes, workspaceRoutes } from './workspaces'
 import { infoRoutes } from './routes/info'
 import { lockedSecretsStore, type SecretsWriter } from './secrets'
 import { platformSettingsRoutes } from './settings'
@@ -33,7 +34,9 @@ export interface AppDeps {
   secretsReader?: SecretsReader
   pluginTypes?: PluginTypeRegistry
   families?: SessionFamilyRegistry
-  /** The started definition list: its routes are mounted, its chat families run in-process, its deletion hooks run before a project row goes, and threads are served when one of its services is the session store. */
+  /** Built from the capability registry's definitions when not passed. */
+  workspaceFacts?: WorkspaceFactRegistry
+  /** The started definition list: its routes are mounted, its chat families run in-process, its deletion hooks run before a workspace row goes, and threads are served when one of its services is the session store. */
   runtime?: Partial<Pick<StartedCapabilities, 'workspaceRoutes' | 'platformRoutes' | 'chatFamilies' | 'onWorkspaceDeleted' | 'service'>>
 }
 
@@ -45,6 +48,8 @@ export interface AppVariables {
   modules: ModuleRegistry
   pluginTypes: PluginTypeRegistry
   families: SessionFamilyRegistry
+  /** The declared workspace facts the registry and gates compute per workspace. */
+  workspaceFacts: WorkspaceFactRegistry
   secrets: SecretsWriter
   /** The product's `scope.urlPrefix`, for links into the web app. */
   scopeUrlPrefix: string
@@ -66,6 +71,7 @@ export function createApp(deps: AppDeps) {
   const modules = deps.modules ?? createModuleRegistry(product.modules, capabilities)
   const pluginTypes = deps.pluginTypes ?? createPluginTypeRegistry([...product.pluginTypes, ...capabilities.definitions().flatMap(d => d.pluginTypes ?? [])])
   const families = deps.families ?? createSessionFamilyRegistry(SESSION_FAMILIES)
+  const workspaceFacts = deps.workspaceFacts ?? createWorkspaceFactRegistry(declaredWorkspaceFacts(capabilities.definitions()))
   const locked = lockedSecretsStore()
   const secrets = deps.secrets ?? locked.writeOnly
   const native = deps.runtime?.chatFamilies ?? {}
@@ -78,6 +84,7 @@ export function createApp(deps: AppDeps) {
     c.set('modules', modules)
     c.set('pluginTypes', pluginTypes)
     c.set('families', families)
+    c.set('workspaceFacts', workspaceFacts)
     c.set('secrets', secrets)
     c.set('scopeUrlPrefix', product.config.scope.urlPrefix)
     c.set('scopeLabel', product.config.scope.label)
@@ -88,15 +95,15 @@ export function createApp(deps: AppDeps) {
   app.get(HEALTH_PATH, c => c.json<HealthResponse>({ status: 'ok' }))
   app.route(INFO_PATH, infoRoutes(product.config))
   app.route(AUTH_PATH, authRoutes(auth))
-  app.route(PROJECTS_PATH, projectRoutes(deps.secretsReader ?? locked, { onWorkspaceDeleted: deps.runtime?.onWorkspaceDeleted }))
-  app.route(PROJECTS_PATH, projectModuleRoutes())
-  app.route(PROJECTS_PATH, registryRoutes())
-  app.route(PROJECTS_PATH, activityRoutes())
+  app.route(WORKSPACES_PATH, workspaceRoutes(deps.secretsReader ?? locked, { onWorkspaceDeleted: deps.runtime?.onWorkspaceDeleted }))
+  app.route(WORKSPACES_PATH, workspaceModuleRoutes())
+  app.route(WORKSPACES_PATH, registryRoutes())
+  app.route(WORKSPACES_PATH, activityRoutes())
   app.route(ACTIVITY_PATH, allActivityRoutes())
-  app.route(PROJECTS_PATH, notificationRoutes())
-  for (const routes of deps.runtime?.workspaceRoutes ?? []) app.route(PROJECTS_PATH, routes)
+  app.route(WORKSPACES_PATH, notificationRoutes())
+  for (const routes of deps.runtime?.workspaceRoutes ?? []) app.route(WORKSPACES_PATH, routes)
   const sessions = deps.runtime?.service?.(THREAD_SESSIONS)
-  if (sessions) app.route(PROJECTS_PATH, threadRoutes(threadServiceFor(deps.db, sessions, { native, bots: deps.runtime?.service?.(THREAD_BOTS), scopeUrlPrefix: product.config.scope.urlPrefix })))
+  if (sessions) app.route(WORKSPACES_PATH, threadRoutes(threadServiceFor(deps.db, sessions, { native, bots: deps.runtime?.service?.(THREAD_BOTS), scopeUrlPrefix: product.config.scope.urlPrefix })))
   app.route(ORGANISATIONS_PATH, organisationRoutes())
   app.route(GRANTS_PATH, grantRoutes())
   app.route(MODULES_PATH, moduleRoutes())

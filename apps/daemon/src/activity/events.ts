@@ -9,7 +9,7 @@ import { activityEventTypesFor, ActivityEventTypeError, type ActivityEventTypeRe
 export const ACTIVITY_PAYLOAD_MAX_BYTES = 4096
 
 export interface AppendActivityEventInput {
-  projectId: string
+  workspaceId: string
   type: ActivityEventType
   title: string
   link?: string
@@ -42,7 +42,7 @@ export function appendActivityEvent(db: Db, input: AppendActivityEventInput): Ac
   }
   const row: Row = {
     id: randomUUID(),
-    projectId: input.projectId,
+    workspaceId: input.workspaceId,
     type: input.type,
     title: input.title,
     occurredAt: new Date().toISOString(),
@@ -81,10 +81,10 @@ export function decodeCursor(cursor: string): { occurredAt: string, rowid: numbe
   return { occurredAt, rowid: id }
 }
 
-export function listActivityEvents(db: Db, projectId: string, options: ListActivityOptions = {}): ActivityListResponse {
+export function listActivityEvents(db: Db, workspaceId: string, options: ListActivityOptions = {}): ActivityListResponse {
   const limit = options.limit ?? ACTIVITY_DEFAULT_LIMIT
   const rowid = sql<number>`${activityEvents}.rowid`
-  const conditions = [eq(activityEvents.projectId, projectId)]
+  const conditions = [eq(activityEvents.workspaceId, workspaceId)]
   if (options.types?.length) conditions.push(inArray(activityEvents.type, options.types))
   if (options.since) conditions.push(gte(activityEvents.occurredAt, options.since))
   if (options.before) {

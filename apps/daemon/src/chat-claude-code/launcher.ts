@@ -11,7 +11,7 @@ export const claudeCodeLauncher: SessionLauncher = {
   launch(row, base, deps) {
     let context
     try {
-      context = claudeCodeLaunchContext(deps, row.projectId)
+      context = claudeCodeLaunchContext(deps, row.workspaceId)
     }
     catch (error) {
       throw new SessionError('family_unavailable', errorMessage(error))

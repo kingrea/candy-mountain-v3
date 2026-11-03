@@ -1,4 +1,4 @@
-import { projectBotsPath, type Bot, type BotListResponse, type BotResponse, type PluginHealth, type Project } from '@candy-mountain/shared'
+import { workspaceBotsPath, type Bot, type BotListResponse, type BotResponse, type PluginHealth, type Workspace } from '@candy-mountain/shared'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fixturePluginType } from '../plugins/fixtures'
 import type { Actor } from '@candy-mountain/shared'
@@ -32,13 +32,13 @@ interface SetupOptions {
   claude?: 'healthy' | 'untested' | 'none'
 }
 
-/** Project `alpha` with a GitHub repository (jack/candy, default `main`), a healthy Claude Code plugin and an unhealthy Codex one. */
-async function setup({ repository = true, repositoryToken = GOOD_TOKEN, claude = 'healthy' }: SetupOptions = {}): Promise<Project> {
+/** Workspace `alpha` with a GitHub repository (jack/candy, default `main`), a healthy Claude Code plugin and an unhealthy Codex one. */
+async function setup({ repository = true, repositoryToken = GOOD_TOKEN, claude = 'healthy' }: SetupOptions = {}): Promise<Workspace> {
   h = instanceHarness([repositoryPluginType, fixturePluginType('claude-code'), fixturePluginType('codex', () => unhealthy)])
   const hosts = stubHosts()
-  const project = await h.createProject('alpha')
+  const project = await h.createWorkspace('alpha')
   const add = (type: string, config: Record<string, unknown>, secrets: Record<string, string>) =>
-    createPluginInstance(h.deps, { type, scope: 'project', projectId: project.id, config, secrets })
+    createPluginInstance(h.deps, { type, scope: 'workspace', workspaceId: project.id, config, secrets })
   if (repository) add('repository', { host: 'github', owner: 'jack', repo: 'candy' }, { token: repositoryToken })
   if (claude !== 'none') {
     const instance = add('claude-code', { account: 'jack' }, { token: 't' })
@@ -55,7 +55,7 @@ function call(method: string, path: string, body?: unknown, roles?: string[]) {
     init.headers = { 'content-type': 'application/json' }
     init.body = typeof body === 'string' ? body : JSON.stringify(body)
   }
-  return app(roles).request(`${projectBotsPath('alpha')}${path}`, init)
+  return app(roles).request(`${workspaceBotsPath('alpha')}${path}`, init)
 }
 
 async function created(body: unknown): Promise<Bot> {
@@ -106,7 +106,7 @@ describe('bot routes', () => {
   it('rejects a family with no plugin and a project without a configured Repository plugin', async () => {
     const project = await setup({ repository: false, claude: 'none' })
     expect(await errorOf(await call('POST', '', { name: 'Bob', family: 'claude-code' }))).toEqual({ status: 422, code: 'repository_not_configured' })
-    createPluginInstance(h.deps, { type: 'repository', scope: 'project', projectId: project.id, config: { host: 'github', owner: 'jack', repo: 'candy' }, secrets: { token: GOOD_TOKEN } })
+    createPluginInstance(h.deps, { type: 'repository', scope: 'workspace', workspaceId: project.id, config: { host: 'github', owner: 'jack', repo: 'candy' }, secrets: { token: GOOD_TOKEN } })
     expect(await errorOf(await call('POST', '', { name: 'Bob', family: 'claude-code' }))).toEqual({ status: 422, code: 'family_unavailable' })
   })
 
@@ -207,7 +207,7 @@ describe('bot routes', () => {
     }
     expect((await (await call('GET', '')).json() as BotListResponse).bots.map(b => b.name)).toEqual(['Ana'])
     expect(await errorOf(await call('GET', '/nope'))).toEqual({ status: 404, code: 'not_found' })
-    expect(await errorOf(await app().request('/projects/ghost/bots'))).toEqual({ status: 404, code: 'not_found' })
+    expect(await errorOf(await app().request('/workspaces/ghost/bots'))).toEqual({ status: 404, code: 'not_found' })
   })
 
   it('refuses Slack keys while the secrets store is locked', async () => {
@@ -217,7 +217,7 @@ describe('bot routes', () => {
     const admin: Actor = { id: 'u1', username: 'jack', displayName: 'Jack', roles: ['admin'] }
     const app = createTestApp({ db: h.database.db, paths: {} as DataPaths, auth: { name: 'development', resolve: () => admin }, pluginTypes: h.deps.pluginTypes, secrets: locked.writeOnly, secretsReader: locked, runtime: botsRoutes({ db: h.database.db, secrets: locked }) })
     const request = (method: string, path: string, body: unknown) =>
-      app.request(`${projectBotsPath('alpha')}${path}`, { method, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+      app.request(`${workspaceBotsPath('alpha')}${path}`, { method, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
 
     expect(await errorOf(await request('POST', '', { name: 'Bob', family: 'claude-code', secrets: { slackAppToken: APP_TOKEN } }))).toEqual({ status: 409, code: 'secrets_locked' })
     expect(await errorOf(await request('PATCH', `/${bot.id}`, { name: 'Renamed', secrets: { slackAppToken: APP_TOKEN } }))).toEqual({ status: 409, code: 'secrets_locked' })
@@ -237,7 +237,7 @@ describe('bot routes', () => {
     expect((await call('GET', `/${one.id}`)).status).toBe(404)
     expect((await call('DELETE', `/${one.id}`)).status).toBe(404)
 
-    expect((await app().request('/projects/alpha', { method: 'DELETE' })).status).toBe(204)
+    expect((await app().request('/workspaces/alpha', { method: 'DELETE' })).status).toBe(204)
     expect(h.store.isSet(botSecretOwner(two.id), 'slackAppToken')).toBe(false)
     expect(await listBots(h.deps)).toEqual([])
   })
@@ -245,9 +245,9 @@ describe('bot routes', () => {
   it('hides bots from other projects and from non-admins', async () => {
     await setup()
     const bot = await created({ name: 'Ana', family: 'claude-code' })
-    await h.createProject('beta')
-    expect((await app().request(`${projectBotsPath('beta')}/${bot.id}`)).status).toBe(404)
-    expect((await app().request(`${projectBotsPath('beta')}/${bot.id}`, { method: 'DELETE' })).status).toBe(404)
+    await h.createWorkspace('beta')
+    expect((await app().request(`${workspaceBotsPath('beta')}/${bot.id}`)).status).toBe(404)
+    expect((await app().request(`${workspaceBotsPath('beta')}/${bot.id}`, { method: 'DELETE' })).status).toBe(404)
     expect(await errorOf(await call('GET', '', undefined, ['member']))).toEqual({ status: 403, code: 'forbidden' })
     expect(await errorOf(await call('POST', '', { name: 'X', family: 'claude-code' }, ['member']))).toEqual({ status: 403, code: 'forbidden' })
   })

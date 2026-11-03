@@ -1,7 +1,7 @@
 export const MONITOR_SOURCES_PATH = '/monitor-sources'
 export const UPTIME_MANAGE_TOOL = 'uptime.manage'
-export const projectMonitorsPath = (slug: string) => `/projects/${slug}/monitors`
-export const projectMonitorPath = (slug: string, id: string) => `${projectMonitorsPath(slug)}/${id}`
+export const workspaceMonitorsPath = (slug: string) => `/workspaces/${slug}/monitors`
+export const workspaceMonitorPath = (slug: string, id: string) => `${workspaceMonitorsPath(slug)}/${id}`
 
 export const MONITOR_INTERVAL_MIN_SECONDS = 30
 export const MONITOR_INTERVAL_MAX_SECONDS = 86_400
@@ -152,11 +152,11 @@ export interface MonitorSourceListResponse {
 export const MONITOR_ERROR_CODES = ['invalid_request', 'not_found', 'unknown_source', 'invalid_options'] as const
 export type MonitorErrorCode = (typeof MONITOR_ERROR_CODES)[number]
 
-export const projectMonitorStatusPath = (slug: string, id: string) => `${projectMonitorPath(slug, id)}/status`
-export const projectMonitorChecksPath = (slug: string, id: string) => `${projectMonitorPath(slug, id)}/checks`
-export const projectMonitorIncidentsPath = (slug: string, id: string) => `${projectMonitorPath(slug, id)}/incidents`
-export const projectUptimeStatusPath = (slug: string) => `/projects/${slug}/uptime/status`
-export const projectUptimeIncidentsPath = (slug: string) => `/projects/${slug}/uptime/incidents`
+export const workspaceMonitorStatusPath = (slug: string, id: string) => `${workspaceMonitorPath(slug, id)}/status`
+export const workspaceMonitorChecksPath = (slug: string, id: string) => `${workspaceMonitorPath(slug, id)}/checks`
+export const workspaceMonitorIncidentsPath = (slug: string, id: string) => `${workspaceMonitorPath(slug, id)}/incidents`
+export const workspaceUptimeStatusPath = (slug: string) => `/workspaces/${slug}/uptime/status`
+export const workspaceUptimeIncidentsPath = (slug: string) => `/workspaces/${slug}/uptime/incidents`
 
 /** In-app link to a monitor on the Uptime page; the page opens that monitor's drawer from `?monitor=`. */
 export const uptimeMonitorLink = (prefix: string, slug: string, monitorId: string) => `/${prefix}/${slug}/uptime?monitor=${encodeURIComponent(monitorId)}`

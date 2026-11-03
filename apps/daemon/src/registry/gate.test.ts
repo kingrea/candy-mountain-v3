@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { CANDY_MOUNTAIN_PRODUCT, type Actor, type ModuleDefinition, type Project } from '@candy-mountain/shared'
+import { CANDY_MOUNTAIN_PRODUCT, type Actor, type ModuleDefinition, type Workspace } from '@candy-mountain/shared'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createTestApp } from '../testing/platform'
 import type { AuthStrategy } from '../auth'
@@ -13,11 +13,12 @@ import { addRole } from '../grants/test-access'
 import { createModuleRegistry } from '../modules'
 import { createPluginTypeRegistry } from '../plugins'
 import { lockedSecretsStore } from '../secrets'
-import { createProject } from '../projects/projects'
-import { setEnabledModules } from '../project-modules/enablement'
+import { setEnabledModules } from '../workspace-modules/enablement'
 import { openTestDatabase } from '../testing'
 import { checkChat, checkTool, checkView, gateChat, gateTool, gateView, requireCapability, type CapabilityAccess } from './gate'
+import { createWorkspaceFactRegistry } from './facts'
 import type { RegistryDeps } from './load'
+import { createWorkspaceWithRepository } from '../repository/test-support'
 
 /** 'full' adds a tool and chat that 'read' lacks, and widens the search scope. */
 const issues = defineCapability({
@@ -28,7 +29,7 @@ const issues = defineCapability({
   agents: [{ id: 'issues-agent', label: 'Agent', description: 'Agent.' }],
   jobs: [],
   requiresPlugins: [],
-  tools: [{ id: 'issues.read', kind: 'tool' }, { id: 'issues.write', kind: 'tool' }, { id: 'issues.search', kind: 'operation', scope: { dimension: 'project', levels: ['own', 'all'] } }],
+  tools: [{ id: 'issues.read', kind: 'tool' }, { id: 'issues.write', kind: 'tool' }, { id: 'issues.search', kind: 'operation', scope: { dimension: 'workspace', levels: ['own', 'all'] } }],
   ladder: [
     { name: 'none', label: 'None', description: 'Nothing.', views: [], chat: false, tools: {} },
     { name: 'read', label: 'Read', description: 'Look.', views: ['issues-home'], chat: false, tools: { 'issues.read': {}, 'issues.search': { scope: 'own' } } },
@@ -43,7 +44,7 @@ const MODULES: readonly ModuleDefinition[] = [
 ]
 
 function access(overrides: Partial<CapabilityAccess> = {}): CapabilityAccess {
-  return { capabilityId: 'issues', projectSlug: 'alpha', scopeLabel: CANDY_MOUNTAIN_PRODUCT.scope.label, admin: false, capability: issues, enabled: true, rung: issues.ladder[1], reasons: [], ...overrides }
+  return { capabilityId: 'issues', workspaceSlug: 'alpha', scopeLabel: CANDY_MOUNTAIN_PRODUCT.scope.label, admin: false, capability: issues, enabled: true, rung: issues.ladder[1], reasons: [], ...overrides }
 }
 
 describe('gate checks', () => {
@@ -85,7 +86,7 @@ describe('gate helpers over the database', () => {
   let database: PlatformDatabase
   let root: string
   let deps: RegistryDeps
-  let project: Project
+  let workspace: Workspace
   const developer: Actor = { id: 'u2', username: 'dev', displayName: 'Dev', roles: ['developer'] }
   const admin: Actor = { id: 'u1', username: 'admin', displayName: 'Admin', roles: ['admin'] }
 
@@ -93,11 +94,11 @@ describe('gate helpers over the database', () => {
     database = openTestDatabase()
     root = mkdtempSync(join(tmpdir(), 'candy-mountain-gate-'))
     const capabilities = createCapabilityRegistry([issues])
-    deps = { db: database.db, capabilities, modules: createModuleRegistry(MODULES, capabilities), pluginTypes: createPluginTypeRegistry([]), secrets: lockedSecretsStore().writeOnly, scopeLabel: CANDY_MOUNTAIN_PRODUCT.scope.label }
+    deps = { db: database.db, capabilities, modules: createModuleRegistry(MODULES, capabilities), pluginTypes: createPluginTypeRegistry([]), secrets: lockedSecretsStore().writeOnly, scopeLabel: CANDY_MOUNTAIN_PRODUCT.scope.label, workspaceFacts: createWorkspaceFactRegistry([]) }
     addRole(database.db, 'developer')
     setGrant(deps, { role: 'developer', target: { kind: 'capability', id: 'issues' }, rungs: { issues: 'read' } })
-    project = await createProject(database.db, { name: 'Alpha', slug: 'alpha', source: { kind: 'local-path', path: root } })
-    setEnabledModules(database.db, project.id, ['issues'])
+    workspace = await createWorkspaceWithRepository(database.db, { name: 'Alpha', slug: 'alpha', path: root })
+    setEnabledModules(database.db, workspace.id, ['issues'])
   })
   afterEach(() => {
     database.close()
@@ -105,31 +106,31 @@ describe('gate helpers over the database', () => {
   })
 
   it('resolves the actor rung, enablement and readiness', () => {
-    expect(gateTool(deps, developer, project, 'issues', 'issues.write')).toMatchObject({ allowed: false, code: 'not_granted' })
-    expect(gateTool(deps, developer, project, 'issues', 'issues.search')).toEqual({ allowed: true, rung: 'read', scope: 'own' })
-    expect(gateTool(deps, admin, project, 'issues', 'issues.write')).toEqual({ allowed: true, rung: 'full' })
-    expect(gateView(deps, developer, project, 'issues', 'issues-admin')).toMatchObject({ code: 'not_granted' })
-    expect(gateChat(deps, developer, project, 'issues')).toMatchObject({ code: 'not_granted' })
-    expect(gateChat(deps, admin, project, 'issues')).toEqual({ allowed: true, rung: 'full' })
-    expect(gateView(deps, admin, project, 'uptime', 'uptime-home')).toMatchObject({ code: 'capability_unknown' })
-    setEnabledModules(database.db, project.id, [])
-    expect(gateView(deps, admin, project, 'issues', 'issues-home')).toMatchObject({ code: 'not_enabled', status: 404 })
+    expect(gateTool(deps, developer, workspace, 'issues', 'issues.write')).toMatchObject({ allowed: false, code: 'not_granted' })
+    expect(gateTool(deps, developer, workspace, 'issues', 'issues.search')).toEqual({ allowed: true, rung: 'read', scope: 'own' })
+    expect(gateTool(deps, admin, workspace, 'issues', 'issues.write')).toEqual({ allowed: true, rung: 'full' })
+    expect(gateView(deps, developer, workspace, 'issues', 'issues-admin')).toMatchObject({ code: 'not_granted' })
+    expect(gateChat(deps, developer, workspace, 'issues')).toMatchObject({ code: 'not_granted' })
+    expect(gateChat(deps, admin, workspace, 'issues')).toEqual({ allowed: true, rung: 'full' })
+    expect(gateView(deps, admin, workspace, 'uptime', 'uptime-home')).toMatchObject({ code: 'capability_unknown' })
+    setEnabledModules(database.db, workspace.id, [])
+    expect(gateView(deps, admin, workspace, 'issues', 'issues-home')).toMatchObject({ code: 'not_enabled', status: 404 })
   })
 
   it('refuses from middleware with the error body and status', async () => {
     const as = (actor: Actor): AuthStrategy => ({ name: 'development', resolve: () => actor })
     const build = (actor: Actor) => {
       const app = createTestApp({ db: database.db, paths: dataPaths(root), auth: as(actor), capabilities: deps.capabilities, modules: deps.modules, pluginTypes: deps.pluginTypes })
-      app.get('/projects/:slug/write', requireCapability({ capability: 'issues', tool: 'issues.write' }), c => c.json({ ok: true }))
-      app.get('/projects/:slug/home', requireCapability({ capability: 'issues', view: 'issues-home' }), c => c.json({ ok: true }))
+      app.get('/workspaces/:slug/write', requireCapability({ capability: 'issues', tool: 'issues.write' }), c => c.json({ ok: true }))
+      app.get('/workspaces/:slug/home', requireCapability({ capability: 'issues', view: 'issues-home' }), c => c.json({ ok: true }))
       return app
     }
-    const refused = await build(developer).request('/projects/alpha/write')
+    const refused = await build(developer).request('/workspaces/alpha/write')
     expect(refused.status).toBe(403)
     expect(await refused.json()).toEqual({ error: { code: 'not_granted', message: 'Rung \'read\' of \'issues\' does not grant tool \'issues.write\'.' } })
-    expect((await build(developer).request('/projects/alpha/home')).status).toBe(200)
-    expect((await build(admin).request('/projects/alpha/write')).status).toBe(200)
-    const missing = await build(admin).request('/projects/ghost/write')
+    expect((await build(developer).request('/workspaces/alpha/home')).status).toBe(200)
+    expect((await build(admin).request('/workspaces/alpha/write')).status).toBe(200)
+    const missing = await build(admin).request('/workspaces/ghost/write')
     expect(missing.status).toBe(404)
     expect(await missing.json()).toEqual({ error: { code: 'not_found', message: 'No project with slug "ghost"' } })
   })

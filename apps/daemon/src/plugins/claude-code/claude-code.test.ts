@@ -6,7 +6,7 @@ import {
   CLAUDE_CODE_ACTIONS,
   CLAUDE_CODE_LOGIN_ATTEMPT_TTL_MS,
   PLUGINS_PATH,
-  PROJECTS_PATH,
+  WORKSPACES_PATH,
   type ClaudeCodeRevokeResponse,
   type ClaudeCodeStartLoginResponse,
   type ClaudeCodeSubmitCodeResponse,
@@ -85,8 +85,8 @@ function call(method: string, path: string, body?: unknown) {
 }
 
 async function instanceFor(project: string, body: Record<string, unknown> = {}): Promise<PluginInstance> {
-  await h.createProject(project)
-  const res = await call('POST', '', { type: 'claude-code', scope: 'project', project, ...body })
+  await h.createWorkspace(project)
+  const res = await call('POST', '', { type: 'claude-code', scope: 'workspace', workspace: project, ...body })
   expect(res.status, await res.clone().text()).toBe(201)
   return (await res.json() as PluginInstanceResponse).instance
 }
@@ -273,7 +273,7 @@ describe('deleting a claude-code instance', () => {
     await submitCode(instance, (await startLogin(instance)).attemptId, GOOD_CODE)
     const kept = await instanceFor('beta')
     await startLogin(kept)
-    expect((await h.app().request(`${PROJECTS_PATH}/alpha`, { method: 'DELETE' })).status).toBe(204)
+    expect((await h.app().request(`${WORKSPACES_PATH}/alpha`, { method: 'DELETE' })).status).toBe(204)
     expect(existsSync(configDirOf(instance))).toBe(false)
     expect(existsSync(configDirOf(kept))).toBe(true)
   })
@@ -336,19 +336,19 @@ describe('claudeCodeLaunchContext', () => {
     h = instanceHarness([claudeCodePluginType])
     const paths = dataPaths(root())
     const deps = { ...h.deps, paths }
-    const alpha = await h.createProject('alpha')
+    const alpha = await h.createWorkspace('alpha')
     expect(claudeCodeLaunchContext(deps, alpha.id)).toBeNull()
 
     const beta = await instanceFor('beta')
-    const loginContext = claudeCodeLaunchContext(deps, beta.projectId!)
+    const loginContext = claudeCodeLaunchContext(deps, beta.workspaceId!)
     expect(loginContext).toMatchObject({ configDir: claudeConfigDir(paths, beta.id), command: undefined, env: {} })
     expect(statSync(loginContext!.configDir).mode & 0o777).toBe(0o700)
     expect(existsSync(join(loginContext!.configDir, 'fake-env.json'))).toBe(false)
 
     const token = await instanceFor('gamma', { config: { authMode: 'token', claudePath: '/opt/claude' }, secrets: { oauthToken: 'tok-secret-123' } })
-    expect(claudeCodeLaunchContext(deps, token.projectId!)).toMatchObject({ command: '/opt/claude', env: { CLAUDE_CODE_OAUTH_TOKEN: 'tok-secret-123' } })
+    expect(claudeCodeLaunchContext(deps, token.workspaceId!)).toMatchObject({ command: '/opt/claude', env: { CLAUDE_CODE_OAUTH_TOKEN: 'tok-secret-123' } })
 
     const bare = await instanceFor('delta', { config: { authMode: 'token' } })
-    expect(() => claudeCodeLaunchContext(deps, bare.projectId!)).toThrow(ClaudeCodeLaunchError)
+    expect(() => claudeCodeLaunchContext(deps, bare.workspaceId!)).toThrow(ClaudeCodeLaunchError)
   })
 })

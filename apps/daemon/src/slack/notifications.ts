@@ -1,7 +1,7 @@
 import { eq, sql } from 'drizzle-orm'
 import { botSecretOwner } from '../bots/bots'
 import type { NotificationChannel } from '../capabilities/definition'
-import { bots } from '../db/schema'
+import { bots } from '../bots/schema'
 import { resolvePluginInstance, type PluginInstanceDeps, type SecretsReader } from '../plugins/instances/instances'
 import { createPluginSecrets } from '../plugins/secrets'
 import { createSlackOperations, slackConfig, slackPluginType, type SlackOperations } from '../plugins/slack'
@@ -10,6 +10,8 @@ import type { SlackConnections } from './manager'
 export interface SlackNotificationChannelDeps extends PluginInstanceDeps {
   secretsReader: SecretsReader
   slack: Pick<SlackConnections, 'web'>
+  /** False when the product boots no bots capability, whose table then does not exist; only the platform Slack plugin can post. */
+  botsBooted?: boolean
 }
 
 export interface SlackNotificationChannelOptions {
@@ -23,7 +25,7 @@ const escapeMrkdwn = (text: string) => text.replace(/&/g, '&amp;').replace(/</g,
 /** Posts as the project's first bot with a Slack bot token (by name), else as the platform Slack plugin; declines when there is neither. */
 export function slackNotificationChannel(deps: SlackNotificationChannelDeps, { fetch }: SlackNotificationChannelOptions = {}): NotificationChannel {
   function resolveSender(projectId: string, signal: AbortSignal): SlackOperations | null {
-    const rows = deps.db.select({ id: bots.id }).from(bots).where(eq(bots.projectId, projectId)).orderBy(sql`lower(${bots.name})`, bots.createdAt).all()
+    const rows = deps.botsBooted === false ? [] : deps.db.select({ id: bots.id }).from(bots).where(eq(bots.projectId, projectId)).orderBy(sql`lower(${bots.name})`, bots.createdAt).all()
     for (const { id } of rows) {
       if (!deps.secrets.isSet(botSecretOwner(id), 'slackBotToken')) continue
       const web = deps.slack.web(id, { fetch, signal })

@@ -10,7 +10,9 @@ const config = loadConfig()
 const product = candyMountainProduct({ chatClaudeCode: { sessions: config.sessions, decisions: config.decisions }, bots: { worktrees: config.worktrees }, uptime: config.uptime })
 const platform = startPlatform(config.dataDir, { secretsKey: config.secretsKey, product, notifications: config.notifications })
 const { name } = product.config
-console.log(`${name} data directory ${platform.paths.root} (${platform.appliedMigrations} migration(s) applied)`)
+console.log(`${name} data directory ${platform.paths.root}`)
+if (platform.legacyCarryOver) console.log(`Database carried across from the numbered history in ${platform.legacyCarryOver.from} (${platform.legacyCarryOver.caughtUp} legacy migration(s) applied first) onto the per-set histories`)
+console.log(`${platform.migrationSets.length} migration set(s) applied: ${platform.migrationSets.map(set => `${set.id} (${set.applied} migration(s))`).join(', ')}`)
 if (!platform.secrets.unlocked) {
   console.warn(`${SECRETS_KEY_ENV} is not set: secrets are locked and cannot be saved or used until it is`)
 }
@@ -26,7 +28,7 @@ registered('capability(ies)', product.capabilities.map(c => c.id))
 registered('module(s)', platform.modules.list().map(m => m.id))
 registered('plugin type(s)', platform.pluginTypes.list().map(t => t.id))
 registered('session family(ies)', platform.families.list().map(f => f.id))
-const app = createApp({ db: platform.db, paths: platform.paths, auth, product, capabilities: platform.capabilities, modules: platform.modules, secrets: platform.secrets.writeOnly, secretsReader: platform.secrets, pluginTypes: platform.pluginTypes, families: platform.families, runtime: platform.runtime })
+const app = createApp({ db: platform.db, paths: platform.paths, auth, product, capabilities: platform.capabilities, modules: platform.modules, secrets: platform.secrets.writeOnly, secretsReader: platform.secrets, pluginTypes: platform.pluginTypes, families: platform.families, workspaceFacts: platform.workspaceFacts, runtime: platform.runtime })
 
 const server = serve({ fetch: app.fetch, hostname: config.host, port: config.port }, (info) => {
   console.log(`${name} daemon listening on http://${info.address}:${info.port}`)

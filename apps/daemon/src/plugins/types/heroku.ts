@@ -9,7 +9,7 @@ export const herokuPluginType = definePluginType({
   reach: [
     'Read the app and its releases to show what is live.',
   ],
-  scopes: ['project'],
+  scopes: ['workspace'],
   singleInstance: true,
   configFields: [
     { kind: 'string', name: 'appName', label: 'App name', description: 'The app\'s name as shown in the Heroku dashboard.', required: true, placeholder: 'my-app', pattern: '[a-z][a-z0-9-]*[a-z0-9]' },

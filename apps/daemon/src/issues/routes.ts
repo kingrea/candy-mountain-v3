@@ -9,15 +9,24 @@ import {
 } from '@candy-mountain/shared'
 import { Hono, type Context } from 'hono'
 import type { AppEnv } from '../app'
-import { getProjectBySlug, ProjectError } from '../projects'
+import type { Db } from '../db'
+import { getWorkspaceBySlug, WorkspaceError } from '../workspaces'
+import { RepositoryError } from '../repository/errors'
+import type { RepositoryPaths } from '../repository/service'
 import { IssueError } from './errors'
-import { issuesService, type IssuesService } from './service'
+import { issuesService, type IssueProject, type IssuesService } from './service'
 
 export function onIssueError(error: Error, c: Context) {
-  if (error instanceof IssueError || error instanceof ProjectError) {
+  if (error instanceof IssueError || error instanceof WorkspaceError || error instanceof RepositoryError) {
     return c.json<ApiErrorBody>({ error: { code: error.code, message: error.message } }, error.status)
   }
   throw error
+}
+
+/** The workspace and its checkout; a workspace without a repository is a not_found RepositoryError. */
+export function issueProject(db: Db, repository: RepositoryPaths, slug: string): IssueProject {
+  const project = getWorkspaceBySlug(db, slug)
+  return { id: project.id, path: repository.get(project.id) }
 }
 
 function issueId(raw: string): string {
@@ -33,12 +42,12 @@ function dependencyIds(c: Context): string[] {
   return ids.map(issueId)
 }
 
-/** Mounted at PROJECTS_PATH; every route is scoped to `/:slug/issues`. */
-export function issueRoutes(service: IssuesService = issuesService) {
+/** Mounted at WORKSPACES_PATH; every route is scoped to `/:slug/issues`. */
+export function issueRoutes(repository: RepositoryPaths, service: IssuesService = issuesService) {
   const app = new Hono<AppEnv>()
   app.onError(onIssueError)
 
-  const project = (c: Context<AppEnv>) => getProjectBySlug(c.var.db, c.req.param('slug') ?? '')
+  const project = (c: Context<AppEnv>) => issueProject(c.var.db, repository, c.req.param('slug') ?? '')
 
   app.get('/:slug/issues', async c =>
     c.json<IssueListResponse>({ issues: await service.list(project(c)) }),

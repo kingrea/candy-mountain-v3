@@ -6,8 +6,8 @@ import {
 import { and, desc, eq, isNotNull, isNull, type SQL } from 'drizzle-orm'
 import { appendActivityEvent } from '../activity'
 import type { Db } from '../db'
-import { uptimeIncidents } from '../db/schema'
-import { findProjectById } from '../projects/projects'
+import { uptimeIncidents } from './schema'
+import { findWorkspaceById } from '../workspaces/workspaces'
 
 export interface ListIncidentsOptions {
   status?: IncidentStatusFilter
@@ -39,7 +39,7 @@ export function listIncidents(db: Db, projectId: string, { status, limit = INCID
 }
 
 function monitorLink(db: Db, monitor: Monitor, scopeUrlPrefix: string): string | undefined {
-  const project = findProjectById(db, monitor.projectId)
+  const project = findWorkspaceById(db, monitor.projectId)
   return project ? uptimeMonitorLink(scopeUrlPrefix, project.slug, monitor.id) : undefined
 }
 
@@ -51,7 +51,7 @@ export function openIncident(db: Db, monitor: Monitor, { reason, openedAt }: Ope
   if (!inserted) return { incident: findOpenIncident(db, monitor.id)!, created: false }
   const incident = toIncident(inserted)
   appendActivityEvent(db, {
-    projectId: monitor.projectId,
+    workspaceId: monitor.projectId,
     type: 'incident.opened',
     title: `${monitor.name} is down: ${reason}`,
     link: monitorLink(db, monitor, scopeUrlPrefix),
@@ -67,7 +67,7 @@ export function closeIncident(db: Db, monitor: Monitor, incidentId: string, clos
   if (!updated) return null
   const incident = toIncident(updated)
   appendActivityEvent(db, {
-    projectId: monitor.projectId,
+    workspaceId: monitor.projectId,
     type: 'incident.closed',
     title: `${monitor.name} is back up`,
     link: monitorLink(db, monitor, scopeUrlPrefix),

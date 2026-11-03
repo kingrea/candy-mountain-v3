@@ -10,7 +10,7 @@ export const netlifyPluginType = definePluginType({
     'Read the site and its deploys.',
     'Show which commit and branch are live in production.',
   ],
-  scopes: ['project'],
+  scopes: ['workspace'],
   singleInstance: true,
   configFields: [
     { kind: 'string', name: 'siteId', label: 'Site ID', description: 'The site\'s ID from Site configuration, or its netlify.app domain.', required: true, placeholder: '3970e0fe-8564-4903-9a55-c5f8de49fb8b', pattern: '[A-Za-z0-9][A-Za-z0-9.-]*' },

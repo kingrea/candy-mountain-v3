@@ -9,7 +9,7 @@ export const issuesCapability = defineCapability({
   agents: [],
   jobs: [],
   requiresPlugins: [],
-  requiresProjectFacts: ['hasBeads'],
+  requiresWorkspaceFacts: ['hasBeads'],
   tools: [
     { id: 'issues.write', kind: 'operation' },
     { id: 'issues.comment', kind: 'operation' },

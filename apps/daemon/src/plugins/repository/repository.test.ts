@@ -27,7 +27,7 @@ describe('repository plugin type', () => {
     expect(PLUGIN_TYPES).toContain(repositoryPluginType)
     expect(createPluginTypeRegistry(PLUGIN_TYPES).get('repository')).toBe(repositoryPluginType)
     const info = pluginTypeInfo(repositoryPluginType)
-    expect(info.scopes).toEqual(['project'])
+    expect(info.scopes).toEqual(['workspace'])
     expect(info.singleInstance).toBe(true)
     expect(info.configFields.map(f => f.name)).toEqual(['host', 'owner', 'repo', 'defaultBranch'])
     expect(info.secretFields).toEqual([expect.objectContaining({ name: 'token', required: true })])

@@ -150,9 +150,9 @@ describe('surfaceInstructionsForBot', () => {
 
   async function project(repository: boolean) {
     h = instanceHarness([repositoryPluginType])
-    const p = await h.createProject('alpha')
+    const p = await h.createWorkspace('alpha')
     if (repository) {
-      createPluginInstance(h.deps, { type: 'repository', scope: 'project', projectId: p.id, config: { host: 'bitbucket', owner: 'team', repo: 'shop' }, secrets: { token: 't' } })
+      createPluginInstance(h.deps, { type: 'repository', scope: 'workspace', workspaceId: p.id, config: { host: 'bitbucket', owner: 'team', repo: 'shop' }, secrets: { token: 't' } })
     }
     return p
   }

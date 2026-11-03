@@ -1,8 +1,7 @@
 import {
+  FACT_ID_PATTERN,
   MANIFEST_ID_PATTERN,
   NONE_RUNG,
-  PLATFORM_FACT_IDS,
-  PROJECT_FACT_IDS,
   TOOL_KINDS,
   VIEW_PATH_PATTERN,
   type AgentManifest,
@@ -12,12 +11,13 @@ import {
   type JobManifest,
   type PlatformFactId,
   type PluginTypeId,
-  type ProjectFactId,
+  type WorkspaceFactId,
   type Rung,
   type ToolManifest,
   type ToolPermission,
   type ViewManifest,
 } from '@candy-mountain/shared'
+import { PLATFORM_FACT_IDS } from '../registry/readiness'
 
 /** Thrown while defining or registering capabilities, so a bad manifest stops the daemon at boot. */
 export class CapabilityManifestError extends Error {
@@ -33,11 +33,11 @@ export function defineCapability<const V extends string, const T extends string,
   description: string
   views: readonly ViewManifest<V>[]
   agents: readonly AgentManifest[]
-  projectAgents?: boolean
+  workspaceAgents?: boolean
   jobs: readonly JobManifest[]
   requiresPlugins: readonly string[]
   requiresAnyPlugins?: readonly (readonly PluginTypeId[])[]
-  requiresProjectFacts?: readonly ProjectFactId[]
+  requiresWorkspaceFacts?: readonly WorkspaceFactId[]
   requiresPlatformFacts?: readonly PlatformFactId[]
   tools: readonly ToolManifest<T>[]
   ladder: readonly [Rung<NoInfer<V>, NoInfer<T>, typeof NONE_RUNG>, ...Rung<NoInfer<V>, NoInfer<T>, R>[]]
@@ -93,10 +93,11 @@ export function assertCapability(cap: AnyCapabilityManifest): void {
     if (required.length) fail(`plugin type(s) ${quoted(required)} are both required and in an any-of group.`)
   }
 
-  const facts = cap.requiresProjectFacts ?? []
-  const badFacts = facts.filter(fact => !(PROJECT_FACT_IDS as readonly string[]).includes(fact))
-  if (badFacts.length) fail(`requires unknown project fact(s) ${quoted(badFacts)}; facts are ${quoted(PROJECT_FACT_IDS)}.`)
-  if (duplicates(facts).length) fail(`repeats required project fact(s) ${quoted(duplicates(facts))}.`)
+  // Whether a definition declares the fact is checked at boot, over the whole list, like plugin types.
+  const facts = cap.requiresWorkspaceFacts ?? []
+  const badFacts = facts.filter(fact => typeof fact !== 'string' || !FACT_ID_PATTERN.test(fact))
+  if (badFacts.length) fail(`requires invalid workspace fact id(s) ${quoted(badFacts.map(String))}; fact ids are camelCase words such as 'hasBeads'.`)
+  if (duplicates(facts).length) fail(`repeats required workspace fact(s) ${quoted(duplicates(facts))}.`)
   const platformFacts = cap.requiresPlatformFacts ?? []
   const badPlatformFacts = platformFacts.filter(fact => !(PLATFORM_FACT_IDS as readonly string[]).includes(fact))
   if (badPlatformFacts.length) fail(`requires unknown platform fact(s) ${quoted(badPlatformFacts)}; facts are ${quoted(PLATFORM_FACT_IDS)}.`)
@@ -105,7 +106,7 @@ export function assertCapability(cap: AnyCapabilityManifest): void {
   for (const view of cap.views) {
     if (isBlank(view.label) || isBlank(view.icon)) fail(`view '${view.id}' needs a label and an icon.`)
     if (typeof view.path !== 'string' || !VIEW_PATH_PATTERN.test(view.path)) {
-      fail(`view '${view.id}' has invalid path '${String(view.path)}'; use lowercase segments relative to the project, without leading or trailing '/'.`)
+      fail(`view '${view.id}' has invalid path '${String(view.path)}'; use lowercase segments relative to the workspace, without leading or trailing '/'.`)
     }
   }
   const dupPaths = duplicates(cap.views.map(v => v.path))
@@ -135,7 +136,7 @@ export function assertCapability(cap: AnyCapabilityManifest): void {
     const at = `rung '${rung.name}'`
     if (isBlank(rung.label) || isBlank(rung.description)) fail(`${at} needs a label and a description.`)
     for (const v of rung.views) if (!viewIds.has(v)) fail(`${at} shows unknown view '${v}'.`)
-    if (rung.chat && !cap.agents.length && !cap.projectAgents) fail(`${at} allows chat but the capability has no agents.`)
+    if (rung.chat && !cap.agents.length && !cap.workspaceAgents) fail(`${at} allows chat but the capability has no agents.`)
     for (const [id, perm] of Object.entries(rung.tools) as [string, ToolPermission | undefined][]) {
       const tool = toolsById.get(id)
       if (!tool) return fail(`${at} grants unknown tool '${id}'.`)

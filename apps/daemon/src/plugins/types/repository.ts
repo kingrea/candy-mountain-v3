@@ -31,7 +31,7 @@ export const repositoryPluginType = definePluginType({
     'Read the repository and list its branches.',
     'Check whether files exist on a branch.',
   ],
-  scopes: ['project'],
+  scopes: ['workspace'],
   singleInstance: true,
   configFields: [
     { kind: 'select', name: 'host', label: 'Host', options: [{ value: 'github', label: 'GitHub' }, { value: 'bitbucket', label: 'Bitbucket' }], required: true },

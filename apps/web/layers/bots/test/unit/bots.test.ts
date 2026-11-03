@@ -14,9 +14,9 @@ function instance(type: string, health: PluginInstance['health'], config: Plugin
   return {
     id: `${type}-1`,
     type,
-    scope: 'project',
-    projectId: 'p1',
-    projectSlug: 'acme',
+    scope: 'workspace',
+    workspaceId: 'p1',
+    workspaceSlug: 'acme',
     config,
     secrets: {},
     health,

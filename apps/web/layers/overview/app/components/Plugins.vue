@@ -52,7 +52,7 @@ const { registry } = useProjectRegistry()
 const admin = computed(() => registry.value?.admin === true)
 
 const { data, status, error } = useApi<PluginInstanceListResponse>(PLUGINS_PATH, {
-  query: { project: slug },
+  query: { workspace: slug },
   immediate: admin.value,
   watch: [admin],
 })

@@ -17,10 +17,10 @@ export function findThread(db: Db, id: string): ChatThread | null {
   return db.select().from(chatThreads).where(eq(chatThreads.id, id)).get() ?? null
 }
 
-export function listThreads(db: Db, projectId: string, actorId: string, agentIds: readonly string[]): ChatThread[] {
+export function listThreads(db: Db, workspaceId: string, actorId: string, agentIds: readonly string[]): ChatThread[] {
   if (!agentIds.length) return []
   return db.select().from(chatThreads)
-    .where(and(eq(chatThreads.projectId, projectId), eq(chatThreads.actorId, actorId), inArray(chatThreads.agentId, [...agentIds])))
+    .where(and(eq(chatThreads.workspaceId, workspaceId), eq(chatThreads.actorId, actorId), inArray(chatThreads.agentId, [...agentIds])))
     .orderBy(desc(chatThreads.lastActivityAt), desc(chatThreads.createdAt))
     .all()
 }

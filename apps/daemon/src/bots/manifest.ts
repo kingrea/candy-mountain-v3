@@ -6,7 +6,7 @@ export const botsCapability = defineCapability({
   description: 'Slack bots that run a coding agent against the project.',
   views: [{ id: 'bots', label: 'Bots', icon: 'i-lucide-bot', path: 'bots' }],
   agents: [],
-  projectAgents: true,
+  workspaceAgents: true,
   jobs: [],
   requiresPlugins: ['repository'],
   requiresAnyPlugins: [['claude-code', 'codex']],

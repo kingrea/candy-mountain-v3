@@ -1,4 +1,4 @@
-import type { Project } from '@candy-mountain/shared'
+import type { Workspace } from '@candy-mountain/shared'
 import type { Hono } from 'hono'
 import type { AgentMcpServerDefinition } from '../agent-mcp/host'
 import type { AppEnv } from '../app'
@@ -26,7 +26,7 @@ export interface StartedCapabilities {
   /** A service by key from whichever capability binds it (the list refuses two), or undefined when none in the list does. */
   service<T>(key: ServiceKey<T>): T | undefined
   /** Dependents first; a throw stops the caller's delete. */
-  onWorkspaceDeleted(workspace: Project): Promise<void>
+  onWorkspaceDeleted(workspace: Workspace): Promise<void>
   /** Reverse start order; every runtime is closed even when one throws, and the first error is rethrown. Later calls return the first run. */
   close(): Promise<void>
 }

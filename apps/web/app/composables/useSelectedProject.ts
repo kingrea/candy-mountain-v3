@@ -1,17 +1,17 @@
 import {
   ORGANISATIONS_PATH,
-  PROJECTS_PATH,
+  WORKSPACES_PATH,
   type OrganisationListResponse,
-  type ProjectListResponse,
+  type WorkspaceListResponse,
 } from '@candy-mountain/shared'
 
 export const PROJECT_DIRECTORY_KEYS = ['project-directory:projects', 'project-directory:organisations']
 
 export function useProjectDirectory() {
-  const projectsRequest = useApi<ProjectListResponse>(PROJECTS_PATH, { key: PROJECT_DIRECTORY_KEYS[0] })
+  const projectsRequest = useApi<WorkspaceListResponse>(WORKSPACES_PATH, { key: PROJECT_DIRECTORY_KEYS[0] })
   const organisationsRequest = useApi<OrganisationListResponse>(ORGANISATIONS_PATH, { key: PROJECT_DIRECTORY_KEYS[1] })
 
-  const projects = computed(() => projectsRequest.data.value?.projects ?? [])
+  const projects = computed(() => projectsRequest.data.value?.workspaces ?? [])
   const organisations = computed(() => organisationsRequest.data.value?.organisations ?? [])
   const groups = computed(() => groupProjectsByOrganisation(projects.value, organisations.value))
   const status = computed(() => {

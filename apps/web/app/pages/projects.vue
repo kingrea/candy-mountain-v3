@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PROJECTS_PATH, type Project, type ProjectResponse } from '@candy-mountain/shared'
+import { WORKSPACES_PATH, type Workspace } from '@candy-mountain/shared'
 import ProjectsConfirmModal from '~/components/projects/ProjectsConfirmModal.vue'
 import type { ProjectGroup } from '~/components/projects/ProjectsList.vue'
 
@@ -36,33 +36,26 @@ const groups = computed<ProjectGroup[]>(() => {
 })
 
 const formOpen = ref(false)
-const editing = ref<Project | null>(null)
+const editing = ref<Workspace | null>(null)
 
 function openCreate() {
   editing.value = null
   formOpen.value = true
 }
 
-function openEdit(project: Project) {
+function openEdit(project: Workspace) {
   editing.value = project
   formOpen.value = true
 }
 
-async function onSaved(project: Project, created: boolean) {
+async function onSaved(project: Workspace, created: boolean, notes: ProjectFormSaveNote[]) {
   await refreshProjectData()
+  const descriptions = notes.flatMap(note => (note.description ? [note.description] : []))
   toast.add({
     title: created ? `Created ${project.name}` : `Saved ${project.name}`,
-    description: verificationSummary(project),
-    color: project.verification.pathExists ? 'success' : 'warning',
+    description: descriptions.length ? descriptions.join(' ') : undefined,
+    color: notes.find(note => note.color)?.color ?? 'success',
   })
-}
-
-function verificationSummary(project: Project): string {
-  const v = project.verification
-  if (!v.pathExists) return 'Path not found.'
-  const issues = v.hasBeads ? 'issue tracker found' : 'no issue tracker'
-  const git = !v.isGitRepo ? 'not a git repo' : v.hasRemote ? `git remote ${v.remoteName}` : 'no git remote'
-  return `Path checked: ${issues}, ${git}.`
 }
 
 const actionError = ref<ApiErrorInfo | null>(null)
@@ -78,18 +71,18 @@ async function runAction(action: () => Promise<unknown>) {
   }
 }
 
-function projectPath(project: Project, suffix = '') {
-  return `${PROJECTS_PATH}/${project.slug}${suffix}`
+function projectPath(project: Workspace, suffix = '') {
+  return `${WORKSPACES_PATH}/${project.slug}${suffix}`
 }
 
-function verify(project: Project) {
+function runRowAction(action: ProjectRowAction, project: Workspace) {
   return runAction(async () => {
-    const response = await $api<ProjectResponse>(projectPath(project, '/verify'), { method: 'POST' })
-    toast.add({ title: `Checked ${project.name}`, description: verificationSummary(response.project) })
+    const note = await action.run(project)
+    if (note) toast.add(note)
   })
 }
 
-async function archive(project: Project) {
+async function archive(project: Workspace) {
   const confirmed = await confirm.open({
     title: `Archive ${project.name}?`,
     description: `It disappears from the ${SCOPE.singular} picker but keeps its slug and settings. You can unarchive it later.`,
@@ -99,11 +92,11 @@ async function archive(project: Project) {
   if (confirmed) await runAction(() => $api(projectPath(project, '/archive'), { method: 'POST' }))
 }
 
-function unarchive(project: Project) {
+function unarchive(project: Workspace) {
   return runAction(() => $api(projectPath(project, '/unarchive'), { method: 'POST' }))
 }
 
-async function remove(project: Project) {
+async function remove(project: Workspace) {
   const confirmed = await confirm.open({
     title: `Delete ${project.name}?`,
     description: `This removes the ${SCOPE.singular} and everything ${PRODUCT.name} stores for it. Files on disk are not touched.`,
@@ -158,7 +151,7 @@ async function remove(project: Project) {
             v-else-if="groups.length"
             :groups="groups"
             @edit="openEdit"
-            @verify="verify"
+            @action="runRowAction"
             @archive="archive"
             @unarchive="unarchive"
             @delete="remove"

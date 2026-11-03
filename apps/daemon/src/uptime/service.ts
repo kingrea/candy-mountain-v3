@@ -5,7 +5,8 @@ import {
 } from '@candy-mountain/shared'
 import { and, asc, eq, isNull, sql } from 'drizzle-orm'
 import type { Db } from '../db'
-import { projects, uptimeMonitors } from '../db/schema'
+import { workspaces } from '../db/schema'
+import { uptimeMonitors } from './schema'
 import { MONITOR_SOURCE_REGISTRY } from './builtin-sources'
 import type { MonitorCheckResult } from './check'
 import { MonitorError } from './errors'
@@ -56,17 +57,17 @@ export function listMonitors(db: Db, projectId: string): Monitor[] {
     .orderBy(asc(sql`lower(${uptimeMonitors.name})`), asc(uptimeMonitors.createdAt)).all().map(toMonitor)
 }
 
-const polled = and(eq(uptimeMonitors.enabled, true), isNull(projects.archivedAt))
+const polled = and(eq(uptimeMonitors.enabled, true), isNull(workspaces.archivedAt))
 
 /** Every monitor that should be polled: enabled, in a project that is not archived (archiving pauses its monitors). */
 export function listEnabledMonitors(db: Db): Monitor[] {
-  return db.select({ monitor: uptimeMonitors }).from(uptimeMonitors).innerJoin(projects, eq(projects.id, uptimeMonitors.projectId))
+  return db.select({ monitor: uptimeMonitors }).from(uptimeMonitors).innerJoin(workspaces, eq(workspaces.id, uptimeMonitors.projectId))
     .where(polled).orderBy(asc(uptimeMonitors.createdAt)).all().map(row => toMonitor(row.monitor))
 }
 
 /** The monitor if it should be polled, by the same rule as listEnabledMonitors. */
 export function findPolledMonitor(db: Db, id: string): Monitor | null {
-  const row = db.select({ monitor: uptimeMonitors }).from(uptimeMonitors).innerJoin(projects, eq(projects.id, uptimeMonitors.projectId))
+  const row = db.select({ monitor: uptimeMonitors }).from(uptimeMonitors).innerJoin(workspaces, eq(workspaces.id, uptimeMonitors.projectId))
     .where(and(eq(uptimeMonitors.id, id), polled)).get()
   return row ? toMonitor(row.monitor) : null
 }

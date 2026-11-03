@@ -24,7 +24,7 @@ export function useIssuesRun(slug: MaybeRefOrGetter<string | null>) {
     async () => {
       const current = toValue(slug)
       if (!current || !admin.value) return null
-      return (await $api<PluginInstanceListResponse>(PLUGINS_PATH, { query: { project: current } })).instances
+      return (await $api<PluginInstanceListResponse>(PLUGINS_PATH, { query: { workspace: current } })).instances
     },
     { server: false, lazy: true, default: () => null, watch: [admin, registry] },
   )

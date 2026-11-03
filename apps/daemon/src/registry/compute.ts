@@ -4,7 +4,7 @@ import {
   botAgentId,
   BOTS_CAPABILITY_ID,
   NONE_RUNG,
-  projectViewRoute,
+  workspaceViewRoute,
   registrySystemGroup,
   type AnyCapabilityManifest,
   type BotFamily,
@@ -25,11 +25,11 @@ import {
 } from '@candy-mountain/shared'
 import { getRung } from '../capabilities'
 import { rungOf } from '../grants/resolve'
-import { capabilityReadiness, type PlatformFacts, type PluginReadiness, type ProjectFacts } from './readiness'
+import { capabilityReadiness, type PlatformFacts, type PluginReadiness, type WorkspaceFactMessages, type WorkspaceFacts } from './readiness'
 
 /** Plain data only, so the answer can be computed without a database. */
 export interface RegistryInput {
-  project: { id: string, slug: string, name: string }
+  workspace: { id: string, slug: string, name: string }
   scopeUrlPrefix: string
   scopeLabel: ScopeLabel
   capabilities: readonly AnyCapabilityManifest[]
@@ -39,7 +39,9 @@ export interface RegistryInput {
   admin: boolean
   /** Keyed by plugin type id, as resolved for this workspace. */
   plugins: Readonly<Record<string, PluginReadiness>>
-  facts: ProjectFacts
+  facts: WorkspaceFacts
+  /** From the declarations that computed `facts`; a fact without one gets a generic reason. */
+  factMessages?: WorkspaceFactMessages
   platformFacts?: PlatformFacts
   /** The workspace's bots that can run from the console. */
   bots?: readonly RegistryBotInput[]
@@ -75,19 +77,19 @@ interface Assessed {
 }
 
 export function computeRegistry(input: RegistryInput): RegistryResponse {
-  const { project, admin } = input
+  const { workspace, admin } = input
   const enabled = input.modules.filter(mod => input.enabledModules.includes(mod.id))
   const assessed = new Map<string, Assessed>()
   for (const cap of input.capabilities) {
     const rung = actorRung(cap, input.rungs)
-    const reasons = capabilityReadiness(cap, input.scopeLabel, input.plugins, input.facts, input.platformFacts)
+    const reasons = capabilityReadiness(cap, input.scopeLabel, input.plugins, input.facts, input.platformFacts, input.factMessages)
     assessed.set(cap.id, { cap, rung, granted: rung.name !== NONE_RUNG, ...candidateModules(cap, input.modules, input.enabledModules), reasons, ready: reasons.length === 0 })
   }
   const held = [...assessed.values()].filter(a => a.granted && (a.members.length > 0 || a.standalone))
   const visible = (a: Assessed) => admin || a.ready
 
   const entriesOf = (a: Assessed): RegistryNavEntry[] =>
-    a.cap.views.filter(view => a.rung.views.includes(view.id)).map(view => ({ id: view.id, label: view.label, icon: view.icon, to: projectViewRoute(input.scopeUrlPrefix, project.slug, view.path) }))
+    a.cap.views.filter(view => a.rung.views.includes(view.id)).map(view => ({ id: view.id, label: view.label, icon: view.icon, to: workspaceViewRoute(input.scopeUrlPrefix, workspace.slug, view.path) }))
 
   const moduleGroups: RegistryNavGroup[] = []
   for (const mod of enabled) {
@@ -108,7 +110,7 @@ export function computeRegistry(input: RegistryInput): RegistryResponse {
   const groups = [...homeGroups, ...moduleGroups, ...standaloneGroups, registrySystemGroup(input.scopeLabel)]
 
   const views: RegistryView[] = held.flatMap(a =>
-    a.cap.views.filter(view => a.rung.views.includes(view.id)).map(view => ({ id: view.id, capabilityId: a.cap.id, label: view.label, icon: view.icon, path: view.path, to: projectViewRoute(input.scopeUrlPrefix, project.slug, view.path), ready: a.ready })),
+    a.cap.views.filter(view => a.rung.views.includes(view.id)).map(view => ({ id: view.id, capabilityId: a.cap.id, label: view.label, icon: view.icon, path: view.path, to: workspaceViewRoute(input.scopeUrlPrefix, workspace.slug, view.path), ready: a.ready })),
   )
   const chats = (a: Assessed | undefined) => a !== undefined && held.includes(a) && a.rung.chat && a.ready
   const agents: RegistryAgent[] = held.filter(chats).flatMap(a => a.cap.agents.map(agent => ({ id: agent.id, capabilityId: a.cap.id, label: agent.label, description: agent.description, ...(agent.family ? { family: agent.family } : {}), ...(agent.avatar ? { avatar: agent.avatar } : {}) })))
@@ -148,5 +150,5 @@ export function computeRegistry(input: RegistryInput): RegistryResponse {
       })
     : []
 
-  return { project: { id: project.id, slug: project.slug, name: project.name }, admin, modules: enabled.map(mod => mod.id), groups, views, agents, capabilities, degraded }
+  return { workspace: { id: workspace.id, slug: workspace.slug, name: workspace.name }, admin, modules: enabled.map(mod => mod.id), groups, views, agents, capabilities, degraded }
 }

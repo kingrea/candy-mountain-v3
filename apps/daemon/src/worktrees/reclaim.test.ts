@@ -1,14 +1,14 @@
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import type { Project } from '@candy-mountain/shared'
+import type { Workspace } from '@candy-mountain/shared'
 import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { BOT_WORKTREE_RECLAIMER, BOT_WORKTREES } from '../bots/definition'
-import { schema, type PlatformDatabase } from '../db'
+import type { PlatformDatabase } from '../db'
+import { worktreeLeases } from '../bots/schema'
 import { capabilityDefinitions } from '../definitions'
 import type { Platform } from '../platform'
 import { startTestPlatform } from '../testing/platform'
-import { createProject } from '../projects/projects'
 import { createTempDataDir, openTestDatabase, type TempDataDir } from '../testing'
 import { resolveWorktreeSettings } from './config'
 import { createGitRunner } from './git'
@@ -16,6 +16,8 @@ import { inspectWorktree } from './inspect'
 import { createWorktreePool, type WorktreeHolder, type WorktreePool } from './pool'
 import { startWorktreeReclaimer, type WorktreeReclaimer } from './reclaim'
 import { createTempGitRepo, TEST_GIT_ENV, type TempGitRepo } from './test-repo'
+import { repositoryPaths } from '../repository/service'
+import { createWorkspaceWithRepository } from '../repository/test-support'
 
 const HOUR = 3_600_000
 const holder = (id: string): WorktreeHolder => ({ kind: 'session', id })
@@ -24,7 +26,7 @@ const gitRunner = createGitRunner({ env: TEST_GIT_ENV })
 let database: PlatformDatabase
 let data: TempDataDir
 let repo: TempGitRepo
-let project: Project
+let project: Workspace
 let pool: WorktreePool
 let reclaimer: WorktreeReclaimer | undefined
 let clock: Date
@@ -32,9 +34,9 @@ const log = { log: vi.fn(), warn: vi.fn(), error: vi.fn() }
 
 async function setUp({ remote = true }: { remote?: boolean } = {}) {
   repo = createTempGitRepo({ remote })
-  project = await createProject(database.db, { name: 'alpha', source: { kind: 'local-path', path: repo.clone } })
-  pool = createWorktreePool({ db: database.db, paths: { worktrees: join(data.root, 'worktrees') }, git: gitRunner, now: () => clock }, { maxPerProject: 8 })
-  reclaimer = startWorktreeReclaimer({ db: database.db, paths: { worktrees: join(data.root, 'worktrees') }, pool, now: () => clock, log }, { idleTimeoutMs: 2 * HOUR, reconcileOnStart: false })
+  project = await createWorkspaceWithRepository(database.db, { name: 'alpha', path: repo.clone })
+  pool = createWorktreePool({ db: database.db, repository: repositoryPaths(database.db), paths: { worktrees: join(data.root, 'worktrees') }, git: gitRunner, now: () => clock }, { maxPerProject: 8 })
+  reclaimer = startWorktreeReclaimer({ db: database.db, repository: repositoryPaths(database.db), paths: { worktrees: join(data.root, 'worktrees') }, pool, now: () => clock, log }, { idleTimeoutMs: 2 * HOUR, reconcileOnStart: false })
 }
 
 async function acquire(id: string) {
@@ -241,7 +243,7 @@ describe('settings and platform', () => {
     const reclaimerOf = (platform: Platform) => platform.runtime.services('bots').get(BOT_WORKTREE_RECLAIMER)
     repo = createTempGitRepo()
     let platform = startTestPlatform(data.root)
-    const created = await createProject(platform.db, { name: 'beta', source: { kind: 'local-path', path: repo.clone } })
+    const created = await createWorkspaceWithRepository(platform.db, { name: 'beta', path: repo.clone })
     const gone = await worktreesOf(platform).acquire({ projectId: created.id, holder: holder('gone'), baseBranch: 'main' })
     const idle = await worktreesOf(platform).acquire({ projectId: created.id, holder: holder('idle'), baseBranch: 'main' })
     await reclaimerOf(platform).ready
@@ -256,7 +258,7 @@ describe('settings and platform', () => {
       expect(worktreesOf(platform).get(gone.id)).toMatchObject({ state: 'released' })
       expect(logSpy).toHaveBeenCalledWith('Closed 1 worktree lease(s) whose directory was missing')
 
-      platform.db.update(schema.worktreeLeases).set({ lastUsedAt: new Date(Date.now() - 2 * HOUR).toISOString() }).where(eq(schema.worktreeLeases.id, idle.id)).run()
+      platform.db.update(worktreeLeases).set({ lastUsedAt: new Date(Date.now() - 2 * HOUR).toISOString() }).where(eq(worktreeLeases.id, idle.id)).run()
       await vi.waitFor(() => expect(worktreesOf(platform).get(idle.id)).toMatchObject({ state: 'released' }), { timeout: 10_000, interval: 50 })
       expect(existsSync(idle.path)).toBe(false)
     }

@@ -1,6 +1,6 @@
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { projectSessionsPath, sessionCancelPath, sessionDecisionPath, sessionDecisionsPath, sessionEventsPath, sessionPromptPath, type ActivityListResponse, type Actor, type AgentSession, type AgentSessionEvent, type AgentSessionEventKind, type ApiErrorBody, type DecisionListResponse, type Project, type SessionListResponse, type SessionResponse } from '@candy-mountain/shared'
+import { workspaceSessionsPath, sessionCancelPath, sessionDecisionPath, sessionDecisionsPath, sessionEventsPath, sessionPromptPath, type ActivityListResponse, type Actor, type AgentSession, type AgentSessionEvent, type AgentSessionEventKind, type ApiErrorBody, type DecisionListResponse, type Workspace, type SessionListResponse, type SessionResponse } from '@candy-mountain/shared'
 import { eq } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { FAKE_ACP_AGENT, fakeBins } from '../acp/test-support'
@@ -9,12 +9,12 @@ import type { AuthStrategy } from '../auth'
 import { addRole } from '../grants/test-access'
 import { createPluginInstance } from '../plugins/instances/instances'
 import { pluginInstances } from '../db/schema'
-import { setEnabledModules } from '../project-modules/enablement'
-import { createProject } from '../projects/projects'
+import { setEnabledModules } from '../workspace-modules/enablement'
 import { startAcpPlatform, type AcpPlatform, type AcpPlatformOptions } from '../chat-claude-code/test-support'
 import { createTempDataDir, type TempDataDir } from '../testing'
 import { resolveSessionSettings } from './config'
 import type { SessionManager, SessionMessage } from './manager'
+import { createWorkspaceWithRepository } from '../repository/test-support'
 
 let temp: TempDataDir | undefined
 let platform: AcpPlatform | undefined
@@ -33,14 +33,14 @@ function boot(options: AcpPlatformOptions = {}): AcpPlatform {
   return platform
 }
 
-async function projectWithCodex(p: AcpPlatform, slug = 'alpha'): Promise<Project> {
+async function workspaceWithCodex(p: AcpPlatform, slug = 'alpha'): Promise<Workspace> {
   const path = join(temp!.root, '..', 'repos', slug)
   mkdirSync(path, { recursive: true })
-  const project = await createProject(p.db, { name: slug, slug, source: { kind: 'local-path', path } })
-  setEnabledModules(p.db, project.id, ['agent-hub'])
-  const instance = createPluginInstance({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly }, { type: 'codex', scope: 'project', projectId: project.id, config: {}, secrets: {} })
+  const workspace = await createWorkspaceWithRepository(p.db, { name: slug, slug, path })
+  setEnabledModules(p.db, workspace.id, ['agent-hub'])
+  const instance = createPluginInstance({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly }, { type: 'codex', scope: 'workspace', workspaceId: workspace.id, config: {}, secrets: {} })
   markHealthy(p, instance.id)
-  return project
+  return workspace
 }
 
 /** Stands in for a passing connection test: the chat gate only reads the stored result. */
@@ -64,7 +64,7 @@ function call(p: AcpPlatform, method: string, path: string, body?: unknown, acto
 }
 
 async function createSession(p: AcpPlatform, slug = 'alpha', body: unknown = { family: 'codex' }): Promise<AgentSession> {
-  const res = await call(p, 'POST', projectSessionsPath(slug), body)
+  const res = await call(p, 'POST', workspaceSessionsPath(slug), body)
   expect(res.status, await res.clone().text()).toBe(201)
   return ((await res.json()) as SessionResponse).session
 }
@@ -150,37 +150,37 @@ async function openStream(p: AcpPlatform, slug: string, id: string, after?: numb
 }
 
 describe('agent sessions', () => {
-  it('creates a session with the project checkout, writes session.started and lists it', async () => {
+  it('creates a session with the workspace checkout, writes session.started and lists it', async () => {
     const p = boot()
-    const project = await projectWithCodex(p)
+    const workspace = await workspaceWithCodex(p)
     const session = await createSession(p)
-    expect(session).toMatchObject({ projectId: project.id, family: 'codex', actorId: expect.any(String), cwd: project.source.path, upstreamSessionId: null, status: 'idle', posture: null })
+    expect(session).toMatchObject({ workspaceId: workspace.id, family: 'codex', actorId: expect.any(String), cwd: join(temp!.root, '..', 'repos', 'alpha'), upstreamSessionId: null, status: 'idle', posture: null })
 
-    const list = (await (await call(p, 'GET', projectSessionsPath('alpha'))).json()) as SessionListResponse
+    const list = (await (await call(p, 'GET', workspaceSessionsPath('alpha'))).json()) as SessionListResponse
     expect(list.sessions).toEqual([session])
-    const one = (await (await call(p, 'GET', `${projectSessionsPath('alpha')}/${session.id}`)).json()) as SessionResponse
+    const one = (await (await call(p, 'GET', `${workspaceSessionsPath('alpha')}/${session.id}`)).json()) as SessionResponse
     expect(one.session).toEqual(session)
 
-    const activity = (await (await call(p, 'GET', `/projects/alpha/activity`)).json()) as ActivityListResponse
+    const activity = (await (await call(p, 'GET', `/workspaces/alpha/activity`)).json()) as ActivityListResponse
     expect(activity.events).toHaveLength(1)
     expect(activity.events[0]).toMatchObject({ type: 'session.started', title: 'Codex session started', payload: { sessionId: session.id, family: 'codex' } })
 
-    await createProject(p.db, { name: 'beta', slug: 'beta', source: { kind: 'local-path', path: project.source.path } })
-    expect(await errorOf(await call(p, 'GET', `${projectSessionsPath('beta')}/${session.id}`))).toEqual({ status: 404, code: 'not_found' })
-    expect(await errorOf(await call(p, 'POST', projectSessionsPath('alpha'), { family: 'gemini' }))).toEqual({ status: 400, code: 'invalid_request' })
-    expect(await errorOf(await call(p, 'POST', projectSessionsPath('alpha'), { family: 'codex', posture: { codex: { mode: 'agent' } } }))).toEqual({ status: 400, code: 'invalid_request' })
-    expect(await errorOf(await call(p, 'POST', projectSessionsPath('alpha'), { family: 'codex', posture: { codex: { model: 'gpt 5\napprovals_reviewer = "auto_review"' } } }))).toEqual({ status: 400, code: 'invalid_request' })
-    expect(await errorOf(await call(p, 'POST', projectSessionsPath('alpha'), { family: 'codex', posture: { codex: { reasoningEffort: 42 } } }))).toEqual({ status: 400, code: 'invalid_request' })
-    expect(p.sessions.configOptions(project.id, 'codex')).toEqual([])
+    await createWorkspaceWithRepository(p.db, { name: 'beta', slug: 'beta', path: join(temp!.root, '..', 'repos', 'alpha') })
+    expect(await errorOf(await call(p, 'GET', `${workspaceSessionsPath('beta')}/${session.id}`))).toEqual({ status: 404, code: 'not_found' })
+    expect(await errorOf(await call(p, 'POST', workspaceSessionsPath('alpha'), { family: 'gemini' }))).toEqual({ status: 400, code: 'invalid_request' })
+    expect(await errorOf(await call(p, 'POST', workspaceSessionsPath('alpha'), { family: 'codex', posture: { codex: { mode: 'agent' } } }))).toEqual({ status: 400, code: 'invalid_request' })
+    expect(await errorOf(await call(p, 'POST', workspaceSessionsPath('alpha'), { family: 'codex', posture: { codex: { model: 'gpt 5\napprovals_reviewer = "auto_review"' } } }))).toEqual({ status: 400, code: 'invalid_request' })
+    expect(await errorOf(await call(p, 'POST', workspaceSessionsPath('alpha'), { family: 'codex', posture: { codex: { reasoningEffort: 42 } } }))).toEqual({ status: 400, code: 'invalid_request' })
+    expect(p.sessions.configOptions(workspace.id, 'codex')).toEqual([])
     expect(await errorOf(await prompt(p, 'alpha', session.id, ''))).toEqual({ status: 400, code: 'invalid_request' })
   })
 
   it('refuses a prompt when the family plugin is not set up, without logging it', async () => {
     const p = boot()
-    const project = await createProject(p.db, { name: 'bare', slug: 'bare', source: { kind: 'local-path', path: temp!.root } })
-    setEnabledModules(p.db, project.id, ['agent-hub'])
-    expect(await errorOf(await call(p, 'POST', projectSessionsPath('bare'), { family: 'codex' }))).toEqual({ status: 409, code: 'not_ready' })
-    const session = p.sessions.create({ projectId: project.id, family: 'codex', actorId: 'someone', cwd: temp!.root })
+    const workspace = await createWorkspaceWithRepository(p.db, { name: 'bare', slug: 'bare', path: temp!.root })
+    setEnabledModules(p.db, workspace.id, ['agent-hub'])
+    expect(await errorOf(await call(p, 'POST', workspaceSessionsPath('bare'), { family: 'codex' }))).toEqual({ status: 409, code: 'not_ready' })
+    const session = p.sessions.create({ workspaceId: workspace.id, family: 'codex', actorId: 'someone', cwd: temp!.root })
     await expect(p.sessions.prompt(session.id, 'hello')).rejects.toMatchObject({ code: 'family_unavailable', status: 422 })
     expect(p.sessions.events(session.id)).toEqual([])
     expect(p.sessions.get(session.id)?.status).toBe('idle')
@@ -188,7 +188,7 @@ describe('agent sessions', () => {
 
   it('runs a turn, logs every event with a growing seq and reports session_busy mid-turn', async () => {
     const p = boot()
-    await projectWithCodex(p)
+    await workspaceWithCodex(p)
     const session = await createSession(p)
     const turnEnd = waitFor(p.sessions, session.id, 'turn_end')
     const res = await prompt(p, 'alpha', session.id, 'hello')
@@ -215,7 +215,7 @@ describe('agent sessions', () => {
 
   it('replays the log to a stream opened mid-turn and then follows live, in order and without gaps', async () => {
     const p = boot()
-    await projectWithCodex(p)
+    await workspaceWithCodex(p)
     const session = await createSession(p)
     const working = waitFor(p.sessions, session.id, 'text')
     await prompt(p, 'alpha', session.id, 'hang')
@@ -248,7 +248,7 @@ describe('agent sessions', () => {
 
   it('resumes the same upstream session after a daemon restart', async () => {
     let p = boot()
-    await projectWithCodex(p)
+    await workspaceWithCodex(p)
     const session = await createSession(p)
     const first = waitFor(p.sessions, session.id, 'turn_end')
     await prompt(p, 'alpha', session.id, 'hello')
@@ -276,7 +276,7 @@ describe('agent sessions', () => {
 
   it('reaps an idle live process, keeps the session and resumes it on the next prompt', async () => {
     const p = boot({ sessions: { idleTimeoutMs: 200, reapIntervalMs: 25 } })
-    await projectWithCodex(p)
+    await workspaceWithCodex(p)
     const session = await createSession(p)
     const exited = waitFor(p.sessions, session.id, 'exited', 5000)
     await prompt(p, 'alpha', session.id, 'hello')
@@ -292,7 +292,7 @@ describe('agent sessions', () => {
 
   it('does not reap a process while a turn is running', async () => {
     const p = boot({ sessions: { idleTimeoutMs: 100, reapIntervalMs: 20 } })
-    await projectWithCodex(p)
+    await workspaceWithCodex(p)
     const session = await createSession(p)
     const working = waitFor(p.sessions, session.id, 'text')
     await prompt(p, 'alpha', session.id, 'hang')
@@ -305,7 +305,7 @@ describe('agent sessions', () => {
 
   it('queues a prompt beyond the live cap and runs it once a slot frees', async () => {
     const p = boot({ sessions: { maxLive: 1 } })
-    await projectWithCodex(p)
+    await workspaceWithCodex(p)
     const a = await createSession(p)
     const b = await createSession(p)
     const working = waitFor(p.sessions, a.id, 'text')
@@ -332,7 +332,7 @@ describe('agent sessions', () => {
 
   it('cancels a queued prompt without starting it', async () => {
     const p = boot({ sessions: { maxLive: 1 } })
-    await projectWithCodex(p)
+    await workspaceWithCodex(p)
     const a = await createSession(p)
     const b = await createSession(p)
     const working = waitFor(p.sessions, a.id, 'text')
@@ -347,7 +347,7 @@ describe('agent sessions', () => {
 
   it('surfaces a missing login as auth_required on the prompt and in the log', async () => {
     const p = boot({ acp: { bins: { ...fakeBins, codexAdapter: { command: 'env', args: ['FAKE_ACP_AUTH=none', process.execPath, FAKE_ACP_AGENT] } } } })
-    await projectWithCodex(p)
+    await workspaceWithCodex(p)
     const session = await createSession(p)
     expect(await errorOf(await prompt(p, 'alpha', session.id, 'hello'))).toEqual({ status: 409, code: 'auth_required' })
     expect(p.sessions.events(session.id).map(event => event.kind)).toEqual(['prompt', 'auth_required', 'turn_end'])
@@ -357,7 +357,7 @@ describe('agent sessions', () => {
 
   it('exposes pending requests of a live turn for a decision to answer', async () => {
     const p = boot()
-    await projectWithCodex(p)
+    await workspaceWithCodex(p)
     const session = await createSession(p)
     const asked = waitFor(p.sessions, session.id, 'permission_request')
     await prompt(p, 'alpha', session.id, 'permission')
@@ -378,7 +378,7 @@ describe('agent sessions', () => {
 
   it('ends open streams and kills live processes on close', async () => {
     const p = boot()
-    await projectWithCodex(p)
+    await workspaceWithCodex(p)
     const session = await createSession(p)
     const done = waitFor(p.sessions, session.id, 'turn_end')
     await prompt(p, 'alpha', session.id, 'hello')
@@ -403,7 +403,7 @@ describe('session access', () => {
   }
 
   const sessionRequests = (id: string): [string, string, unknown?][] => [
-    ['GET', `${projectSessionsPath('alpha')}/${id}`],
+    ['GET', `${workspaceSessionsPath('alpha')}/${id}`],
     ['GET', sessionEventsPath('alpha', id)],
     ['POST', sessionPromptPath('alpha', id), { text: 'hello' }],
     ['POST', sessionCancelPath('alpha', id)],
@@ -412,17 +412,17 @@ describe('session access', () => {
   ]
 
   const listed = async (p: AcpPlatform, actor: Actor) => {
-    const res = await call(p, 'GET', projectSessionsPath('alpha'), undefined, actor)
+    const res = await call(p, 'GET', workspaceSessionsPath('alpha'), undefined, actor)
     expect(res.status, await res.clone().text()).toBe(200)
     return ((await res.json()) as SessionListResponse).sessions.map(session => session.id)
   }
 
   it('hides another actor\'s session from a non-admin on every route', async () => {
     const p = boot()
-    await projectWithCodex(p)
+    await workspaceWithCodex(p)
     await grantDeveloper(p, {})
     const adminOwned = await createSession(p)
-    const theirs = p.sessions.create({ projectId: adminOwned.projectId, family: 'codex', actorId: OTHER.id, cwd: adminOwned.cwd })
+    const theirs = p.sessions.create({ workspaceId: adminOwned.workspaceId, family: 'codex', actorId: OTHER.id, cwd: adminOwned.cwd })
 
     for (const [method, path, body] of [...sessionRequests(adminOwned.id), ...sessionRequests(theirs.id)]) {
       expect(await errorOf(await call(p, method, path, body, DEVELOPER)), `${method} ${path}`).toEqual({ status: 404, code: 'not_found' })
@@ -433,14 +433,14 @@ describe('session access', () => {
 
   it('refuses an actor whose chat rung is none, even on their own session', async () => {
     const p = boot()
-    const project = await projectWithCodex(p)
+    const workspace = await workspaceWithCodex(p)
     await grantDeveloper(p, { 'chat-codex': 'none', 'chat-claude-code': 'none' })
-    const own = p.sessions.create({ projectId: project.id, family: 'codex', actorId: DEVELOPER.id, cwd: temp!.root })
+    const own = p.sessions.create({ workspaceId: workspace.id, family: 'codex', actorId: DEVELOPER.id, cwd: temp!.root })
 
     const refused = [
       ...sessionRequests(own.id),
-      ['GET', projectSessionsPath('alpha')],
-      ['POST', projectSessionsPath('alpha'), { family: 'codex' }],
+      ['GET', workspaceSessionsPath('alpha')],
+      ['POST', workspaceSessionsPath('alpha'), { family: 'codex' }],
     ] as [string, string, unknown?][]
     for (const [method, path, body] of refused) {
       expect(await errorOf(await call(p, method, path, body, DEVELOPER)), `${method} ${path}`).toEqual({ status: 403, code: 'not_granted' })
@@ -450,13 +450,13 @@ describe('session access', () => {
 
   it('lets the owner and the admin drive a session, including one with no human owner', async () => {
     const p = boot()
-    await projectWithCodex(p)
+    await workspaceWithCodex(p)
     await grantDeveloper(p, {})
-    const res = await call(p, 'POST', projectSessionsPath('alpha'), { family: 'codex' }, DEVELOPER)
+    const res = await call(p, 'POST', workspaceSessionsPath('alpha'), { family: 'codex' }, DEVELOPER)
     expect(res.status, await res.clone().text()).toBe(201)
     const own = ((await res.json()) as SessionResponse).session
     expect(own.actorId).toBe(DEVELOPER.id)
-    const bot = p.sessions.create({ projectId: own.projectId, family: 'codex', actorId: 'bot:reviewer', cwd: own.cwd })
+    const bot = p.sessions.create({ workspaceId: own.workspaceId, family: 'codex', actorId: 'bot:reviewer', cwd: own.cwd })
 
     expect(await listed(p, DEVELOPER)).toEqual([own.id])
     expect((await listed(p, ADMIN)).sort()).toEqual([own.id, bot.id].sort())
@@ -465,7 +465,7 @@ describe('session access', () => {
       const done = waitFor(p.sessions, session.id, 'turn_end')
       expect((await call(p, 'POST', sessionPromptPath('alpha', session.id), { text: 'hello' }, actor)).status).toBe(202)
       await done
-      const one = await call(p, 'GET', `${projectSessionsPath('alpha')}/${session.id}`, undefined, actor)
+      const one = await call(p, 'GET', `${workspaceSessionsPath('alpha')}/${session.id}`, undefined, actor)
       expect(((await one.json()) as SessionResponse).session.id).toBe(session.id)
       expect(((await (await call(p, 'GET', sessionDecisionsPath('alpha', session.id), undefined, actor)).json()) as DecisionListResponse).decisions).toEqual([])
       expect((await call(p, 'POST', sessionCancelPath('alpha', session.id), undefined, actor)).status).toBe(200)

@@ -1,4 +1,4 @@
-import type { AnyCapabilityManifest, PlatformFactId, PluginInstance, PluginTypeInfo, ProjectFactId, ReadinessReason, ScopeLabel } from '@candy-mountain/shared'
+import type { AnyCapabilityManifest, PluginInstance, PluginTypeInfo, ReadinessReason, ScopeLabel } from '@candy-mountain/shared'
 
 export type PluginReadiness = { name: string } & (
   | { state: 'ready' }
@@ -8,9 +8,17 @@ export type PluginReadiness = { name: string } & (
   | { state: 'unhealthy', reason: string }
 )
 
-export type ProjectFacts = Record<ProjectFactId, boolean>
+/** Every declared fact for one workspace, as the definitions computed it; a fact left out counts as false. */
+export type WorkspaceFacts = Readonly<Record<string, boolean>>
 
-/** The same for every workspace and actor; a fact left out counts as false. */
+/** The readiness message of each declared fact, named with the product's scope label. */
+export type WorkspaceFactMessages = Readonly<Record<string, (label: ScopeLabel) => string>>
+
+/** The facts the platform computes itself, the same for every workspace and actor. */
+export const PLATFORM_FACT_IDS = ['llmGateway'] as const
+export type PlatformFactId = (typeof PLATFORM_FACT_IDS)[number]
+
+/** A fact left out counts as false. */
 export type PlatformFacts = Partial<Record<PlatformFactId, boolean>>
 
 /** The instance a workspace resolves for a plugin type, judged on stored state only; nothing is re-tested here. */
@@ -40,21 +48,17 @@ export function pluginReason(typeId: string, readiness: PluginReadiness, label: 
   return message === null ? null : { kind: 'plugin', plugin: typeId, message }
 }
 
-const FACT_MESSAGES: Record<ProjectFactId, (label: ScopeLabel) => string> = {
-  hasBeads: label => `The ${label.singular} has no .beads directory.`,
-  isGitRepo: label => `The ${label.singular} is not a git repository.`,
-  hasRemote: label => `The ${label.singular} has no git remote.`,
-  hasBots: label => `The ${label.singular} has no bots yet; add one on the Bots page.`,
-}
-
 const PLATFORM_FACT_MESSAGES: Record<PlatformFactId, string> = {
   llmGateway: 'No LLM gateway is configured; set the gateway base URL, key and model id on the Settings page.',
 }
 
 export const requiredPluginTypes = (cap: AnyCapabilityManifest): string[] => [...cap.requiresPlugins, ...(cap.requiresAnyPlugins ?? []).flat()]
 
-/** Empty when the capability is ready for the workspace. A plugin type absent from `plugins` counts as missing. */
-export function capabilityReadiness(cap: AnyCapabilityManifest, label: ScopeLabel, plugins: Readonly<Record<string, PluginReadiness>>, facts: ProjectFacts, platformFacts: PlatformFacts = {}): ReadinessReason[] {
+/**
+ * Empty when the capability is ready for the workspace. A plugin type absent from `plugins` counts as missing; a
+ * workspace fact absent from `facts` counts as false, worded generically when `factMessages` has nothing for it.
+ */
+export function capabilityReadiness(cap: AnyCapabilityManifest, label: ScopeLabel, plugins: Readonly<Record<string, PluginReadiness>>, facts: WorkspaceFacts, platformFacts: PlatformFacts = {}, factMessages: WorkspaceFactMessages = {}): ReadinessReason[] {
   const reasons: ReadinessReason[] = []
   for (const typeId of cap.requiresPlugins) {
     const reason = pluginReason(typeId, plugins[typeId] ?? { name: typeId, state: 'missing' }, label)
@@ -65,11 +69,11 @@ export function capabilityReadiness(cap: AnyCapabilityManifest, label: ScopeLabe
     const names = group.map(typeId => plugins[typeId]?.name ?? typeId)
     reasons.push({ kind: 'plugin-any', plugins: [...group], message: `Needs one of: ${names.join(', ')}; none is configured and healthy.` })
   }
-  for (const fact of cap.requiresProjectFacts ?? []) {
-    if (!facts[fact]) reasons.push({ kind: 'project-fact', fact, message: FACT_MESSAGES[fact](label) })
+  for (const fact of cap.requiresWorkspaceFacts ?? []) {
+    if (!facts[fact]) reasons.push({ kind: 'workspace-fact', fact, message: factMessages[fact]?.(label) ?? `The ${label.singular} lacks '${fact}'.` })
   }
   for (const fact of cap.requiresPlatformFacts ?? []) {
-    if (!platformFacts[fact]) reasons.push({ kind: 'platform-fact', fact, message: PLATFORM_FACT_MESSAGES[fact] })
+    if (!platformFacts[fact as PlatformFactId]) reasons.push({ kind: 'platform-fact', fact, message: PLATFORM_FACT_MESSAGES[fact as PlatformFactId] })
   }
   return reasons
 }

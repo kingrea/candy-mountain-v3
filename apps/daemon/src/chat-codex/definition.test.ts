@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { PROJECTS_PATH, type ApiErrorBody } from '@candy-mountain/shared'
+import { WORKSPACES_PATH, type ApiErrorBody } from '@candy-mountain/shared'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fakeBins } from '../acp/test-support'
 import { CapabilityDefinitionError } from '../capabilities/definition'
@@ -12,11 +12,11 @@ import { CAPABILITY_DEFINITIONS, createTestApp, startTestPlatform, withoutCapabi
 import { claudeLoginAttempts } from '../plugins/claude-code/login-attempts'
 import { codexLoginAttempts } from '../plugins/codex/attempts'
 import { PLUGIN_TYPES } from '../plugins/types'
-import { createProject } from '../projects/projects'
 import { SESSION_FAMILIES } from '../threads/families'
 import { createTempDataDir, type TempDataDir } from '../testing'
 import { chatCodexDefinition } from './definition'
 import { codexLauncher } from './launcher'
+import { createWorkspaceWithRepository } from '../repository/test-support'
 
 const acp = { bins: fakeBins, killTimeoutMs: 1000 }
 
@@ -50,9 +50,9 @@ describe('the chat-codex definition', () => {
 
   async function codexSession(platform: Platform) {
     checkout = mkdtempSync(join(tmpdir(), 'candy-mountain-chat-codex-'))
-    const project = await createProject(platform.db, { name: 'alpha', slug: 'alpha', source: { kind: 'local-path', path: checkout } })
+    const project = await createWorkspaceWithRepository(platform.db, { name: 'alpha', slug: 'alpha', path: checkout })
     const sessions = platform.runtime.service(ACP_SESSIONS)!
-    return { sessions, session: sessions.create({ projectId: project.id, family: 'codex', actorId: 'actor', cwd: checkout }) }
+    return { sessions, session: sessions.create({ workspaceId: project.id, family: 'codex', actorId: 'actor', cwd: checkout }) }
   }
 
   it('brings the codex plugin type and family, which the platform no longer supplies itself', () => {
@@ -76,7 +76,8 @@ describe('the chat-codex definition', () => {
 
   it('boots without it: no codex plugin type or family, and a codex session is refused as unavailable', async () => {
     // Bots require the codex plugin type, so a product without chat-codex leaves them out too.
-    const { platform, app } = start(without('chat-codex', 'bots'))
+    // Bots need the codex family, and team the hasBots fact bots declares.
+    const { platform, app } = start(without('chat-codex', 'bots', 'team'))
 
     expect(platform.capabilities.has('chat-codex')).toBe(false)
     expect(platform.pluginTypes.has('codex')).toBe(false)
@@ -85,7 +86,7 @@ describe('the chat-codex definition', () => {
     await expect(sessions.prompt(session.id, 'hello')).rejects.toMatchObject({ code: 'family_unavailable', message: 'No agent harness launches codex sessions.' })
     expect(() => sessions.registerLauncher('codex', codexLauncher)).toThrow("Cannot register a launcher for unregistered session family 'codex'.")
 
-    const res = await app.request(`${PROJECTS_PATH}/alpha/sessions`, { method: 'POST', body: JSON.stringify({ family: 'codex' }), headers: { 'content-type': 'application/json' } })
+    const res = await app.request(`${WORKSPACES_PATH}/alpha/sessions`, { method: 'POST', body: JSON.stringify({ family: 'codex' }), headers: { 'content-type': 'application/json' } })
     expect(res.status).toBe(400)
     expect(((await res.json()) as ApiErrorBody).error.code).toBe('invalid_request')
   })

@@ -6,7 +6,7 @@ import { assessPluginInstance, type PluginReadiness } from './readiness'
 
 const issues = fixtureCapability('issues')
 const uptime = fixtureCapability('uptime', ['repository'])
-const team: AnyCapabilityManifest = { ...fixtureCapability('team'), requiresProjectFacts: ['hasBeads'] }
+const team: AnyCapabilityManifest = { ...fixtureCapability('team'), requiresWorkspaceFacts: ['hasBeads'] }
 const platformAgent = fixtureCapability('platform-agent')
 const CAPABILITIES = [issues, uptime, team, platformAgent]
 
@@ -21,7 +21,7 @@ const healthy: PluginReadiness = { name: 'Repository', state: 'ready' }
 
 function input(overrides: Partial<RegistryInput> = {}): RegistryInput {
   return {
-    project: { id: 'p1', slug: 'alpha', name: 'Alpha' },
+    workspace: { id: 'p1', slug: 'alpha', name: 'Alpha' },
     scopeUrlPrefix: 'p',
     scopeLabel: CANDY_MOUNTAIN_PRODUCT.scope.label,
     capabilities: CAPABILITIES,
@@ -31,6 +31,7 @@ function input(overrides: Partial<RegistryInput> = {}): RegistryInput {
     admin: false,
     plugins: { repository: healthy },
     facts: { hasBeads: true, isGitRepo: true, hasRemote: true, hasBots: true },
+    factMessages: { hasBeads: label => `The ${label.singular} has no .beads directory.` },
     ...overrides,
   }
 }
@@ -38,7 +39,7 @@ function input(overrides: Partial<RegistryInput> = {}): RegistryInput {
 const admin = (overrides: Partial<RegistryInput> = {}) => input({ admin: true, rungs: { issues: 'full', uptime: 'full', team: 'full', 'platform-agent': 'full' }, ...overrides })
 
 describe('computeRegistry', () => {
-  it('lists the Issues module group for a project with Issues enabled, with absolute view paths', () => {
+  it('lists the Issues module group for a workspace with Issues enabled, with absolute view paths', () => {
     const registry = computeRegistry(input({ enabledModules: ['issues'] }))
     expect(registry.modules).toEqual(['issues'])
     expect(registry.groups.map(g => g.id)).toEqual(['issues', 'platform-agent', 'system'])
@@ -51,7 +52,7 @@ describe('computeRegistry', () => {
     expect(registry.capabilities[0]).toEqual({ id: 'issues', label: 'Fixture issues', rung: 'read', chat: false, ready: true, reasons: [], modules: ['issues'], views: ['issues-home'], tools: ['issues.read', 'issues.search'] })
   })
 
-  it('maps the empty view path to the project home', () => {
+  it('maps the empty view path to the workspace home', () => {
     const home: AnyCapabilityManifest = { ...issues, views: [{ id: 'issues-home', label: 'Home', icon: 'i-lucide-box', path: '' }, issues.views[1]!] }
     const registry = computeRegistry(input({ capabilities: [home], enabledModules: ['issues'] }))
     expect(registry.views[0]!.to).toBe('/p/alpha')
@@ -127,13 +128,13 @@ describe('computeRegistry', () => {
     expect(registry.capabilities.find(c => c.id === 'uptime')!.tools).toEqual(['uptime.read', 'uptime.search'])
   })
 
-  it('checks a required project fact', () => {
+  it('checks a required workspace fact', () => {
     const registry = computeRegistry(admin({ facts: { hasBeads: false, isGitRepo: true, hasRemote: true, hasBots: true } }))
-    expect(registry.capabilities.find(c => c.id === 'team')).toMatchObject({ ready: false, reasons: [{ kind: 'project-fact', fact: 'hasBeads', message: 'The project has no .beads directory.' }] })
+    expect(registry.capabilities.find(c => c.id === 'team')).toMatchObject({ ready: false, reasons: [{ kind: 'workspace-fact', fact: 'hasBeads', message: 'The project has no .beads directory.' }] })
     expect(registry.degraded[0]!.reasons.map(r => r.capabilityId)).toEqual(['team'])
   })
 
-  it('excludes capabilities of modules the project has not enabled', () => {
+  it('excludes capabilities of modules the workspace has not enabled', () => {
     const registry = computeRegistry(admin({ enabledModules: [] }))
     expect(registry.capabilities.map(c => c.id)).toEqual(['platform-agent'])
     expect(registry.groups.map(g => g.id)).toEqual(['platform-agent', 'system'])

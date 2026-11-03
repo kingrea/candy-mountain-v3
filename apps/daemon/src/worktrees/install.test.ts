@@ -2,16 +2,17 @@ import { execFileSync } from 'node:child_process'
 import { chmodSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
-import type { Project } from '@candy-mountain/shared'
+import type { Workspace } from '@candy-mountain/shared'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { PlatformDatabase } from '../db'
-import { createProject } from '../projects/projects'
 import { createTempDataDir, openTestDatabase, type TempDataDir } from '../testing'
 import { createGitRunner } from './git'
 import { inspectWorktree } from './inspect'
 import { DEPENDENCY_OUTPUT_TAIL_BYTES, dependencyInstallState, detectPackageManager, type DependencyInstaller, installEnv, installWorktreeDependencies } from './install'
 import { createWorktreePool, type WorktreePool } from './pool'
 import { createTempGitRepo, TEST_GIT_ENV, type TempGitRepo } from './test-repo'
+import { repositoryPaths } from '../repository/service'
+import { createWorkspaceWithRepository } from '../repository/test-support'
 
 const dirs: string[] = []
 function tempDir(files: Record<string, string> = {}): string {
@@ -185,7 +186,7 @@ describe('worktree pool dependency installs', () => {
   let database: PlatformDatabase
   let data: TempDataDir
   let repo: TempGitRepo
-  let project: Project
+  let project: Workspace
   const gitRunner = createGitRunner({ env: TEST_GIT_ENV })
 
   beforeEach(() => {
@@ -200,8 +201,8 @@ describe('worktree pool dependency installs', () => {
   })
 
   async function poolFor(installer?: DependencyInstaller): Promise<WorktreePool> {
-    project = await createProject(database.db, { name: 'alpha', source: { kind: 'local-path', path: repo.clone } })
-    return createWorktreePool({ db: database.db, paths: { worktrees: join(data.root, 'worktrees') }, git: gitRunner, installer })
+    project = await createWorkspaceWithRepository(database.db, { name: 'alpha', path: repo.clone })
+    return createWorktreePool({ db: database.db, repository: repositoryPaths(database.db), paths: { worktrees: join(data.root, 'worktrees') }, git: gitRunner, installer })
   }
 
   function pushFiles(files: Record<string, string>) {

@@ -5,7 +5,7 @@ import { dataPaths } from './src/data-dir'
 export default defineConfig({
   dialect: 'sqlite',
   schema: './src/db/schema/index.ts',
-  out: './drizzle',
+  out: './src/db/migrations',
   dbCredentials: { url: dataPaths(resolveDataDir()).database },
   strict: true,
 })

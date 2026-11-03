@@ -1,4 +1,4 @@
-export const projectTeamPath = (slug: string) => `/projects/${slug}/team`
+export const workspaceTeamPath = (slug: string) => `/workspaces/${slug}/team`
 
 export const TEAM_NAME_MAX_LENGTH = 100
 export const TEAM_EMAIL_MAX_LENGTH = 254

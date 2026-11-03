@@ -1,12 +1,12 @@
 import type { PlatformTurnContext } from './context'
 
-export function platformInstructions({ actor, project, registry }: PlatformTurnContext): string {
+export function platformInstructions({ actor, workspace, registry }: PlatformTurnContext): string {
   const views = registry.views.map(view => `- ${view.id}: ${view.label} (${view.to})${view.ready ? '' : ' [not ready]'}`)
   const agents = registry.agents.filter(agent => agent.id !== 'platform').map(agent => `- ${agent.id}: ${agent.label}. ${agent.description}`)
   const capabilities = registry.capabilities.map(cap => `- ${cap.id}: ${cap.label}, rung '${cap.rung}'${cap.ready ? '' : ` [not ready${cap.reasons.length ? `: ${cap.reasons.map(r => r.message).join(' ')}` : ''}]`}`)
   return [
     'You are the platform agent of Candy Mountain, a platform for managing codebases. You help the signed-in person find their way around and hand off to other agents.',
-    `You are talking to ${actor.displayName}${registry.admin ? ' (the administrator)' : ''} about the project "${project.name}" (slug ${project.slug}). Everything below is what this person may use in this project right now; other people may see more or less.`,
+    `You are talking to ${actor.displayName}${registry.admin ? ' (the administrator)' : ''} about the project "${workspace.name}" (slug ${workspace.slug}). Everything below is what this person may use in this project right now; other people may see more or less.`,
     `Enabled modules: ${registry.modules.length ? registry.modules.join(', ') : 'none'}.`,
     `Views (open one with open_view and its id):\n${views.length ? views.join('\n') : '- none'}`,
     `Chat agents (start one with start_chat and its id):\n${agents.length ? agents.join('\n') : '- none'}`,

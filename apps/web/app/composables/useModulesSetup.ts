@@ -2,13 +2,13 @@ import {
   MODULES_PATH,
   PLUGIN_TYPES_PATH,
   PLUGINS_PATH,
-  projectModulesPath,
+  workspaceModulesPath,
   type ModuleId,
   type ModuleListResponse,
   type PluginInstanceListResponse,
   type PluginTypeListResponse,
-  type ProjectModulesResponse,
-  type SetProjectModulesRequest,
+  type WorkspaceModulesResponse,
+  type SetWorkspaceModulesRequest,
 } from '@candy-mountain/shared'
 
 /** Setup data for the selected project's Modules page; only the admin may call it, the daemon refuses others. */
@@ -18,13 +18,13 @@ export function useModulesSetup() {
   const toast = useToast()
 
   const definitions = useApi<ModuleListResponse>(MODULES_PATH, { key: 'modules-setup:definitions' })
-  const enablement = useApi<ProjectModulesResponse>(() => projectModulesPath(slug.value ?? ''), {
+  const enablement = useApi<WorkspaceModulesResponse>(() => workspaceModulesPath(slug.value ?? ''), {
     key: computed(() => `modules-setup:enabled:${slug.value ?? ''}`),
   })
   const pluginTypes = useApi<PluginTypeListResponse>(PLUGIN_TYPES_PATH, { key: 'modules-setup:plugin-types' })
   const instances = useApi<PluginInstanceListResponse>(PLUGINS_PATH, {
     key: computed(() => `modules-setup:instances:${slug.value ?? ''}`),
-    query: { project: slug },
+    query: { workspace: slug },
   })
 
   const requests = [definitions, enablement, pluginTypes, instances]
@@ -45,8 +45,8 @@ export function useModulesSetup() {
     saving.value = id
     try {
       const order = definitions.data.value?.modules.map(mod => mod.id) ?? []
-      const body: SetProjectModulesRequest = { modules: toggledModules(order, enabled.value, id, on) }
-      enablement.data.value = await $api<ProjectModulesResponse>(projectModulesPath(slug.value), { method: 'PUT', body })
+      const body: SetWorkspaceModulesRequest = { modules: toggledModules(order, enabled.value, id, on) }
+      enablement.data.value = await $api<WorkspaceModulesResponse>(workspaceModulesPath(slug.value), { method: 'PUT', body })
       await refreshProjectRegistry(slug.value)
       toast.add({ title: `${label} ${on ? 'enabled' : 'disabled'}`, color: 'success' })
     }

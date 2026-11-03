@@ -1,12 +1,11 @@
 import { mkdirSync, mkdtempSync, rmSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { PLUGINS_PATH, PROJECTS_PATH, type Actor, type CodexLoginAttempt, type CodexLoginStatusResponse, type CodexRevokeResponse, type PluginInstance, type PluginInstanceResponse, type Project } from '@candy-mountain/shared'
+import { PLUGINS_PATH, WORKSPACES_PATH, type Actor, type CodexLoginAttempt, type CodexLoginStatusResponse, type CodexRevokeResponse, type PluginInstance, type PluginInstanceResponse, type Workspace } from '@candy-mountain/shared'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createTestApp } from '../../testing/platform'
 import { ensureDataDir, type DataPaths } from '../../data-dir'
 import type { PlatformDatabase } from '../../db'
-import { createProject } from '../../projects/projects'
 import { createSecretsStore, MasterKey } from '../../secrets'
 import { openTestDatabase } from '../../testing'
 import { createPluginInstance, testPluginInstance } from '../instances'
@@ -17,6 +16,7 @@ import { interpretCodexStatus, parseDeviceAuthPrompt } from './cli'
 import { FAKE_USER_CODE, FAKE_VERIFICATION_URL, installFakeCodex, type FakeCodex } from './fake-codex'
 import { codexHome } from './home'
 import { codexLaunchContext } from './launch'
+import { createWorkspaceWithRepository } from '../../repository/test-support'
 
 interface Harness {
   root: string
@@ -25,9 +25,9 @@ interface Harness {
   attempts: CodexLoginAttempts
   database: PlatformDatabase
   deps: Parameters<typeof codexLaunchContext>[0] & Parameters<typeof testPluginInstance>[0]
-  project(slug: string): Promise<{ project: Project, instance: PluginInstance, home: string }>
+  project(slug: string): Promise<{ project: Workspace, instance: PluginInstance, home: string }>
   call(method: string, path: string): Promise<Response>
-  deleteProject(slug: string): Promise<Response>
+  deleteWorkspace(slug: string): Promise<Response>
   close(): Promise<void>
 }
 
@@ -62,12 +62,12 @@ function harness(options: CodexLoginAttemptsOptions = {}, config: Record<string,
     async project(slug) {
       const checkout = join(root, 'repos', slug)
       mkdirSync(checkout, { recursive: true })
-      const project = await createProject(database.db, { name: slug, slug, source: { kind: 'local-path', path: checkout } })
-      const instance = createPluginInstance(deps, { type: 'codex', scope: 'project', projectId: project.id, config })
+      const project = await createWorkspaceWithRepository(database.db, { name: slug, slug, path: checkout })
+      const instance = createPluginInstance(deps, { type: 'codex', scope: 'workspace', workspaceId: project.id, config })
       return { project, instance, home: codexHome(paths, instance.id) }
     },
     call: (method, path) => Promise.resolve(app.request(`${PLUGINS_PATH}${path}`, { method })),
-    deleteProject: slug => Promise.resolve(app.request(`${PROJECTS_PATH}/${slug}`, { method: 'DELETE' })),
+    deleteWorkspace: slug => Promise.resolve(app.request(`${WORKSPACES_PATH}/${slug}`, { method: 'DELETE' })),
     async close() {
       await attempts.close()
       database.close()
@@ -194,7 +194,7 @@ describe('codex device login', () => {
       h.fake.complete(home)
       await waitFor(() => status(instance.id), r => r.attempt?.status === 'succeeded')
     }
-    expect((await h.deleteProject('alpha')).status).toBe(204)
+    expect((await h.deleteWorkspace('alpha')).status).toBe(204)
     expect(() => statSync(alpha.home)).toThrow()
     expect(statSync(beta.home).isDirectory()).toBe(true)
   })
@@ -242,8 +242,8 @@ describe('codex device login', () => {
   it('runs the configured codexPath instead of codex on PATH', async () => {
     h = harness()
     vi.stubEnv('PATH', '/usr/bin:/bin')
-    const project = await createProject(h.database.db, { name: 'alpha', slug: 'alpha', source: { kind: 'local-path', path: h.root } })
-    const instance = createPluginInstance(h.deps, { type: 'codex', scope: 'project', projectId: project.id, config: { codexPath: h.fake.bin } })
+    const project = await createWorkspaceWithRepository(h.database.db, { name: 'alpha', slug: 'alpha', path: h.root })
+    const instance = createPluginInstance(h.deps, { type: 'codex', scope: 'workspace', workspaceId: project.id, config: { codexPath: h.fake.bin } })
     expect((await json<CodexLoginAttempt>(h.call('POST', `/${instance.id}/start-login`))).userCode).toBe(FAKE_USER_CODE)
   })
 
@@ -260,10 +260,10 @@ describe('codex device login', () => {
   it('rejects a relative codexPath and a second instance per project', async () => {
     h = harness()
     const { project } = await h.project('alpha')
-    expect(() => createPluginInstance(h!.deps, { type: 'codex', scope: 'project', projectId: project.id })).toThrow(/already has a Codex instance/)
-    const beta = await createProject(h.database.db, { name: 'beta', slug: 'beta', source: { kind: 'local-path', path: h.root } })
-    expect(() => createPluginInstance(h!.deps, { type: 'codex', scope: 'project', projectId: beta.id, config: { codexPath: 'codex' } })).toThrow(/codexPath/)
-    expect(() => createPluginInstance(h!.deps, { type: 'codex', scope: 'global', projectId: null })).toThrow(/project scope only/)
+    expect(() => createPluginInstance(h!.deps, { type: 'codex', scope: 'workspace', workspaceId: project.id })).toThrow(/already has a Codex instance/)
+    const beta = await createWorkspaceWithRepository(h.database.db, { name: 'beta', slug: 'beta', path: h.root })
+    expect(() => createPluginInstance(h!.deps, { type: 'codex', scope: 'workspace', workspaceId: beta.id, config: { codexPath: 'codex' } })).toThrow(/codexPath/)
+    expect(() => createPluginInstance(h!.deps, { type: 'codex', scope: 'global', workspaceId: null })).toThrow(/workspace scope only/)
   })
 })
 

@@ -13,14 +13,14 @@ import { pluginInstances } from '../db/schema'
 import { hasBd } from '../issues/test-workspace'
 import { createPluginInstance } from '../plugins/instances/instances'
 import { GOOD_TOKEN, json as hostJson, stubHosts } from '../plugins/repository/fake-hosts'
-import { setEnabledModules } from '../project-modules/enablement'
-import { createProject } from '../projects/projects'
+import { setEnabledModules } from '../workspace-modules/enablement'
 import { startAcpPlatform, type AcpPlatform, type AcpPlatformOptions } from '../chat-claude-code/test-support'
 import { MasterKey } from '../secrets'
 import type { SessionManager, SessionMessage } from '../sessions'
 import { createTempDataDir, type TempDataDir } from '../testing'
 import { findThread } from '../threads/store'
 import { createTempGitRepo, TEST_GIT_ENV, type TempGitRepo } from '../worktrees/test-repo'
+import { createWorkspaceWithRepository } from '../repository/test-support'
 
 const ADMIN: Actor = { id: 'admin-actor', username: 'admin', displayName: 'Admin', roles: ['admin'] }
 const CLAUDE_PERSONA = '---\nname: ana\ndescription: Ana fixes small issues.\n---\nYou are Ana. Keep changes small.\n'
@@ -89,8 +89,8 @@ const readDeps = (p: AcpPlatform): BotReadDeps => ({ db: p.db, pluginTypes: p.pl
 
 /** Stands in for a passing connection test: the starter only reads the stored result. */
 function setHealth(p: AcpPlatform, projectId: string, type: PluginTypeId, healthy: boolean, config: Record<string, unknown> = {}): void {
-  const existing = p.db.select().from(pluginInstances).where(eq(pluginInstances.projectId, projectId)).all().find(row => row.typeId === type)
-  const id = existing?.id ?? createPluginInstance({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly }, { type, scope: 'project', projectId, config, secrets: {} }).id
+  const existing = p.db.select().from(pluginInstances).where(eq(pluginInstances.workspaceId, projectId)).all().find(row => row.typeId === type)
+  const id = existing?.id ?? createPluginInstance({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly }, { type, scope: 'workspace', workspaceId: projectId, config, secrets: {} }).id
   p.db.update(pluginInstances).set({ health: healthy ? { healthy: true } : { healthy: false, reason: 'Not logged in.' }, healthCheckedAt: new Date().toISOString() }).where(eq(pluginInstances.id, id)).run()
 }
 
@@ -103,7 +103,7 @@ interface SetupOptions {
   worktrees?: AcpPlatformOptions['worktrees']
 }
 
-/** Project `alpha` on a temp clone with a bare origin, personas `ana` (Claude) and `cody` (Codex) on main, both agent plugins stored healthy. */
+/** Workspace `alpha` on a temp clone with a bare origin, personas `ana` (Claude) and `cody` (Codex) on main, both agent plugins stored healthy. */
 async function setup({ family = 'claude-code', writeScope = 'write-confirm', personaName = 'ana', beads = false, worktrees }: SetupOptions = {}) {
   repo = createTempGitRepo()
   commitFile('.claude/agents/ana.md', CLAUDE_PERSONA)
@@ -116,10 +116,10 @@ async function setup({ family = 'claude-code', writeScope = 'write-confirm', per
   temp = createTempDataDir()
   const p = startAcpPlatform(temp.root, { secretsKey: MasterKey.generate(), acp: { bins: fakeBins, killTimeoutMs: 1000 }, worktrees })
   platform = p
-  const project = await createProject(p.db, { name: 'alpha', slug: 'alpha', source: { kind: 'local-path', path: repo.clone } })
+  const project = await createWorkspaceWithRepository(p.db, { name: 'alpha', slug: 'alpha', path: repo.clone })
   // The session routes the console prompts through are gated on the chat capabilities of the Agent Hub module.
   setEnabledModules(p.db, project.id, ['agent-hub'])
-  createPluginInstance({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly }, { type: 'repository', scope: 'project', projectId: project.id, config: { host: 'github', owner: 'jack', repo: 'candy' }, secrets: { token: GOOD_TOKEN } })
+  createPluginInstance({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly }, { type: 'repository', scope: 'workspace', workspaceId: project.id, config: { host: 'github', owner: 'jack', repo: 'candy' }, secrets: { token: GOOD_TOKEN } })
   setHealth(p, project.id, 'claude-code', true, { claudePath: fakeClaude(temp.root) })
   setHealth(p, project.id, 'codex', true)
   const bot = await createBot(readDeps(p), project.id, parseCreateBot({ name: 'Ana Bot', family, writeScope, personaName }))
@@ -183,7 +183,7 @@ describe.skipIf(!hasBd)('bot session end to end', () => {
     expect(instructions).toContain('jack/candy on GitHub')
     expect(instructions).not.toContain('post_blocks')
 
-    expect(started.thread).toMatchObject({ id: threadId, projectId: project.id, actorId: ADMIN.id, agentId: botAgentId(bot.id), currentSessionId: session.id, title: 'Ana Bot', working: false })
+    expect(started.thread).toMatchObject({ id: threadId, workspaceId: project.id, actorId: ADMIN.id, agentId: botAgentId(bot.id), currentSessionId: session.id, title: 'Ana Bot', working: false })
     expect(listActivityEvents(p.db, project.id).events[0]).toMatchObject({ type: 'session.started', title: 'Bot "Ana Bot" session started', payload: { sessionId: session.id, family: 'claude-code', actorId: ADMIN.id, botId: bot.id, botName: 'Ana Bot' } })
 
     const usedBefore = p.worktrees.get(lease.id)!.lastUsedAt

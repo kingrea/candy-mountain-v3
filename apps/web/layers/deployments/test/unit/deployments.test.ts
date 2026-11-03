@@ -22,13 +22,13 @@ const netlify: LiveVersionSourceInfo = { id: 'netlify', label: 'Netlify', descri
 const heroku: LiveVersionSourceInfo = { id: 'heroku', label: 'Heroku', description: 'Heroku releases.', fields: [], plugin: 'heroku' }
 const SOURCES = [custom, netlify, heroku]
 
-function instance(type: string, health: PluginInstance['health'], scope: PluginInstance['scope'] = 'project'): PluginInstance {
+function instance(type: string, health: PluginInstance['health'], scope: PluginInstance['scope'] = 'workspace'): PluginInstance {
   return {
     id: `${type}-${scope}`,
     type: type as PluginInstance['type'],
     scope,
-    projectId: scope === 'project' ? 'p1' : null,
-    projectSlug: scope === 'project' ? 'acme' : null,
+    workspaceId: scope === 'workspace' ? 'p1' : null,
+    workspaceSlug: scope === 'workspace' ? 'acme' : null,
     config: {},
     secrets: {},
     health,

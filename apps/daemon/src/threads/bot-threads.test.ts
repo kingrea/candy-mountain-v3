@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { botAgentId, botSessionsPath, chatAgentOptionsPath, projectRegistryPath, projectThreadPath, projectThreadsPath, sessionPromptPath, threadClosePath, threadPromptPath, type Actor, type AgentSessionEvent, type AgentSessionEventKind, type ApiErrorBody, type BotFamily, type BotSessionStartResponse, type ChatAgentOptionsResponse, type ChatThreadCloseResponse, type ChatThreadListResponse, type ChatThreadPromptResponse, type ChatThreadResponse, type PluginTypeId, type RegistryResponse } from '@candy-mountain/shared'
+import { botAgentId, botSessionsPath, chatAgentOptionsPath, workspaceRegistryPath, workspaceThreadPath, workspaceThreadsPath, sessionPromptPath, threadClosePath, threadPromptPath, type Actor, type AgentSessionEvent, type AgentSessionEventKind, type ApiErrorBody, type BotFamily, type BotSessionStartResponse, type ChatAgentOptionsResponse, type ChatThreadCloseResponse, type ChatThreadListResponse, type ChatThreadPromptResponse, type ChatThreadResponse, type PluginTypeId, type RegistryResponse } from '@candy-mountain/shared'
 import { eq } from 'drizzle-orm'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fakeBins, fakeClaude } from '../acp/test-support'
@@ -11,13 +11,13 @@ import { pluginInstances } from '../db/schema'
 import { addRole } from '../grants/test-access'
 import { createPluginInstance } from '../plugins/instances/instances'
 import { GOOD_TOKEN, stubHosts } from '../plugins/repository/fake-hosts'
-import { setEnabledModules } from '../project-modules/enablement'
-import { createProject, sourcePath } from '../projects/projects'
+import { setEnabledModules } from '../workspace-modules/enablement'
 import { startAcpPlatform, type AcpPlatform } from '../chat-claude-code/test-support'
 import { MasterKey } from '../secrets'
 import type { SessionManager, SessionMessage } from '../sessions'
 import { createTempDataDir, type TempDataDir } from '../testing'
 import { createTempGitRepo, type TempGitRepo } from '../worktrees/test-repo'
+import { createWorkspaceWithRepository } from '../repository/test-support'
 
 const ADMIN: Actor = { id: 'admin-actor', username: 'admin', displayName: 'Admin', roles: ['admin'] }
 const DEVELOPER: Actor = { id: 'dev-actor', username: 'dev', displayName: 'Dev', roles: ['developer'] }
@@ -68,9 +68,9 @@ function commitFile(path: string, text: string): void {
   repo!.git(repo!.clone, 'push', '--quiet', 'origin', 'main')
 }
 
-function setHealth(p: AcpPlatform, projectId: string, type: PluginTypeId, config: Record<string, unknown> = {}, secrets: Record<string, string> = {}): void {
-  const existing = p.db.select().from(pluginInstances).where(eq(pluginInstances.projectId, projectId)).all().find(row => row.typeId === type)
-  const id = existing?.id ?? createPluginInstance({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly }, { type, scope: 'project', projectId, config, secrets }).id
+function setHealth(p: AcpPlatform, workspaceId: string, type: PluginTypeId, config: Record<string, unknown> = {}, secrets: Record<string, string> = {}): void {
+  const existing = p.db.select().from(pluginInstances).where(eq(pluginInstances.workspaceId, workspaceId)).all().find(row => row.typeId === type)
+  const id = existing?.id ?? createPluginInstance({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly }, { type, scope: 'workspace', workspaceId, config, secrets }).id
   p.db.update(pluginInstances).set({ health: { healthy: true }, healthCheckedAt: new Date().toISOString() }).where(eq(pluginInstances.id, id)).run()
 }
 
@@ -81,7 +81,7 @@ function boot(dataDir: string, key: MasterKey): AcpPlatform {
   return platform
 }
 
-/** Project `alpha` on a temp clone with a bare origin and persona `ana` on main; Repository and Claude Code stored healthy; one bot without Slack keys. */
+/** Workspace `alpha` on a temp clone with a bare origin and persona `ana` on main; Repository and Claude Code stored healthy; one bot without Slack keys. */
 async function setup({ family = 'claude-code', verified = true }: { family?: BotFamily, verified?: boolean } = {}) {
   repo = createTempGitRepo()
   commitFile('.claude/agents/ana.md', CLAUDE_PERSONA)
@@ -89,13 +89,13 @@ async function setup({ family = 'claude-code', verified = true }: { family?: Bot
   temp = createTempDataDir()
   const key = MasterKey.generate()
   const p = boot(temp.root, key)
-  const project = await createProject(p.db, { name: 'alpha', slug: 'alpha', source: { kind: 'local-path', path: repo.clone } })
-  setEnabledModules(p.db, project.id, ['agent-hub'])
-  setHealth(p, project.id, 'repository', { host: 'github', owner: 'jack', repo: 'candy' }, { token: GOOD_TOKEN })
-  setHealth(p, project.id, 'claude-code', { claudePath: fakeClaude(temp.root) })
-  const bot = await createBot(readDeps(p), project.id, parseCreateBot({ name: 'Ana Bot', family, writeScope: 'write-confirm', personaName: 'ana' }))
+  const workspace = await createWorkspaceWithRepository(p.db, { name: 'alpha', slug: 'alpha', path: repo.clone })
+  setEnabledModules(p.db, workspace.id, ['agent-hub'])
+  setHealth(p, workspace.id, 'repository', { host: 'github', owner: 'jack', repo: 'candy' }, { token: GOOD_TOKEN })
+  setHealth(p, workspace.id, 'claude-code', { claudePath: fakeClaude(temp.root) })
+  const bot = await createBot(readDeps(p), workspace.id, parseCreateBot({ name: 'Ana Bot', family, writeScope: 'write-confirm', personaName: 'ana' }))
   if (verified) expect(recordBotPersonaCheck(p.db, bot.id, bot.updatedAt, { status: 'verified' })).toBe(true)
-  return { p, project, bot, key }
+  return { p, workspace, bot, key }
 }
 
 function waitFor(sessions: SessionManager, id: string, kind: AgentSessionEventKind): Promise<AgentSessionEvent> {
@@ -123,9 +123,9 @@ function textOf(p: AcpPlatform, sessionId: string, match: string): string {
   return event?.kind === 'text' ? event.text : ''
 }
 
-const agentsOf = async (p: AcpPlatform, actor: Actor = ADMIN) => (await json<RegistryResponse>(await call(p, 'GET', projectRegistryPath('alpha'), undefined, actor), 200)).agents
-const getThread = async (p: AcpPlatform, id: string) => json<ChatThreadResponse>(await call(p, 'GET', projectThreadPath('alpha', id)), 200)
-const listThreads = async (p: AcpPlatform) => (await json<ChatThreadListResponse>(await call(p, 'GET', projectThreadsPath('alpha')), 200)).threads
+const agentsOf = async (p: AcpPlatform, actor: Actor = ADMIN) => (await json<RegistryResponse>(await call(p, 'GET', workspaceRegistryPath('alpha'), undefined, actor), 200)).agents
+const getThread = async (p: AcpPlatform, id: string) => json<ChatThreadResponse>(await call(p, 'GET', workspaceThreadPath('alpha', id)), 200)
+const listThreads = async (p: AcpPlatform) => (await json<ChatThreadListResponse>(await call(p, 'GET', workspaceThreadsPath('alpha')), 200)).threads
 
 async function prompt(p: AcpPlatform, threadId: string, text: string): Promise<ChatThreadPromptResponse> {
   return json<ChatThreadPromptResponse>(await call(p, 'POST', threadPromptPath('alpha', threadId), { text }), 202)
@@ -140,7 +140,7 @@ async function promptAndWait(p: AcpPlatform, threadId: string, text: string): Pr
 }
 
 describe('bots as chat agents', () => {
-  it('lists a bot whose only gaps are its Slack keys, as a bot agent of the project', async () => {
+  it('lists a bot whose only gaps are its Slack keys, as a bot agent of the workspace', async () => {
     const { p, bot } = await setup()
     expect((await getBot(readDeps(p), bot.id)).status).toEqual({ warnings: ['Slack bot token is missing', 'Slack app-level token is missing'] })
     expect(await agentsOf(p)).toContainEqual({
@@ -156,10 +156,10 @@ describe('bots as chat agents', () => {
   })
 
   it('leaves out a bot that is not usable yet, and actors without chat on bots or on the bot\'s family', async () => {
-    const { p, project } = await setup({ verified: false })
+    const { p, workspace } = await setup({ verified: false })
     expect((await agentsOf(p)).map(agent => agent.id)).toEqual(['claude-code'])
 
-    const ready = await createBot(readDeps(p), project.id, parseCreateBot({ name: 'Ready Bot', family: 'claude-code', personaName: 'ana' }))
+    const ready = await createBot(readDeps(p), workspace.id, parseCreateBot({ name: 'Ready Bot', family: 'claude-code', personaName: 'ana' }))
     recordBotPersonaCheck(p.db, ready.id, ready.updatedAt, { status: 'verified' })
     expect((await agentsOf(p)).map(agent => agent.id)).toEqual(['claude-code', botAgentId(ready.id)])
 
@@ -168,25 +168,25 @@ describe('bots as chat agents', () => {
     expect((await agentsOf(p, DEVELOPER)).map(agent => agent.id)).toEqual(['claude-code', botAgentId(ready.id)])
     await json(await call(p, 'PUT', '/grants', { role: 'developer', target: { kind: 'module', id: 'agent-hub' }, rungs: { bots: 'none' } }), 200)
     expect((await agentsOf(p, DEVELOPER)).map(agent => agent.id)).toEqual(['claude-code'])
-    expect(await errorOf(await call(p, 'POST', projectThreadsPath('alpha'), { agentId: botAgentId(ready.id) }, DEVELOPER))).toEqual({ status: 403, code: 'not_granted' })
+    expect(await errorOf(await call(p, 'POST', workspaceThreadsPath('alpha'), { agentId: botAgentId(ready.id) }, DEVELOPER))).toEqual({ status: 403, code: 'not_granted' })
     await json(await call(p, 'PUT', '/grants', { role: 'developer', target: { kind: 'module', id: 'agent-hub' }, rungs: { 'chat-claude-code': 'none' } }), 200)
     expect((await agentsOf(p, DEVELOPER)).map(agent => agent.id)).toEqual([])
-    expect(await errorOf(await call(p, 'POST', projectThreadsPath('alpha'), { agentId: botAgentId(ready.id) }, DEVELOPER))).toEqual({ status: 403, code: 'not_granted' })
+    expect(await errorOf(await call(p, 'POST', workspaceThreadsPath('alpha'), { agentId: botAgentId(ready.id) }, DEVELOPER))).toEqual({ status: 403, code: 'not_granted' })
 
-    expect(await errorOf(await call(p, 'POST', projectThreadsPath('alpha'), { agentId: 'bot:nobody' }))).toEqual({ status: 404, code: 'not_found' })
+    expect(await errorOf(await call(p, 'POST', workspaceThreadsPath('alpha'), { agentId: 'bot:nobody' }))).toEqual({ status: 404, code: 'not_found' })
   })
 })
 
 describe('bot threads', () => {
   it('runs the bot in its own worktree, keeps an unpushed worktree on close and releases it once pushed, while a plain thread uses the checkout', async () => {
-    const { p, project, bot } = await setup()
+    const { p, bot } = await setup()
     const agentId = botAgentId(bot.id)
     const statusBefore = repo!.git(repo!.clone, 'status', '--porcelain')
 
-    expect(await errorOf(await call(p, 'POST', projectThreadsPath('alpha'), { agentId, model: 'opus' }))).toEqual({ status: 400, code: 'invalid_request' })
+    expect(await errorOf(await call(p, 'POST', workspaceThreadsPath('alpha'), { agentId, model: 'opus' }))).toEqual({ status: 400, code: 'invalid_request' })
     expect((await json<ChatAgentOptionsResponse>(await call(p, 'GET', chatAgentOptionsPath('alpha', agentId)), 200)).options).toEqual({ agentId, family: 'claude-code', models: [], efforts: [] })
 
-    const created = await json<ChatThreadResponse>(await call(p, 'POST', projectThreadsPath('alpha'), { agentId }), 201)
+    const created = await json<ChatThreadResponse>(await call(p, 'POST', workspaceThreadsPath('alpha'), { agentId }), 201)
     const { thread, session, bot: info } = created
     expect(thread).toMatchObject({ agentId, actorId: ADMIN.id, title: null, working: false })
     expect(info).toMatchObject({ botId: bot.id, name: 'Ana Bot', branch: `cm/bot/ana-bot/${session.id}`, baseBranch: 'main', worktree: 'active', keptUnpushed: false })
@@ -213,8 +213,8 @@ describe('bot threads', () => {
     p.decisions.answer(pending.id, { optionKind: 'deny', surface: 'web', actorId: ADMIN.id })
     await until(async () => (await listThreads(p)).find(t => t.id === thread.id)?.working === false)
 
-    const plain = await json<ChatThreadResponse>(await call(p, 'POST', projectThreadsPath('alpha'), { agentId: 'claude-code' }), 201)
-    expect(plain.session.cwd).toBe(sourcePath(project.source))
+    const plain = await json<ChatThreadResponse>(await call(p, 'POST', workspaceThreadsPath('alpha'), { agentId: 'claude-code' }), 201)
+    expect(plain.session.cwd).toBe(repo!.clone)
     expect(plain.bot).toBeUndefined()
     expect(await errorOf(await call(p, 'POST', threadClosePath('alpha', plain.thread.id)))).toEqual({ status: 422, code: 'unsupported_agent' })
 

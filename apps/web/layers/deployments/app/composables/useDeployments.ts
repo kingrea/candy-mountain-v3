@@ -1,7 +1,7 @@
 import {
   LIVE_VERSION_SOURCES_PATH,
-  projectEnvironmentsPath,
-  projectLiveVersionsPath,
+  workspaceEnvironmentsPath,
+  workspaceLiveVersionsPath,
   type EnvironmentLiveVersion,
   type EnvironmentListResponse,
   type LiveVersionSourceListResponse,
@@ -19,7 +19,7 @@ export function useDeploymentsEnvironments() {
 
   const request = useAsyncData(
     () => deploymentsEnvironmentsDataKey(slug.value),
-    () => (slug.value ? $api<EnvironmentListResponse>(projectEnvironmentsPath(slug.value)) : Promise.resolve({ environments: [] })),
+    () => (slug.value ? $api<EnvironmentListResponse>(workspaceEnvironmentsPath(slug.value)) : Promise.resolve({ environments: [] })),
   )
 
   // Nuxt seeds a new key with the previous key's data, so another project's environments are filtered out.
@@ -37,7 +37,7 @@ export function useDeploymentsLiveVersions() {
 
   const request = useAsyncData(
     () => deploymentsLiveDataKey(slug.value),
-    () => (slug.value ? $api<LiveVersionsResponse>(projectLiveVersionsPath(slug.value)) : Promise.resolve({ environments: [] })),
+    () => (slug.value ? $api<LiveVersionsResponse>(workspaceLiveVersionsPath(slug.value)) : Promise.resolve({ environments: [] })),
     { server: false, lazy: true },
   )
 

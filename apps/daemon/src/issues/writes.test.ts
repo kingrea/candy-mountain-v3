@@ -6,7 +6,7 @@ import { IssueError } from './errors'
 import type { IssueProject, IssuesService } from './service'
 import { createIssueWriter } from './writes'
 
-const project: IssueProject = { id: 'p1', source: { kind: 'local-path', path: '/repo' } }
+const project: IssueProject = { id: 'p1', path: '/repo' }
 
 function fakeReads() {
   return {

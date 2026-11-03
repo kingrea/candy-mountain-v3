@@ -1,12 +1,12 @@
-import type { Actor, Project, RegistryResponse } from '@candy-mountain/shared'
+import type { Actor, Workspace, RegistryResponse } from '@candy-mountain/shared'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { CapabilityRegistry } from '../capabilities'
 import type { CapabilityAccess } from '../registry'
 
-/** Everything one turn needs, resolved for the actor and project before the model runs. */
+/** Everything one turn needs, resolved for the actor and workspace before the model runs. */
 export interface PlatformTurnContext {
   actor: Actor
-  project: Project
+  workspace: Workspace
   capabilities: CapabilityRegistry
   registry: RegistryResponse
   scopeUrlPrefix: string

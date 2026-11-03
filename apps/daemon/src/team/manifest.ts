@@ -8,7 +8,7 @@ export const teamCapability = defineCapability({
   agents: [],
   jobs: [],
   requiresPlugins: [],
-  requiresProjectFacts: ['hasBots'],
+  requiresWorkspaceFacts: ['hasBots'],
   tools: [],
   ladder: [
     { name: 'none', label: 'None', description: 'No access to the project\'s team.', views: [], chat: false, tools: {} },

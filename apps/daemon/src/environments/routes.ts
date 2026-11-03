@@ -6,8 +6,8 @@ import { Hono, type Context } from 'hono'
 import type { AppEnv } from '../app'
 import { requireAdmin } from '../auth/admin'
 import type { SecretsReader } from '../plugins/instances/instances'
-import { ProjectError } from '../projects/errors'
-import { getProjectBySlug } from '../projects/projects'
+import { WorkspaceError } from '../workspaces/errors'
+import { getWorkspaceBySlug } from '../workspaces/workspaces'
 import { LIVE_VERSION_SOURCE_REGISTRY } from './builtin-sources'
 import { EnvironmentError } from './errors'
 import { createEnvironment, deleteEnvironment, getEnvironment, listEnvironments, readLiveVersions, updateEnvironment } from './service'
@@ -33,13 +33,13 @@ export function environmentRoutes(secretsReader: SecretsReader, { sources = LIVE
   const app = new Hono<AppEnv>()
   const admin = requireAdmin()
   app.onError((error, c) => {
-    if (error instanceof EnvironmentError || error instanceof ProjectError) {
+    if (error instanceof EnvironmentError || error instanceof WorkspaceError) {
       return c.json<ApiErrorBody>({ error: { code: error.code, message: error.message } }, error.status)
     }
     throw error
   })
 
-  const projectOf = (c: Context<AppEnv>) => getProjectBySlug(c.var.db, c.req.param('slug')!)
+  const projectOf = (c: Context<AppEnv>) => getWorkspaceBySlug(c.var.db, c.req.param('slug')!)
 
   app.get('/:slug/environments', c =>
     c.json<EnvironmentListResponse>({ environments: listEnvironments(c.var.db, projectOf(c).id) }),

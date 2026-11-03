@@ -2,8 +2,8 @@ import type { ApiErrorBody, TeamMemberListResponse, TeamMemberResponse } from '@
 import { Hono, type Context } from 'hono'
 import type { AppEnv } from '../app'
 import { requireAdmin } from '../auth/admin'
-import { ProjectError } from '../projects/errors'
-import { getProjectBySlug } from '../projects/projects'
+import { WorkspaceError } from '../workspaces/errors'
+import { getWorkspaceBySlug } from '../workspaces/workspaces'
 import { TeamError } from './errors'
 import { addTeamMember, getTeamMember, listTeamMembers, removeTeamMember, updateTeamMember } from './service'
 import { parseCreateTeamMember, parseUpdateTeamMember } from './validation'
@@ -22,13 +22,13 @@ export function teamMemberRoutes() {
   const app = new Hono<AppEnv>()
   const admin = requireAdmin()
   app.onError((error, c) => {
-    if (error instanceof TeamError || error instanceof ProjectError) {
+    if (error instanceof TeamError || error instanceof WorkspaceError) {
       return c.json<ApiErrorBody>({ error: { code: error.code, message: error.message } }, error.status)
     }
     throw error
   })
 
-  const projectIdOf = (c: Context<AppEnv>) => getProjectBySlug(c.var.db, c.req.param('slug')!).id
+  const projectIdOf = (c: Context<AppEnv>) => getWorkspaceBySlug(c.var.db, c.req.param('slug')!).id
 
   app.get('/:slug/team', admin, c =>
     c.json<TeamMemberListResponse>({ members: listTeamMembers(c.var.db, projectIdOf(c)) }),

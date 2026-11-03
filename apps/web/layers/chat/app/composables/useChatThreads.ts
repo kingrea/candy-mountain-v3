@@ -1,6 +1,6 @@
 import {
-  projectThreadPath,
-  projectThreadsPath,
+  workspaceThreadPath,
+  workspaceThreadsPath,
   threadCancelPath,
   threadPromptPath,
   threadReadPath,
@@ -24,16 +24,16 @@ export function useChatThreads(slug: MaybeRefOrGetter<string | null | undefined>
     async () => {
       await loaded
       const current = toValue(slug)
-      return current && enabled.value ? $api<ChatThreadListResponse>(projectThreadsPath(current)) : { threads: [] }
+      return current && enabled.value ? $api<ChatThreadListResponse>(workspaceThreadsPath(current)) : { threads: [] }
     },
     { watch: [enabled] },
   )
 
   const threads = computed(() => {
-    const projectId = registry.value?.project.id
+    const projectId = registry.value?.workspace.id
     const wanted = toValue(agentId)
     return (request.data.value?.threads ?? [])
-      .filter(thread => thread.projectId === projectId && (!wanted || thread.agentId === wanted))
+      .filter(thread => thread.workspaceId === projectId && (!wanted || thread.agentId === wanted))
       .sort((a, b) => b.lastActivityAt.localeCompare(a.lastActivityAt))
   })
 
@@ -50,7 +50,7 @@ export function useChatThreads(slug: MaybeRefOrGetter<string | null | undefined>
   }
 
   async function create(body: CreateChatThreadRequest): Promise<ChatThreadResponse> {
-    const created = await $api<ChatThreadResponse>(projectThreadsPath(path()), { method: 'POST', body })
+    const created = await $api<ChatThreadResponse>(workspaceThreadsPath(path()), { method: 'POST', body })
     replace(created.thread)
     return created
   }
@@ -75,7 +75,7 @@ export function useChatThreads(slug: MaybeRefOrGetter<string | null | undefined>
 
   /** A model or effort change starts a fresh session; refresh the thread afterwards so the panel follows it. */
   async function update(threadId: string, body: UpdateChatThreadRequest): Promise<ChatThreadResponse> {
-    const response = await $api<ChatThreadResponse>(projectThreadPath(path(), threadId), { method: 'PATCH', body })
+    const response = await $api<ChatThreadResponse>(workspaceThreadPath(path(), threadId), { method: 'PATCH', body })
     replace(response.thread)
     return response
   }
@@ -103,7 +103,7 @@ export function useChatThread(slug: MaybeRefOrGetter<string | null | undefined>,
     () => {
       const current = toValue(slug)
       const id = toValue(threadId)
-      return current && id ? $api<ChatThreadResponse>(projectThreadPath(current, id)) : Promise.resolve(null)
+      return current && id ? $api<ChatThreadResponse>(workspaceThreadPath(current, id)) : Promise.resolve(null)
     },
   )
 

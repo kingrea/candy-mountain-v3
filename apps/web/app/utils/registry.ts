@@ -1,4 +1,4 @@
-import type { CapabilityId, ProjectFactId, ReadinessReason, RegistryCapability, RegistryResponse, RegistryView } from '@candy-mountain/shared'
+import type { CapabilityId, WorkspaceFactId, ReadinessReason, RegistryCapability, RegistryResponse, RegistryView } from '@candy-mountain/shared'
 import { projectPluginsPagePath } from './navigation'
 import { PROJECTS_PAGE_PATH, projectPath } from './project-scope'
 import { SCOPE } from './scope-label'
@@ -29,8 +29,8 @@ export interface LockoutAction {
   to: string
 }
 
-// A missing project fact is fixed where that fact comes from; anything unlisted is a path fact, re-checked on the Projects page.
-const FACT_ACTIONS: Partial<Record<ProjectFactId, { label: string, icon: string, segments: string[] }>> = {
+// A missing project fact is fixed where that fact comes from; anything unlisted is a repository fact, re-checked on the Projects page.
+const FACT_ACTIONS: Partial<Record<WorkspaceFactId, { label: string, icon: string, segments: string[] }>> = {
   hasBots: { label: 'Add a bot', icon: 'i-lucide-bot', segments: ['bots'] },
 }
 
@@ -43,7 +43,7 @@ export function lockoutActions(reasons: readonly ReadinessReason[], slug: string
     add({ label: 'Configure plugins', icon: 'i-lucide-plug', to: projectPluginsPagePath(slug) })
   }
   for (const reason of reasons) {
-    if (reason.kind !== 'project-fact') continue
+    if (reason.kind !== 'workspace-fact') continue
     const fix = FACT_ACTIONS[reason.fact]
     add(fix
       ? { label: fix.label, icon: fix.icon, to: projectPath(slug, ...fix.segments) }

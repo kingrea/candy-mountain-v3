@@ -9,7 +9,7 @@ import {
   BOT_SECRET_PREFIXES,
   BOT_WRITE_SCOPE_NAMES,
   BOT_WRITE_SCOPES,
-  projectBotsPath,
+  workspaceBotsPath,
   SLACK_CHANNEL_ID_PATTERN,
   type Bot,
   type BotAnswersIn,
@@ -122,7 +122,7 @@ async function checkPersona() {
   personaError.value = null
   try {
     const body: BotPersonaPreviewRequest = { personaName, baseBranch: baseBranch || null }
-    const files = await $api<BotPersonaPreviewResponse>(`${projectBotsPath(slug.value)}/check-persona`, { method: 'POST', body })
+    const files = await $api<BotPersonaPreviewResponse>(`${workspaceBotsPath(slug.value)}/check-persona`, { method: 'POST', body })
     if (request !== personaRequest) return
     personaCheck.value = { personaName, baseBranch, files }
   }
@@ -233,8 +233,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   const bot = props.bot
   try {
     const response = bot
-      ? await $api<BotResponse>(`${projectBotsPath(slug.value)}/${bot.id}`, { method: 'PATCH', body: updateBody(event.data, bot) })
-      : await $api<BotResponse>(projectBotsPath(slug.value), { method: 'POST', body: createBody(event.data) })
+      ? await $api<BotResponse>(`${workspaceBotsPath(slug.value)}/${bot.id}`, { method: 'PATCH', body: updateBody(event.data, bot) })
+      : await $api<BotResponse>(workspaceBotsPath(slug.value), { method: 'POST', body: createBody(event.data) })
     emit('saved', response.bot, !bot)
     open.value = false
   }

@@ -1,6 +1,6 @@
 import {
   MONITOR_SOURCES_PATH,
-  projectUptimeStatusPath,
+  workspaceUptimeStatusPath,
   type MonitorSourceListResponse,
   type UptimeStatusResponse,
 } from '@candy-mountain/shared'
@@ -17,7 +17,7 @@ export function useUptimeSources() {
 export function useUptimeStatus() {
   const { slug, project } = useSelectedProject()
   const { $api } = useNuxtApp()
-  const path = (current: string) => `${projectUptimeStatusPath(current)}?recent=${UPTIME_HISTORY_LENGTH}`
+  const path = (current: string) => `${workspaceUptimeStatusPath(current)}?recent=${UPTIME_HISTORY_LENGTH}`
 
   const request = useAsyncData(
     () => uptimeStatusDataKey(slug.value),

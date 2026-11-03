@@ -44,6 +44,6 @@ it('creates its tables beside the Drizzle ones without disturbing them', async (
   sqlite.close()
 
   expect(tables).toContain('platform_meta')
-  expect(tables).toContain('__drizzle_migrations')
+  expect(tables).toContain('__drizzle_migrations_platform')
   expect(tables.some(name => name.startsWith('mastra_'))).toBe(true)
 })

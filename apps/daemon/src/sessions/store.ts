@@ -20,8 +20,8 @@ export function findSession(db: Db, id: string): AgentSession | null {
   return row ? toSession(row) : null
 }
 
-export function listSessions(db: Db, projectId: string): AgentSession[] {
-  return db.select().from(agentSessions).where(eq(agentSessions.projectId, projectId)).orderBy(asc(agentSessions.createdAt), asc(agentSessions.id)).all().map(toSession)
+export function listSessions(db: Db, workspaceId: string): AgentSession[] {
+  return db.select().from(agentSessions).where(eq(agentSessions.workspaceId, workspaceId)).orderBy(asc(agentSessions.createdAt), asc(agentSessions.id)).all().map(toSession)
 }
 
 export interface SessionPatch {

@@ -42,6 +42,7 @@ export const CANDY_MOUNTAIN_PRODUCT: Readonly<ProductConfig> = {
   },
   capabilities: [
     'overview',
+    'repository',
     'issues',
     'slack',
     'chat-claude-code',

@@ -1,18 +1,18 @@
-import { existsSync, mkdtempSync, rmSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { existsSync } from 'node:fs'
 import type { ActivityListResponse, ApiErrorBody, ModuleDefinition } from '@candy-mountain/shared'
 import { afterEach, describe, expect, it } from 'vitest'
-import { ACTIVITY_EVENT_TYPES, ActivityEventTypeError, appendActivityEvent } from './activity'
+import { ActivityEventTypeError, appendActivityEvent, type ActivityEventTypeDeclaration } from './activity'
 import { CapabilityManifestError } from './capabilities'
+import { CapabilityDefinitionError, defineCapabilityDefinition, type CapabilityDefinition } from './capabilities/definition'
 import { cloneManifest, fixtureCapability } from './capabilities/fixtures'
 import { ModuleDefinitionError } from './modules'
-import { createTestApp, startTestPlatform, type TestPlatformOptions } from './testing/platform'
+import { CAPABILITY_DEFINITIONS, createTestApp, startTestPlatform, type TestPlatformOptions } from './testing/platform'
 import { PluginTypeError } from './plugins'
+import { WorkspaceFactError, type WorkspaceFactDeclaration } from './registry/facts'
 import { fixturePluginType } from './plugins/fixtures'
-import { createProject } from './projects/projects'
 import { SESSION_FAMILIES, SessionFamilyError } from './threads'
 import { createTempDataDir, type TempDataDir } from './testing'
+import { createWorkspace } from './workspaces/workspaces'
 
 const operations = (capabilityId: string): ModuleDefinition => ({
   id: 'operations',
@@ -21,6 +21,11 @@ const operations = (capabilityId: string): ModuleDefinition => ({
   icon: 'i-lucide-activity',
   capabilities: [{ capabilityId, defaultRung: 'read' }],
 })
+
+const widgets = (...activityEventTypes: ActivityEventTypeDeclaration[]) => defineCapabilityDefinition({ id: 'widgets', activityEventTypes })
+// Not through the helper, so a malformed fact reaches the boot-time validation under test.
+const knowing = (...workspaceFacts: WorkspaceFactDeclaration[]): CapabilityDefinition => ({ id: 'widgets', workspaceFacts })
+const fact = (id: string): WorkspaceFactDeclaration => ({ id, compute: () => true, message: () => `No ${id}.` })
 
 function codexChat() {
   const cap = cloneManifest(fixtureCapability('chat-codex'))
@@ -44,14 +49,18 @@ describe('daemon boot with open ids', () => {
     ['module', { capabilities: [fixtureCapability('uptime')], modules: [operations('uptime'), operations('uptime')] }, ModuleDefinitionError, "Duplicate module id(s): 'operations'."],
     ['plugin type', { pluginTypes: [fixturePluginType('netlify'), fixturePluginType('netlify')] }, PluginTypeError, "Duplicate plugin type id(s): 'netlify'."],
     ['session family', { families: [...SESSION_FAMILIES, { id: 'helper', name: 'Helper' }, { id: 'helper', name: 'Helper again' }] }, SessionFamilyError, "Duplicate session family id(s): 'helper'."],
-    ['activity event type', { activityEventTypes: [...ACTIVITY_EVENT_TYPES, 'run.started'] }, ActivityEventTypeError, "Duplicate activity event type(s): 'run.started'."],
+    ['activity event type', { capabilities: [...CAPABILITY_DEFINITIONS, widgets({ id: 'run.started', label: 'Run started again' })] }, ActivityEventTypeError, "Duplicate activity event type(s): 'run.started'."],
+    ['notification kind', { capabilities: [...CAPABILITY_DEFINITIONS, widgets({ id: 'widget.built', label: 'Widget built', notifications: [{ id: 'bot.finished', label: 'A widget is built' }] })] }, ActivityEventTypeError, "Duplicate notification kind(s): 'bot.finished'."],
+    ['workspace fact', { capabilities: [...CAPABILITY_DEFINITIONS, knowing(fact('hasBots'))] }, WorkspaceFactError, "Duplicate workspace fact id(s): 'hasBots'."],
   ])('refuses a duplicate %s id', (_what, options, error, message) => refuses(options, error, message))
 
   it.each<[string, TestPlatformOptions, new (...args: never[]) => Error, string]>([
     ['module', { capabilities: [fixtureCapability('uptime')], modules: [{ ...operations('uptime'), id: 'Ops' }] }, ModuleDefinitionError, "Invalid module id 'Ops'"],
     ['plugin type', { pluginTypes: [{ ...fixturePluginType('netlify'), id: 'Net lify' }] }, PluginTypeError, "Invalid plugin type id 'Net lify'"],
     ['session family', { families: [{ id: 'Claude Code', name: 'Claude Code' }] }, SessionFamilyError, "Invalid session family id 'Claude Code'"],
-    ['activity event type', { activityEventTypes: ['Run Started'] }, ActivityEventTypeError, "Invalid activity event type(s) 'Run Started'"],
+    ['activity event type', { capabilities: [...CAPABILITY_DEFINITIONS, widgets({ id: 'Run Started', label: 'Run started' })] }, ActivityEventTypeError, "Invalid activity event type(s) 'Run Started'"],
+    ['notification kind', { capabilities: [...CAPABILITY_DEFINITIONS, widgets({ id: 'widget.built', label: 'Widget built', notifications: [{ id: 'Widget Built', label: 'A widget is built' }] })] }, ActivityEventTypeError, "Invalid notification kind(s) 'Widget Built'"],
+    ['workspace fact', { capabilities: [...CAPABILITY_DEFINITIONS, knowing({ ...fact('hasWidgets'), id: 'has-widgets' })] }, CapabilityDefinitionError, "Capability 'widgets': declares invalid workspace fact(s) 'has-widgets'"],
   ])('refuses a malformed %s id', (_what, options, error, message) => refuses(options, error, message))
 
   it('refuses a module that names an unregistered capability', () => {
@@ -66,6 +75,21 @@ describe('daemon boot with open ids', () => {
     )
   })
 
+  it('refuses a manifest that requires a workspace fact no definition declares, naming both', () => {
+    const team = cloneManifest(fixtureCapability('team'))
+    team.requiresWorkspaceFacts = ['hasWidgets']
+    const others = CAPABILITY_DEFINITIONS.filter(c => c.id !== 'team')
+    refuses({ capabilities: [...others, team], modules: [] }, WorkspaceFactError, "Capability 'team' requires workspace fact 'hasWidgets', which no definition declares.")
+    temp = createTempDataDir()
+    const platform = startTestPlatform(temp.root, { capabilities: [...others, team, knowing(fact('hasWidgets'))], modules: [] })
+    try {
+      expect(platform.workspaceFacts.list()).toEqual(['hasBeads', 'isGitRepo', 'hasRemote', 'hasBots', 'hasWidgets'])
+    }
+    finally {
+      platform.close()
+    }
+  })
+
   it('refuses an agent that names an unregistered session family', () => {
     refuses(
       { capabilities: [codexChat()], modules: [], families: SESSION_FAMILIES },
@@ -76,32 +100,30 @@ describe('daemon boot with open ids', () => {
 
   it('starts with a family and an event type no shared list knows, and refuses events of an unregistered type', async () => {
     temp = createTempDataDir()
-    const checkout = mkdtempSync(join(tmpdir(), 'candy-mountain-open-ids-'))
     const cap = cloneManifest(fixtureCapability('chat-codex'))
     cap.agents[0]!.family = 'helper'
     const platform = startTestPlatform(temp.root, {
-      capabilities: [cap],
+      capabilities: [cap, widgets({ id: 'widget.built', label: 'Widget built' })],
       modules: [],
       families: [...SESSION_FAMILIES, { id: 'helper', name: 'Helper' }],
-      activityEventTypes: [...ACTIVITY_EVENT_TYPES, 'widget.built'],
     })
     try {
       expect(platform.families.nameOf('helper')).toBe('Helper')
       expect(platform.families.nameOf('gone')).toBe('gone')
-      const project = await createProject(platform.db, { name: 'alpha', source: { kind: 'local-path', path: checkout } })
-      appendActivityEvent(platform.db, { projectId: project.id, type: 'widget.built', title: 'Widget built' })
-      expect(() => appendActivityEvent(platform.db, { projectId: project.id, type: 'widget.broken', title: 'x' })).toThrow("Activity event type 'widget.broken' is not registered.")
+      // No repository capability is booted, so the workspace has no repository record.
+      const workspace = createWorkspace(platform.db, { name: 'alpha' })
+      appendActivityEvent(platform.db, { workspaceId: workspace.id, type: 'widget.built', title: 'Widget built' })
+      expect(() => appendActivityEvent(platform.db, { workspaceId: workspace.id, type: 'widget.broken', title: 'x' })).toThrow("Activity event type 'widget.broken' is not registered.")
 
       const app = createTestApp({ db: platform.db, paths: platform.paths, capabilities: platform.capabilities, modules: platform.modules, families: platform.families })
-      const listed = await app.request('/projects/alpha/activity?type=widget.built')
+      const listed = await app.request('/workspaces/alpha/activity?type=widget.built')
       expect((await listed.json() as ActivityListResponse).events.map(e => e.type)).toEqual(['widget.built'])
-      const refused = await app.request('/projects/alpha/activity?type=widget.broken')
+      const refused = await app.request('/workspaces/alpha/activity?type=widget.broken')
       expect(refused.status).toBe(400)
       expect((await refused.json() as ApiErrorBody).error.message).toBe('Unknown activity type: widget.broken')
     }
     finally {
       platform.close()
-      rmSync(checkout, { recursive: true, force: true })
     }
   })
 })

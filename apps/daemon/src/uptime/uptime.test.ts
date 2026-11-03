@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { Actor, ApiErrorBody, ModuleId, Monitor, MonitorSourceListResponse, Project } from '@candy-mountain/shared'
+import type { Actor, ApiErrorBody, ModuleId, Monitor, MonitorSourceListResponse, Workspace } from '@candy-mountain/shared'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createTestApp } from '../testing/platform'
 import type { AuthStrategy } from '../auth'
@@ -12,14 +12,15 @@ import type { PlatformDatabase } from '../db'
 import { setGrant } from '../grants/grants'
 import { addRole } from '../grants/test-access'
 import { createModuleRegistry, MODULES } from '../modules'
-import { setEnabledModules } from '../project-modules/enablement'
-import { createProject, deleteProject } from '../projects/projects'
+import { setEnabledModules } from '../workspace-modules/enablement'
+import { deleteWorkspace } from '../workspaces/workspaces'
 import { openTestDatabase } from '../testing'
 import { HTTP_SOURCE, MONITOR_SOURCE_REGISTRY } from './builtin-sources'
 import { MonitorError } from './errors'
 import { uptimeRoutes } from './definition'
 import { createMonitor, listEnabledMonitors, listMonitors, updateMonitor } from './service'
 import { createMonitorSourceRegistry, defineMonitorSource, MonitorSourceError, type MonitorSource } from './sources'
+import { createWorkspaceWithRepository } from '../repository/test-support'
 
 let database: PlatformDatabase
 let root: string
@@ -33,8 +34,8 @@ afterEach(() => {
   rmSync(root, { recursive: true, force: true })
 })
 
-async function project(name: string, modules: ModuleId[] = ['operations']): Promise<Project> {
-  const created = await createProject(database.db, { name, source: { kind: 'local-path', path: root } })
+async function project(name: string, modules: ModuleId[] = ['operations']): Promise<Workspace> {
+  const created = await createWorkspaceWithRepository(database.db, { name, path: root })
   setEnabledModules(database.db, created.id, modules)
   return created
 }
@@ -135,7 +136,7 @@ describe('monitor service', () => {
   it('is removed with its project', async () => {
     const alpha = await project('alpha')
     createMonitor(database.db, alpha.id, http)
-    deleteProject(database.db, 'alpha')
+    deleteWorkspace(database.db, 'alpha')
     expect(listMonitors(database.db, alpha.id)).toEqual([])
   })
 
@@ -151,55 +152,55 @@ describe('monitor service', () => {
 describe('monitor routes', () => {
   it('creates, reads, updates, toggles and deletes a monitor', async () => {
     await project('alpha')
-    const created = await call('POST', '/projects/alpha/monitors', { ...http, name: ' API ' })
+    const created = await call('POST', '/workspaces/alpha/monitors', { ...http, name: ' API ' })
     expect(created.status).toBe(201)
     const { monitor } = await created.json() as { monitor: Monitor }
     expect(monitor).toMatchObject({ name: 'API', sourceType: 'http', target: http.target, intervalSeconds: 60, enabled: true, options: { expectedStatus: 204 } })
 
-    const listed = await (await call('GET', '/projects/alpha/monitors')).json() as { monitors: Monitor[] }
+    const listed = await (await call('GET', '/workspaces/alpha/monitors')).json() as { monitors: Monitor[] }
     expect(listed.monitors).toEqual([monitor])
-    expect((await call('GET', `/projects/alpha/monitors/${monitor.id}`)).status).toBe(200)
+    expect((await call('GET', `/workspaces/alpha/monitors/${monitor.id}`)).status).toBe(200)
 
-    const patched = await call('PATCH', `/projects/alpha/monitors/${monitor.id}`, { intervalSeconds: 120, options: { expectedStatus: 200, responseContains: 'ok' } })
+    const patched = await call('PATCH', `/workspaces/alpha/monitors/${monitor.id}`, { intervalSeconds: 120, options: { expectedStatus: 200, responseContains: 'ok' } })
     expect(((await patched.json()) as { monitor: Monitor }).monitor).toMatchObject({ intervalSeconds: 120, options: { expectedStatus: 200, responseContains: 'ok' }, name: 'API' })
 
-    const disabled = await call('POST', `/projects/alpha/monitors/${monitor.id}/disable`)
+    const disabled = await call('POST', `/workspaces/alpha/monitors/${monitor.id}/disable`)
     expect(((await disabled.json()) as { monitor: Monitor }).monitor.enabled).toBe(false)
-    const enabled = await call('POST', `/projects/alpha/monitors/${monitor.id}/enable`)
+    const enabled = await call('POST', `/workspaces/alpha/monitors/${monitor.id}/enable`)
     expect(((await enabled.json()) as { monitor: Monitor }).monitor.enabled).toBe(true)
 
-    expect((await call('DELETE', `/projects/alpha/monitors/${monitor.id}`)).status).toBe(204)
-    expect((await call('GET', `/projects/alpha/monitors/${monitor.id}`)).status).toBe(404)
+    expect((await call('DELETE', `/workspaces/alpha/monitors/${monitor.id}`)).status).toBe(204)
+    expect((await call('GET', `/workspaces/alpha/monitors/${monitor.id}`)).status).toBe(404)
   })
 
   it('rejects an unknown source, a short interval and bad bodies', async () => {
     const alpha = await project('alpha')
-    const unknown = await call('POST', '/projects/alpha/monitors', { ...http, sourceType: 'gopher' })
+    const unknown = await call('POST', '/workspaces/alpha/monitors', { ...http, sourceType: 'gopher' })
     expect(unknown.status).toBe(422)
     expect(await errorCode(unknown)).toBe('unknown_source')
-    const short = await call('POST', '/projects/alpha/monitors', { ...http, intervalSeconds: 29 })
+    const short = await call('POST', '/workspaces/alpha/monitors', { ...http, intervalSeconds: 29 })
     expect(short.status).toBe(400)
     expect(((await short.json()) as ApiErrorBody).error.message).toMatch(/at least 30/)
-    const options = await call('POST', '/projects/alpha/monitors', { ...http, sourceType: 'statusio', options: { componentId: 'a' } })
+    const options = await call('POST', '/workspaces/alpha/monitors', { ...http, sourceType: 'statusio', options: { componentId: 'a' } })
     expect(options.status).toBe(422)
     expect(await errorCode(options)).toBe('invalid_options')
     for (const body of [{}, { ...http, name: '' }, { ...http, target: 'ftp://x' }, { ...http, target: 'not a url' }, { ...http, intervalSeconds: '60' }, { ...http, enabled: 'yes' }, { ...http, options: [] }]) {
-      expect((await call('POST', '/projects/alpha/monitors', body)).status).toBe(400)
+      expect((await call('POST', '/workspaces/alpha/monitors', body)).status).toBe(400)
     }
-    expect((await app().request('/projects/alpha/monitors', { method: 'POST', body: '{' })).status).toBe(400)
+    expect((await app().request('/workspaces/alpha/monitors', { method: 'POST', body: '{' })).status).toBe(400)
     expect(listMonitors(database.db, alpha.id)).toEqual([])
 
-    const { monitor } = await (await call('POST', '/projects/alpha/monitors', http)).json() as { monitor: Monitor }
-    expect((await call('PATCH', `/projects/alpha/monitors/${monitor.id}`, { intervalSeconds: 10 })).status).toBe(400)
-    expect(await errorCode(await call('PATCH', `/projects/alpha/monitors/${monitor.id}`, { sourceType: 'nope' }))).toBe('unknown_source')
+    const { monitor } = await (await call('POST', '/workspaces/alpha/monitors', http)).json() as { monitor: Monitor }
+    expect((await call('PATCH', `/workspaces/alpha/monitors/${monitor.id}`, { intervalSeconds: 10 })).status).toBe(400)
+    expect(await errorCode(await call('PATCH', `/workspaces/alpha/monitors/${monitor.id}`, { sourceType: 'nope' }))).toBe('unknown_source')
   })
 
   it('gates reads on the uptime view, writes on the admin plus the manage tool, and scopes ids to the project', async () => {
     const alpha = await project('alpha')
     await project('beta')
     const monitor = createMonitor(database.db, alpha.id, http)
-    const reads = ['/projects/alpha/monitors', `/projects/alpha/monitors/${monitor.id}`, '/projects/alpha/uptime/status', `/projects/alpha/monitors/${monitor.id}/checks`]
-    const writes = [['POST', '/projects/alpha/monitors'], ['PATCH', `/projects/alpha/monitors/${monitor.id}`], ['DELETE', `/projects/alpha/monitors/${monitor.id}`], ['POST', `/projects/alpha/monitors/${monitor.id}/disable`], ['POST', `/projects/alpha/monitors/${monitor.id}/enable`]] as const
+    const reads = ['/workspaces/alpha/monitors', `/workspaces/alpha/monitors/${monitor.id}`, '/workspaces/alpha/uptime/status', `/workspaces/alpha/monitors/${monitor.id}/checks`]
+    const writes = [['POST', '/workspaces/alpha/monitors'], ['PATCH', `/workspaces/alpha/monitors/${monitor.id}`], ['DELETE', `/workspaces/alpha/monitors/${monitor.id}`], ['POST', `/workspaces/alpha/monitors/${monitor.id}/disable`], ['POST', `/workspaces/alpha/monitors/${monitor.id}/enable`]] as const
 
     for (const path of reads) expect((await call('GET', path, undefined, ['viewer'])).status).toBe(403)
     addRole(database.db, 'viewer')
@@ -208,15 +209,15 @@ describe('monitor routes', () => {
     grant('viewer', 'manage')
     for (const [method, path] of writes) expect((await call(method, path, http, ['viewer'])).status).toBe(403)
     expect((await call('GET', '/monitor-sources', undefined, ['nobody'])).status).toBe(200)
-    expect((await call('GET', `/projects/beta/monitors/${monitor.id}`)).status).toBe(404)
-    expect((await call('POST', `/projects/beta/monitors/${monitor.id}/disable`)).status).toBe(404)
-    expect((await call('GET', '/projects/nope/monitors')).status).toBe(404)
+    expect((await call('GET', `/workspaces/beta/monitors/${monitor.id}`)).status).toBe(404)
+    expect((await call('POST', `/workspaces/beta/monitors/${monitor.id}/disable`)).status).toBe(404)
+    expect((await call('GET', '/workspaces/nope/monitors')).status).toBe(404)
   })
 
   it('refuses reads and writes while Operations is not enabled for the project', async () => {
     const alpha = await project('alpha', [])
     const monitor = createMonitor(database.db, alpha.id, http)
-    for (const res of [await call('GET', '/projects/alpha/uptime/status'), await call('POST', `/projects/alpha/monitors/${monitor.id}/disable`)]) {
+    for (const res of [await call('GET', '/workspaces/alpha/uptime/status'), await call('POST', `/workspaces/alpha/monitors/${monitor.id}/disable`)]) {
       expect(res.status).toBe(404)
       expect(await errorCode(res)).toBe('not_enabled')
     }

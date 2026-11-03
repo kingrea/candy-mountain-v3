@@ -3,9 +3,9 @@ import { existsSync, mkdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { and, asc, eq } from 'drizzle-orm'
 import type { DataPaths } from '../data-dir'
-import { schema, type Db } from '../db'
-import type { WorktreeHolderKind, WorktreeLeaseState } from '../db/schema/worktree-leases'
-import { findProjectById, sourcePath } from '../projects/projects'
+import type { Db } from '../db'
+import { worktreeLeases, type WorktreeHolderKind, type WorktreeLeaseState } from '../bots/schema'
+import type { RepositoryPaths } from '../repository/service'
 import { DEFAULT_WORKTREES_PER_PROJECT, type WorktreeSettings } from './config'
 import { WorktreeError } from './errors'
 import { createGitRunner, GitError, type GitRunner } from './git'
@@ -89,6 +89,8 @@ export interface WorktreePool {
 export interface WorktreePoolDeps {
   db: Db
   paths: Pick<DataPaths, 'worktrees'>
+  /** Where a project's clone is; worktrees branch off it. */
+  repository: RepositoryPaths
   git?: GitRunner
   now?: () => Date
   installer?: DependencyInstaller
@@ -98,7 +100,6 @@ export type WorktreePoolOptions = Partial<WorktreeSettings> & {
   dependencyInstallTimeoutMs?: number
 }
 
-const { worktreeLeases } = schema
 type LeaseRow = typeof worktreeLeases.$inferSelect
 
 export function botBranchName(botName: string, sessionId: string): string {
@@ -110,7 +111,7 @@ export function defaultBranchName(holder: WorktreeHolder): string {
   return `${WORKTREE_BRANCH_PREFIX}/${holder.kind}/${holder.id}`
 }
 
-export function createWorktreePool({ db, paths, git = createGitRunner(), now = () => new Date(), installer = installWorktreeDependencies }: WorktreePoolDeps, { maxPerProject = DEFAULT_WORKTREES_PER_PROJECT, dependencyInstallTimeoutMs = DEPENDENCY_INSTALL_TIMEOUT_MS }: WorktreePoolOptions = {}): WorktreePool {
+export function createWorktreePool({ db, paths, repository, git = createGitRunner(), now = () => new Date(), installer = installWorktreeDependencies }: WorktreePoolDeps, { maxPerProject = DEFAULT_WORKTREES_PER_PROJECT, dependencyInstallTimeoutMs = DEPENDENCY_INSTALL_TIMEOUT_MS }: WorktreePoolOptions = {}): WorktreePool {
   const lock = createKeyedLock()
   const withProjectLock = <T>(projectId: string, fn: () => Promise<T>) => lock(projectId, fn)
 
@@ -134,9 +135,8 @@ export function createWorktreePool({ db, paths, git = createGitRunner(), now = (
     .get()
 
   async function clonePathFor(projectId: string): Promise<string> {
-    const project = findProjectById(db, projectId)
-    if (!project) throw new WorktreeError('not_found', `Project ${projectId} does not exist`)
-    const clone = sourcePath(project.source)
+    const clone = repository.find(projectId)
+    if (clone === null) throw new WorktreeError('not_found', `Project ${projectId} has no repository`)
     const gitDir = await git(clone, ['rev-parse', '--git-dir']).catch(() => null)
     if (gitDir === null) throw new WorktreeError('clone_unavailable', `Project checkout ${clone} is missing or not a git repository`)
     return clone
@@ -268,8 +268,7 @@ export function createWorktreePool({ db, paths, git = createGitRunner(), now = (
           return { ...current, ...flags }
         }
       }
-      const project = findProjectById(db, found.projectId)
-      const clone = project ? sourcePath(project.source) : null
+      const clone = repository.find(found.projectId)
       if (clone !== null) {
         await git(clone, ['worktree', 'remove', '--force', found.path]).catch(() => undefined)
         await git(clone, ['worktree', 'prune']).catch(() => undefined)

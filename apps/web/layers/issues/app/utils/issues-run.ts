@@ -50,7 +50,7 @@ export function issuesRunRepository(input: {
   const name = type?.name ?? 'Repository'
 
   if (instances) {
-    const instance = instances.find(candidate => candidate.type === REPOSITORY && candidate.scope === 'project' && candidate.projectSlug === slug)
+    const instance = instances.find(candidate => candidate.type === REPOSITORY && candidate.scope === 'workspace' && candidate.workspaceSlug === slug)
       ?? instances.find(candidate => candidate.type === REPOSITORY && candidate.scope === 'global')
     if (!instance) return { state: 'missing', reason: `No ${name} plugin is configured for this project or the platform.` }
     const unset = (type?.secretFields ?? []).filter(field => field.required && instance.secrets[field.name] !== 'set').map(field => `'${field.name}'`)

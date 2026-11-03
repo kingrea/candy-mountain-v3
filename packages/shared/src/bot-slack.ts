@@ -1,4 +1,4 @@
-import { projectBotsPath } from './bots'
+import { workspaceBotsPath } from './bots'
 
 export const BOT_SLACK_STATES = ['connected', 'connecting', 'disconnected'] as const
 export type BotSlackState = (typeof BOT_SLACK_STATES)[number]
@@ -33,4 +33,4 @@ export interface BotSlackConnectionResponse {
   connection: BotSlackConnection
 }
 
-export const botSlackConnectionPath = (slug: string, botId: string) => `${projectBotsPath(slug)}/${botId}/slack`
+export const botSlackConnectionPath = (slug: string, botId: string) => `${workspaceBotsPath(slug)}/${botId}/slack`

@@ -13,8 +13,8 @@ export interface PluginInstance {
   type: PluginTypeId
   scope: PluginScope
   /** Null for global instances. */
-  projectId: string | null
-  projectSlug: string | null
+  workspaceId: string | null
+  workspaceSlug: string | null
   config: PluginConfig
   /** Every secret field the type declares; values are never sent. */
   secrets: Record<string, PluginSecretState>
@@ -30,8 +30,8 @@ export type PluginSecretValues = Record<string, string | null>
 export interface CreatePluginInstanceRequest {
   type: PluginTypeId
   scope: PluginScope
-  /** Project slug; required for project scope, absent for global. */
-  project?: string | null
+  /** Workspace slug; required for workspace scope, absent for global. */
+  workspace?: string | null
   config?: Record<string, unknown>
   secrets?: PluginSecretValues
 }
@@ -57,7 +57,7 @@ export interface PluginTypeListResponse {
 export const PLUGIN_INSTANCE_ERROR_CODES = [
   'invalid_request',
   'not_found',
-  'project_not_found',
+  'workspace_not_found',
   'type_not_found',
   'unsupported_scope',
   'instance_exists',

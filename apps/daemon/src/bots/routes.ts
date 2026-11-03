@@ -3,8 +3,8 @@ import { Hono, type Context } from 'hono'
 import type { AppEnv } from '../app'
 import { requireAdmin } from '../auth/admin'
 import type { SecretsReader } from '../plugins/instances/instances'
-import { ProjectError } from '../projects/errors'
-import { getProjectBySlug } from '../projects/projects'
+import { WorkspaceError } from '../workspaces/errors'
+import { getWorkspaceBySlug } from '../workspaces/workspaces'
 import { SecretsLockedError } from '../secrets'
 import { botProjectId, createBot, deleteBot, getBot, listBots, updateBot, type BotReadDeps } from './bots'
 import { BotError } from './errors'
@@ -25,7 +25,7 @@ export function botRoutes(secretsReader: SecretsReader) {
   const app = new Hono<AppEnv>()
   const admin = requireAdmin()
   app.onError((error, c) => {
-    if (error instanceof BotError || error instanceof ProjectError) {
+    if (error instanceof BotError || error instanceof WorkspaceError) {
       return c.json<ApiErrorBody>({ error: { code: error.code, message: error.message } }, error.status)
     }
     if (error instanceof SecretsLockedError) return c.json<ApiErrorBody>({ error: { code: 'secrets_locked', message: error.message } }, 409)
@@ -33,7 +33,7 @@ export function botRoutes(secretsReader: SecretsReader) {
   })
 
   const deps = (c: Context<AppEnv>): BotReadDeps => ({ ...c.var, secretsReader })
-  const projectIdOf = (c: Context<AppEnv>) => getProjectBySlug(c.var.db, c.req.param('slug')!).id
+  const projectIdOf = (c: Context<AppEnv>) => getWorkspaceBySlug(c.var.db, c.req.param('slug')!).id
   const signal = (c: Context) => ({ signal: c.req.raw.signal })
 
   function botIdOf(c: Context<AppEnv>): string {

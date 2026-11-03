@@ -27,12 +27,12 @@ export function parseCreatePluginInstance(body: unknown, pluginTypes: Pick<Plugi
   if (!isObject(body)) invalid('Request body must be an object')
   if (typeof body.type !== 'string' || !body.type) invalid('type is required')
   if (!(PLUGIN_SCOPES as readonly unknown[]).includes(body.scope)) invalid(`scope must be one of ${PLUGIN_SCOPES.join(', ')}`)
-  if (body.project !== undefined && body.project !== null && typeof body.project !== 'string') invalid('project must be a project slug')
+  if (body.workspace !== undefined && body.workspace !== null && typeof body.workspace !== 'string') invalid('workspace must be a workspace slug')
   if (!pluginTypes.has(body.type)) throw new PluginInstanceError('type_not_found', `Plugin type "${body.type}" is not registered`)
   return {
     type: body.type,
     scope: body.scope as PluginScope,
-    project: (body.project as string | null | undefined) ?? null,
+    workspace: (body.workspace as string | null | undefined) ?? null,
     config: parseConfig(body.config),
     secrets: parseSecrets(body.secrets),
   }

@@ -1,10 +1,10 @@
 import type { AgentSessionEventKind, AgentSessionFamily, AgentSessionPosture, AgentSessionStatus } from '@candy-mountain/shared'
 import { index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core'
-import { projects } from './projects'
+import { workspaces } from './workspaces'
 
 export const agentSessions = sqliteTable('agent_sessions', {
   id: text('id').primaryKey(),
-  projectId: text('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  workspaceId: text('workspace_id').notNull().references(() => workspaces.id, { onDelete: 'cascade' }),
   family: text('family').$type<AgentSessionFamily>().notNull(),
   actorId: text('actor_id').notNull(),
   cwd: text('cwd').notNull(),
@@ -14,7 +14,7 @@ export const agentSessions = sqliteTable('agent_sessions', {
   createdAt: text('created_at').notNull(),
   lastActivityAt: text('last_activity_at').notNull(),
 }, table => [
-  index('agent_sessions_project_created_idx').on(table.projectId, table.createdAt),
+  index('agent_sessions_workspace_created_idx').on(table.workspaceId, table.createdAt),
 ])
 
 export const agentSessionEvents = sqliteTable('agent_session_events', {

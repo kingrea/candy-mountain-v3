@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { projectTeamPath, type TeamMember } from '@candy-mountain/shared'
+import { workspaceTeamPath, type TeamMember } from '@candy-mountain/shared'
 import type { TableColumn } from '@nuxt/ui'
 import ProjectsConfirmModal from '~/components/projects/ProjectsConfirmModal.vue'
 
@@ -54,7 +54,7 @@ async function remove(member: TeamMember) {
   if (!confirmed || !slug.value) return
   actionError.value = null
   try {
-    await $api(`${projectTeamPath(slug.value)}/${member.id}`, { method: 'DELETE' })
+    await $api(`${workspaceTeamPath(slug.value)}/${member.id}`, { method: 'DELETE' })
     toast.add({ title: `Removed ${member.displayName}`, color: 'success' })
   }
   catch (error) {

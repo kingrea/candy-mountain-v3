@@ -1,5 +1,4 @@
 import {
-  NOTIFICATION_KINDS,
   SLACK_CHANNEL_ID_PATTERN,
   SLACK_MEMBER_ID_PATTERN,
   type NotificationDestination,
@@ -10,7 +9,8 @@ import {
   type NotificationRules,
   type UpdateNotificationRulesRequest,
 } from '@candy-mountain/shared'
-import { eq } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
+import { activityEventTypesFor, type ActivityEventTypeRegistry } from '../activity/types'
 import type { Db } from '../db'
 import { platformMeta } from '../db/schema'
 
@@ -23,16 +23,23 @@ export class NotificationError extends Error {
   }
 }
 
-export const notificationRulesKey = (projectId: string) => `notifications.${projectId}`
-export const notificationDeliveredKey = (projectId: string) => `notifications.delivered.${projectId}`
+export const notificationRulesKey = (workspaceId: string) => `notifications.${workspaceId}`
+export const notificationDeliveredKey = (workspaceId: string) => `notifications.delivered.${workspaceId}`
 
-/** Delivered event ids kept per project; beyond this the oldest are forgotten. */
+/** platform_meta has no foreign key to cascade from, so deleting a workspace calls this. */
+export function deleteNotificationState(db: Db, workspaceId: string): void {
+  db.delete(platformMeta).where(inArray(platformMeta.key, [notificationRulesKey(workspaceId), notificationDeliveredKey(workspaceId)])).run()
+}
+
+/** Delivered event ids kept per workspace; beyond this the oldest are forgotten. */
 export const DELIVERED_RING_SIZE = 500
 
 const emptyRule = (): NotificationRule => ({ enabled: false, destination: null, lastFailureAt: null, lastFailureReason: null, lastDeliveredAt: null })
 
-export const emptyNotificationRules = (): NotificationRules =>
-  Object.fromEntries(NOTIFICATION_KINDS.map(kind => [kind, emptyRule()])) as NotificationRules
+const kindsOf = (db: Db) => activityEventTypesFor(db).notificationKinds().map(kind => kind.id)
+
+export const emptyNotificationRules = (kinds: readonly NotificationKind[]): NotificationRules =>
+  Object.fromEntries(kinds.map(kind => [kind, emptyRule()]))
 
 function readJson(db: Db, key: string): unknown {
   const value = db.select({ value: platformMeta.value }).from(platformMeta).where(eq(platformMeta.key, key)).get()?.value
@@ -61,11 +68,12 @@ function destinationOf(value: unknown): NotificationDestination | null {
   return null
 }
 
-export function readNotificationRules(db: Db, projectId: string): NotificationRules {
-  const stored = readJson(db, notificationRulesKey(projectId))
-  const rules = emptyNotificationRules()
+export function readNotificationRules(db: Db, workspaceId: string): NotificationRules {
+  const kinds = kindsOf(db)
+  const stored = readJson(db, notificationRulesKey(workspaceId))
+  const rules = emptyNotificationRules(kinds)
   if (!isRecord(stored)) return rules
-  for (const kind of NOTIFICATION_KINDS) {
+  for (const kind of kinds) {
     const raw = stored[kind]
     if (!isRecord(raw)) continue
     rules[kind] = {
@@ -79,8 +87,10 @@ export function readNotificationRules(db: Db, projectId: string): NotificationRu
   return rules
 }
 
-export function writeNotificationRules(db: Db, projectId: string, rules: NotificationRules): void {
-  writeJson(db, notificationRulesKey(projectId), rules)
+/** Stored rules for kinds this product does not register are kept, so they read again once a product registers the kind. */
+export function writeNotificationRules(db: Db, workspaceId: string, rules: NotificationRules): void {
+  const stored = readJson(db, notificationRulesKey(workspaceId))
+  writeJson(db, notificationRulesKey(workspaceId), { ...(isRecord(stored) ? stored : {}), ...rules })
 }
 
 function parseDestination(kind: string, value: unknown): NotificationDestination | null {
@@ -101,11 +111,11 @@ function parseDestination(kind: string, value: unknown): NotificationDestination
   throw new NotificationError('invalid_request', `${kind}: destination needs a channelId or a memberId`)
 }
 
-export function parseUpdateNotificationRules(body: unknown): UpdateNotificationRulesRequest {
+export function parseUpdateNotificationRules(body: unknown, kinds: Pick<ActivityEventTypeRegistry, 'hasNotificationKind'>): UpdateNotificationRulesRequest {
   if (!isRecord(body) || !isRecord(body.rules)) throw new NotificationError('invalid_request', 'Request body must be { rules: { <kind>: { enabled?, destination? } } }')
   const rules: UpdateNotificationRulesRequest['rules'] = {}
   for (const [kind, raw] of Object.entries(body.rules)) {
-    if (!(NOTIFICATION_KINDS as readonly string[]).includes(kind)) throw new NotificationError('invalid_request', `Unknown notification kind: ${kind}`)
+    if (!kinds.hasNotificationKind(kind)) throw new NotificationError('invalid_request', `Unknown notification kind: ${kind}`)
     if (!isRecord(raw)) throw new NotificationError('invalid_request', `${kind}: rule must be an object`)
     const update: NotificationRuleUpdate = {}
     if (raw.enabled !== undefined) {
@@ -113,50 +123,52 @@ export function parseUpdateNotificationRules(body: unknown): UpdateNotificationR
       update.enabled = raw.enabled
     }
     if (raw.destination !== undefined) update.destination = parseDestination(kind, raw.destination)
-    rules[kind as NotificationKind] = update
+    rules[kind] = update
   }
   return { rules }
 }
 
 /** Kinds in the request are merged over the stored rule; touching a rule clears its failure so the next attempt is judged afresh. */
-export function updateNotificationRules(db: Db, projectId: string, request: UpdateNotificationRulesRequest): NotificationRules {
-  const rules = readNotificationRules(db, projectId)
-  for (const kind of NOTIFICATION_KINDS) {
+export function updateNotificationRules(db: Db, workspaceId: string, request: UpdateNotificationRulesRequest): NotificationRules {
+  const rules = readNotificationRules(db, workspaceId)
+  for (const [kind, rule] of Object.entries(rules)) {
     const update = request.rules[kind]
     if (!update) continue
     const next: NotificationRule = {
-      ...rules[kind],
-      enabled: update.enabled ?? rules[kind].enabled,
-      destination: update.destination === undefined ? rules[kind].destination : update.destination,
+      ...rule,
+      enabled: update.enabled ?? rule.enabled,
+      destination: update.destination === undefined ? rule.destination : update.destination,
       lastFailureAt: null,
       lastFailureReason: null,
     }
     if (next.enabled && !next.destination) throw new NotificationError('invalid_request', `${kind}: an enabled rule needs a destination`)
     rules[kind] = next
   }
-  writeNotificationRules(db, projectId, rules)
+  writeNotificationRules(db, workspaceId, rules)
   return rules
 }
 
 export type NotificationOutcome = { ok: true, at: string } | { ok: false, at: string, reason: string }
 
-export function recordNotificationOutcome(db: Db, projectId: string, kind: NotificationKind, outcome: NotificationOutcome): void {
-  const rules = readNotificationRules(db, projectId)
+export function recordNotificationOutcome(db: Db, workspaceId: string, kind: NotificationKind, outcome: NotificationOutcome): void {
+  const rules = readNotificationRules(db, workspaceId)
+  const rule = rules[kind]
+  if (!rule) return
   rules[kind] = outcome.ok
-    ? { ...rules[kind], lastDeliveredAt: outcome.at, lastFailureAt: null, lastFailureReason: null }
-    : { ...rules[kind], lastFailureAt: outcome.at, lastFailureReason: outcome.reason }
-  writeNotificationRules(db, projectId, rules)
+    ? { ...rule, lastDeliveredAt: outcome.at, lastFailureAt: null, lastFailureReason: null }
+    : { ...rule, lastFailureAt: outcome.at, lastFailureReason: outcome.reason }
+  writeNotificationRules(db, workspaceId, rules)
 }
 
 /**
  * Marks an event as handled before anything is sent, so a crash mid-delivery drops the message rather than repeating it.
  * Returns false when the id was already claimed.
  */
-export function claimNotificationEvent(db: Db, projectId: string, eventId: string): boolean {
-  const stored = readJson(db, notificationDeliveredKey(projectId))
+export function claimNotificationEvent(db: Db, workspaceId: string, eventId: string): boolean {
+  const stored = readJson(db, notificationDeliveredKey(workspaceId))
   const ids = Array.isArray(stored) ? stored.filter((id): id is string => typeof id === 'string') : []
   if (ids.includes(eventId)) return false
   ids.push(eventId)
-  writeJson(db, notificationDeliveredKey(projectId), ids.slice(-DELIVERED_RING_SIZE))
+  writeJson(db, notificationDeliveredKey(workspaceId), ids.slice(-DELIVERED_RING_SIZE))
   return true
 }

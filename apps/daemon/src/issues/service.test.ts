@@ -3,7 +3,7 @@ import type { BdRunner } from './bd-runner'
 import { IssueError } from './errors'
 import { createIssuesService, type IssueProject } from './service'
 
-const project: IssueProject = { id: 'p1', source: { kind: 'local-path', path: '/repo' } }
+const project: IssueProject = { id: 'p1', path: '/repo' }
 
 const listRows = [
   { id: 'x-1', title: 'Epic', status: 'open', priority: 1, issue_type: 'epic' },
@@ -68,7 +68,7 @@ describe('issue list cache', () => {
     await service.list(project)
     expect(listCalls(run)).toBe(2)
 
-    await service.list({ ...project, source: { kind: 'local-path', path: '/moved' } })
+    await service.list({ ...project, path: '/moved' })
     expect(listCalls(run)).toBe(3)
     expect(run.mock.calls.at(-1)?.[0]).toBe('/moved')
   })
@@ -85,7 +85,7 @@ describe('issue list cache', () => {
     const run = fakeRunner()
     const service = createIssuesService({ run })
     await service.list(project)
-    await service.list({ id: 'p2', source: { kind: 'local-path', path: '/other' } })
+    await service.list({ id: 'p2', path: '/other' })
     expect(listCalls(run)).toBe(2)
   })
 })

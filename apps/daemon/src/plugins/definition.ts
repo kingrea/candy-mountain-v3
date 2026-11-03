@@ -18,7 +18,7 @@ import { pluginActionProblems, type PluginAction, type PluginTypeAction } from '
 
 export * from './actions'
 
-export type PluginHealthInstance = Pick<PluginInstance, 'id' | 'scope' | 'projectId'>
+export type PluginHealthInstance = Pick<PluginInstance, 'id' | 'scope' | 'workspaceId'>
 
 export interface PluginDeleteContext<S extends string = string> {
   instance: PluginInstance
@@ -46,7 +46,7 @@ export interface PluginType<C extends readonly PluginConfigField[] = readonly Pl
   actions?: Readonly<Record<string, PluginAction<PluginConfigOf<C>, S[number]['name']>>>
   /** Endpoints of the type itself, mounted at `/plugin-types/:id/<name>`, for checks that need no instance. */
   typeActions?: Readonly<Record<string, PluginTypeAction>>
-  /** Runs before an instance or its project is deleted, while the row and secrets still exist; a throw stops the delete. */
+  /** Runs before an instance or its workspace is deleted, while the row and secrets still exist; a throw stops the delete. */
   onDelete?(context: PluginDeleteContext<S[number]['name']>): void | Promise<void>
 }
 

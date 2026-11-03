@@ -1,4 +1,4 @@
-import { PROJECTS_PATH, type ProjectListResponse } from '@candy-mountain/shared'
+import { WORKSPACES_PATH, type WorkspaceListResponse } from '@candy-mountain/shared'
 
 export const PROJECTS_DATA_KEY = 'projects'
 export const ALL_PROJECTS_DATA_KEY = 'projects:all'
@@ -9,11 +9,11 @@ export interface UseProjectsOptions {
 
 export function useProjects(options: UseProjectsOptions = {}) {
   const includeArchived = options.includeArchived ?? false
-  const result = useApi<ProjectListResponse>(PROJECTS_PATH, {
+  const result = useApi<WorkspaceListResponse>(WORKSPACES_PATH, {
     key: includeArchived ? ALL_PROJECTS_DATA_KEY : PROJECTS_DATA_KEY,
     query: includeArchived ? { includeArchived: 'true' } : undefined,
   })
-  const projects = computed(() => result.data.value?.projects ?? [])
+  const projects = computed(() => result.data.value?.workspaces ?? [])
   return { ...result, projects }
 }
 

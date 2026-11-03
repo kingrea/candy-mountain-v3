@@ -1,23 +1,24 @@
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { Actor, ApiErrorBody, Environment, LiveVersionSourceListResponse, LiveVersionsResponse, Project } from '@candy-mountain/shared'
+import type { Actor, ApiErrorBody, Environment, LiveVersionSourceListResponse, LiveVersionsResponse, Workspace } from '@candy-mountain/shared'
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { createTestApp } from '../testing/platform'
 import type { AuthStrategy } from '../auth'
 import { dataPaths } from '../data-dir'
 import type { PlatformDatabase } from '../db'
-import { environments } from '../db/schema'
+import { environments } from '../deployments/schema'
 import { deploymentsRoutes } from '../deployments/definition'
 import { createPluginTypeRegistry, PLUGIN_TYPES } from '../plugins'
-import { createProject, deleteProject } from '../projects/projects'
+import { deleteWorkspace } from '../workspaces/workspaces'
 import { lockedSecretsStore } from '../secrets'
 import { openTestDatabase } from '../testing'
 import { CUSTOM_ENDPOINT_SOURCE } from './custom-endpoint'
 import { json, startFakeEndpoint, unreachableUrl, type FakeEndpoint } from './fake-endpoint'
 import { createEnvironment, listEnvironments, readLiveVersions } from './service'
 import { createLiveVersionSourceRegistry, defineLiveVersionSource, LiveVersionSourceError, type LiveVersionDeps, type LiveVersionSource } from './sources'
+import { createWorkspaceWithRepository } from '../repository/test-support'
 
 let database: PlatformDatabase
 let root: string
@@ -40,7 +41,7 @@ afterEach(() => {
 })
 
 const instanceDeps = () => ({ db: database.db, pluginTypes: createPluginTypeRegistry(PLUGIN_TYPES), secrets: lockedSecretsStore().writeOnly })
-const project = (name: string): Promise<Project> => createProject(database.db, { name, source: { kind: 'local-path', path: root } })
+const project = (name: string): Promise<Workspace> => createWorkspaceWithRepository(database.db, { name, path: root })
 
 function app(roles = ['admin']) {
   const auth: AuthStrategy = { name: 'development', resolve: (): Actor => ({ id: 'u1', username: 'jack', displayName: 'Jack', roles }) }
@@ -81,26 +82,26 @@ describe('live-version sources', () => {
 describe('environments', () => {
   it('creates, reads, updates and deletes an environment through the API', async () => {
     const { slug } = await project('Shop')
-    const created = await call('POST', `/projects/${slug}/environments`, production())
+    const created = await call('POST', `/workspaces/${slug}/environments`, production())
     expect(created.status).toBe(201)
     const { environment } = await created.json() as { environment: Environment }
     expect(environment).toMatchObject({ name: 'Production', liveSourceKind: 'custom-endpoint', deployKind: null, deploySettings: null })
     expect(environment.liveSourceSettings).toEqual({ url: endpoint.url('/api/debug'), ...mapping })
 
-    expect((await (await call('GET', `/projects/${slug}/environments`, undefined, ['viewer'])).json() as { environments: Environment[] }).environments).toEqual([environment])
-    expect((await call('GET', `/projects/${slug}/environments/${environment.id}`, undefined, ['viewer'])).status).toBe(200)
+    expect((await (await call('GET', `/workspaces/${slug}/environments`, undefined, ['viewer'])).json() as { environments: Environment[] }).environments).toEqual([environment])
+    expect((await call('GET', `/workspaces/${slug}/environments/${environment.id}`, undefined, ['viewer'])).status).toBe(200)
 
-    const renamed = await call('PATCH', `/projects/${slug}/environments/${environment.id}`, { name: 'Live', liveSourceSettings: { url: 'https://example.com/v', versionPath: 'version' } })
+    const renamed = await call('PATCH', `/workspaces/${slug}/environments/${environment.id}`, { name: 'Live', liveSourceSettings: { url: 'https://example.com/v', versionPath: 'version' } })
     expect(renamed.status).toBe(200)
     expect((await renamed.json() as { environment: Environment })).toMatchObject({ environment: { name: 'Live', liveSourceSettings: { url: 'https://example.com/v', versionPath: 'version' } } })
 
-    expect((await call('DELETE', `/projects/${slug}/environments/${environment.id}`)).status).toBe(204)
-    expect((await call('GET', `/projects/${slug}/environments/${environment.id}`)).status).toBe(404)
+    expect((await call('DELETE', `/workspaces/${slug}/environments/${environment.id}`)).status).toBe(204)
+    expect((await call('GET', `/workspaces/${slug}/environments/${environment.id}`)).status).toBe(404)
   })
 
   it('rejects bad input with the right codes', async () => {
     const { slug } = await project('Shop')
-    const post = (body: unknown, roles?: string[]) => call('POST', `/projects/${slug}/environments`, body, roles)
+    const post = (body: unknown, roles?: string[]) => call('POST', `/workspaces/${slug}/environments`, body, roles)
 
     expect((await post(production(), ['viewer'])).status).toBe(403)
     expect(await errorOf(await post({ liveSourceKind: 'custom-endpoint' }))).toMatchObject({ code: 'invalid_request' })
@@ -112,7 +113,7 @@ describe('environments', () => {
 
     expect((await post(production())).status).toBe(201)
     expect(await errorOf(await post({ ...production(), name: 'production' }))).toMatchObject({ code: 'name_taken' })
-    expect((await call('GET', '/projects/nope/environments')).status).toBe(404)
+    expect((await call('GET', '/workspaces/nope/environments')).status).toBe(404)
   })
 
   it('keeps environments per project and removes them with the project', async () => {
@@ -121,9 +122,9 @@ describe('environments', () => {
     const settings = { url: 'https://example.com/v', versionPath: 'version' }
     const env = createEnvironment(instanceDeps(), shop.id, { name: 'Production', liveSourceKind: 'custom-endpoint', liveSourceSettings: settings })
     createEnvironment(instanceDeps(), blog.id, { name: 'Production', liveSourceKind: 'custom-endpoint', liveSourceSettings: settings })
-    expect((await call('GET', `/projects/${blog.slug}/environments/${env.id}`)).status).toBe(404)
+    expect((await call('GET', `/workspaces/${blog.slug}/environments/${env.id}`)).status).toBe(404)
 
-    deleteProject(database.db, shop.slug)
+    deleteWorkspace(database.db, shop.slug)
     expect(listEnvironments(database.db, shop.id)).toEqual([])
     expect(listEnvironments(database.db, blog.id)).toHaveLength(1)
   })
@@ -132,11 +133,11 @@ describe('environments', () => {
 describe('live versions', () => {
   it('renders the four fields per environment and confines an unreachable endpoint to its own entry', async () => {
     const { slug } = await project('Shop')
-    await call('POST', `/projects/${slug}/environments`, production())
-    await call('POST', `/projects/${slug}/environments`, { name: 'Staging', liveSourceKind: 'custom-endpoint', liveSourceSettings: { url: await unreachableUrl(), ...mapping } })
-    await call('POST', `/projects/${slug}/environments`, { name: 'Preview', liveSourceKind: 'custom-endpoint', liveSourceSettings: { url: endpoint.url('/missing'), ...mapping } })
+    await call('POST', `/workspaces/${slug}/environments`, production())
+    await call('POST', `/workspaces/${slug}/environments`, { name: 'Staging', liveSourceKind: 'custom-endpoint', liveSourceSettings: { url: await unreachableUrl(), ...mapping } })
+    await call('POST', `/workspaces/${slug}/environments`, { name: 'Preview', liveSourceKind: 'custom-endpoint', liveSourceSettings: { url: endpoint.url('/missing'), ...mapping } })
 
-    const res = await call('GET', `/projects/${slug}/live-versions`, undefined, ['viewer'])
+    const res = await call('GET', `/workspaces/${slug}/live-versions`, undefined, ['viewer'])
     expect(res.status).toBe(200)
     const { environments } = await res.json() as LiveVersionsResponse
     expect(environments.map(e => e.environmentName)).toEqual(['Production', 'Staging', 'Preview'])

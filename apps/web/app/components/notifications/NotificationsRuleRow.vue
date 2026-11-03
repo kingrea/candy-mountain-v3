@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { NOTIFICATION_KIND_LABELS, type NotificationKind, type NotificationRule } from '@candy-mountain/shared'
+import type { NotificationKind, NotificationRule } from '@candy-mountain/shared'
 
 const props = defineProps<{
   kind: NotificationKind
+  /** The daemon's label for the kind, e.g. 'A bot finishes'. */
+  label: string
   rule: NotificationRule
   saving: boolean
   disabled: boolean
@@ -37,12 +39,12 @@ function onSave() {
     <div class="flex flex-col gap-4">
       <div class="flex items-center justify-between gap-3">
         <h2 class="font-semibold text-highlighted">
-          {{ NOTIFICATION_KIND_LABELS[kind] }}
+          {{ label }}
         </h2>
         <USwitch
           v-model="draft.enabled"
           :disabled="disabled"
-          :aria-label="`Send a notification when ${NOTIFICATION_KIND_LABELS[kind].toLowerCase()}`"
+          :aria-label="`Send a notification when ${label.toLowerCase()}`"
           data-testid="notification-toggle"
         />
       </div>

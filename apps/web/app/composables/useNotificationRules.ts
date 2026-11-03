@@ -1,7 +1,7 @@
 import {
   PLUGINS_PATH,
-  projectBotsPath,
-  projectNotificationsPath,
+  workspaceBotsPath,
+  workspaceNotificationsPath,
   type Bot,
   type BotListResponse,
   type NotificationKind,
@@ -16,16 +16,16 @@ export function useNotificationRules() {
   const { $api } = useNuxtApp()
   const toast = useToast()
 
-  const rules = useApi<NotificationRulesResponse>(() => projectNotificationsPath(slug.value ?? ''), {
+  const rules = useApi<NotificationRulesResponse>(() => workspaceNotificationsPath(slug.value ?? ''), {
     key: computed(() => `notifications:rules:${slug.value ?? ''}`),
   })
   // Bots and plugins only decide the identity line, so their failure must not hide the rules.
-  const bots = useApi<BotListResponse>(() => projectBotsPath(slug.value ?? ''), {
+  const bots = useApi<BotListResponse>(() => workspaceBotsPath(slug.value ?? ''), {
     key: computed(() => `notifications:bots:${slug.value ?? ''}`),
   })
   const plugins = useApi<PluginInstanceListResponse>(PLUGINS_PATH, {
     key: computed(() => `notifications:plugins:${slug.value ?? ''}`),
-    query: { project: slug },
+    query: { workspace: slug },
   })
 
   const identity = computed(() => slackIdentity(
@@ -41,7 +41,7 @@ export function useNotificationRules() {
     errors.value = { ...errors.value, [kind]: undefined }
     try {
       const body: UpdateNotificationRulesRequest = { rules: { [kind]: { enabled: draft.enabled, destination: draftDestination(draft) } } }
-      rules.data.value = await $api<NotificationRulesResponse>(projectNotificationsPath(slug.value), { method: 'PUT', body })
+      rules.data.value = await $api<NotificationRulesResponse>(workspaceNotificationsPath(slug.value), { method: 'PUT', body })
       toast.add({ title: 'Notification saved', color: 'success' })
       return true
     }
@@ -55,6 +55,7 @@ export function useNotificationRules() {
   }
 
   return {
+    kinds: computed(() => rules.data.value?.kinds ?? []),
     rules: computed(() => rules.data.value?.rules ?? null),
     identity,
     identityLoading: computed(() => bots.status.value === 'pending' || plugins.status.value === 'pending'),

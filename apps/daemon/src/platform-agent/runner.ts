@@ -39,7 +39,7 @@ const text = (content: string) => [{ type: 'content', content: { type: 'text', t
 
 export function createPlatformAgentRunner(deps: PlatformAgentDeps, options: PlatformAgentOptions = {}): NativeFamilyRunner {
   const flushIntervalMs = options.flushIntervalMs ?? 150
-  return async ({ project, actor, thread, text: prompt, emit, signal }) => {
+  return async ({ workspace, actor, thread, text: prompt, emit, signal }) => {
     const gateway = resolveLlmGatewayConfig(deps.db, deps.secretsReader)
     if (!gateway.baseUrl || !gateway.modelId || !gateway.apiKey) {
       emit({ kind: 'error', phase: 'start', message: 'The LLM gateway is not configured; set the gateway base URL, key and model id on the Settings page.', code: null })
@@ -48,13 +48,13 @@ export function createPlatformAgentRunner(deps: PlatformAgentDeps, options: Plat
     const accessed = new Map<string, CapabilityAccess>()
     const turn: PlatformTurnContext = {
       actor,
-      project,
+      workspace,
       capabilities: deps.capabilities,
-      registry: loadRegistry(deps, actor, project),
+      registry: loadRegistry(deps, actor, workspace),
       scopeUrlPrefix: deps.scopeUrlPrefix,
       access(capabilityId) {
         let access = accessed.get(capabilityId)
-        if (!access) accessed.set(capabilityId, access = resolveCapabilityAccess(deps, actor, project, capabilityId))
+        if (!access) accessed.set(capabilityId, access = resolveCapabilityAccess(deps, actor, workspace, capabilityId))
         return access
       },
       model: { baseUrl: gateway.baseUrl, modelId: gateway.modelId, apiKey: gateway.apiKey },

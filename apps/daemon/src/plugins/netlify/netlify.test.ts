@@ -76,7 +76,7 @@ describe('netlify plugin type', () => {
     expect(PLUGIN_TYPES).not.toContain(netlifyPluginType)
     expect(createPluginTypeRegistry([...PLUGIN_TYPES, netlifyPluginType]).get('netlify')).toBe(netlifyPluginType)
     const info = pluginTypeInfo(netlifyPluginType)
-    expect(info.scopes).toEqual(['project'])
+    expect(info.scopes).toEqual(['workspace'])
     expect(info.singleInstance).toBe(true)
     expect(info.configFields).toEqual([expect.objectContaining({ name: 'siteId', required: true })])
     expect(info.secretFields).toEqual([expect.objectContaining({ name: 'token', required: true })])

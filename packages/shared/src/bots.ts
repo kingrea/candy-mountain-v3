@@ -100,7 +100,7 @@ export interface BotResponse {
   bot: Bot
 }
 
-export const projectBotsPath = (slug: string) => `/projects/${slug}/bots`
+export const workspaceBotsPath = (slug: string) => `/workspaces/${slug}/bots`
 
 export const botPersonaPath = (family: BotFamily, name: string) =>
   family === 'claude-code' ? `.claude/agents/${name}.md` : `.agents/${name}.md`
@@ -117,7 +117,7 @@ export interface BotPersonaFiles {
   codex: boolean
 }
 
-/** Body of `POST /projects/:slug/bots/check-persona`, for a bot that is not saved yet. */
+/** Body of `POST /workspaces/:slug/bots/check-persona`, for a bot that is not saved yet. */
 export interface BotPersonaPreviewRequest {
   personaName: string
   /** Blank or null uses the Repository plugin's default branch. */
@@ -126,7 +126,7 @@ export interface BotPersonaPreviewRequest {
 
 export type BotPersonaPreviewResponse = BotPersonaFiles
 
-/** Response of `POST /projects/:slug/bots/:id/check-persona`; status and reason are for the bot's own family. */
+/** Response of `POST /workspaces/:slug/bots/:id/check-persona`; status and reason are for the bot's own family. */
 export interface BotPersonaCheckResponse extends BotPersonaFiles {
   checkedAt: string
   status: Exclude<BotPersonaStatus, 'unverified'>

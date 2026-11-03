@@ -10,7 +10,7 @@ import {
 } from '../../app/utils/chatClientActions'
 import { chatSegmentTranscript, chatTranscriptRows } from '../../app/utils/chatTranscript'
 
-const navigate: PlatformClientAction = { kind: 'navigate', to: '/p/alpha/uptime', projectSlug: 'alpha', viewId: 'uptime', capabilityId: 'uptime' }
+const navigate: PlatformClientAction = { kind: 'navigate', to: '/p/alpha/uptime', workspaceSlug: 'alpha', viewId: 'uptime', capabilityId: 'uptime' }
 const openThread: PlatformClientAction = { kind: 'open_thread', agentId: 'scribe' }
 
 const at = (second: number) => `2026-10-28T10:00:${String(second).padStart(2, '0')}.000Z`
@@ -20,7 +20,7 @@ function row(seq: number, toolCallId: string, action: PlatformClientAction): Age
 }
 
 const registry = {
-  project: { id: 'p1', slug: 'alpha', name: 'Alpha' },
+  workspace: { id: 'p1', slug: 'alpha', name: 'Alpha' },
   views: [{ id: 'uptime', capabilityId: 'uptime', label: 'Uptime', icon: 'i-lucide-activity', path: 'uptime', to: '/p/alpha/uptime/checks', ready: true }],
   agents: [{ id: 'scribe', capabilityId: 'chat-scribe', label: 'Scribe', description: '' }],
 } as unknown as RegistryResponse
@@ -90,14 +90,14 @@ describe('chatNavigatePath and chatActionLabel', () => {
   it('prefers the registry route for the same project and falls back to the action route', () => {
     expect(chatNavigatePath(navigate, registry)).toBe('/p/alpha/uptime/checks')
     expect(chatNavigatePath({ ...navigate, viewId: 'gone' }, registry)).toBe('/p/alpha/uptime')
-    expect(chatNavigatePath({ ...navigate, projectSlug: 'beta', to: '/p/beta/uptime' }, registry)).toBe('/p/beta/uptime')
+    expect(chatNavigatePath({ ...navigate, workspaceSlug: 'beta', to: '/p/beta/uptime' }, registry)).toBe('/p/beta/uptime')
     expect(chatNavigatePath(navigate, null)).toBe('/p/alpha/uptime')
   })
 
   it('names the view, project and agent from the registry', () => {
     expect(chatActionLabel(navigate, 'applied', registry)).toBe('Opened Uptime for Alpha')
     expect(chatActionLabel(navigate, 'ignored', registry)).toBe('Did not open Uptime for Alpha')
-    expect(chatActionLabel({ ...navigate, projectSlug: 'beta' }, 'earlier', registry)).toBe('Opened uptime for beta')
+    expect(chatActionLabel({ ...navigate, workspaceSlug: 'beta' }, 'earlier', registry)).toBe('Opened uptime for beta')
     expect(chatActionLabel(openThread, 'applied', registry)).toBe('Started a chat with Scribe')
     expect(chatActionLabel({ kind: 'open_thread', agentId: 'oracle' }, 'failed', registry)).toBe('Could not start a chat with oracle')
   })

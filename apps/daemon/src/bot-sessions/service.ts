@@ -10,7 +10,7 @@ import type { Db } from '../db'
 import { agentSessions } from '../db/schema'
 import { resolvePluginInstance, type PluginInstanceDeps, type SecretsReader } from '../plugins/instances/instances'
 import { assertPostureNotWidened, CLAUDE_SANDBOX_DEFAULT_WRITE_PATHS, PostureError, resolveBotPosture, type NeutralisedItem } from '../posture'
-import { findProjectById, sourcePath } from '../projects/projects'
+import type { RepositoryPaths } from '../repository/service'
 import { SessionError, type SessionManager } from '../sessions'
 import { findThread, insertThread, switchThreadSession } from '../threads/store'
 import { beadsEnvForWorktree, botBranchName, dependencyInstallState, WorktreeError, type WorktreeLease, type WorktreePool } from '../worktrees'
@@ -21,6 +21,7 @@ export interface BotSessionDeps extends PluginInstanceDeps {
   secretsReader: SecretsReader
   sessions: SessionManager
   worktrees: WorktreePool
+  repository: RepositoryPaths
 }
 
 export interface BotSessionServiceOptions {
@@ -89,7 +90,7 @@ function holderSessionIds(db: Db, holder: BotSessionHolder, botId?: string): str
 }
 
 export function createBotSessionService(deps: BotSessionDeps, options: BotSessionServiceOptions = {}): BotSessionService {
-  const { db, sessions, worktrees } = deps
+  const { db, sessions, worktrees, repository } = deps
   const now = () => new Date((options.now ?? Date.now)()).toISOString()
   const diagnostic = options.onDiagnostic ?? (() => {})
   const readDeps: BotReadDeps = { db, pluginTypes: deps.pluginTypes, secrets: deps.secrets, secretsReader: deps.secretsReader }
@@ -108,7 +109,7 @@ export function createBotSessionService(deps: BotSessionDeps, options: BotSessio
   }
 
   const leaseOf = (session: AgentSession): WorktreeLease | null =>
-    worktrees.list(session.projectId).find(lease => lease.holder.kind === 'session' && lease.holder.id === session.id) ?? null
+    worktrees.list(session.workspaceId).find(lease => lease.holder.kind === 'session' && lease.holder.id === session.id) ?? null
 
   function assertPluginHealthy(bot: Bot): void {
     const health = resolvePluginInstance(deps, bot.projectId, bot.family)?.health
@@ -162,7 +163,7 @@ export function createBotSessionService(deps: BotSessionDeps, options: BotSessio
     }
     return insertThread(db, {
       id: threadId,
-      projectId: bot.projectId,
+      workspaceId: bot.projectId,
       actorId,
       agentId: botAgentId(bot.id),
       currentSessionId: session.id,
@@ -183,9 +184,8 @@ export function createBotSessionService(deps: BotSessionDeps, options: BotSessio
     const personaName = bot.persona.name!
     const baseBranch = bot.effectiveBaseBranch
     if (!baseBranch) throw new BotStartError('repository_not_configured', `Bot "${bot.name}" cannot start: the repository's default branch could not be read`)
-    const project = findProjectById(db, bot.projectId)
-    if (!project) throw new BotError('not_found', `No project with id "${bot.projectId}"`)
-    const mainCheckout = sourcePath(project.source)
+    const mainCheckout = repository.find(bot.projectId)
+    if (mainCheckout === null) throw new BotStartError('repository_not_configured', `Bot "${bot.name}" cannot start: the project has no repository`)
 
     const sessionId = randomUUID()
     const lease = await acquireLease(bot, sessionId, baseBranch)
@@ -225,7 +225,7 @@ export function createBotSessionService(deps: BotSessionDeps, options: BotSessio
         env,
         bot: { id: bot.id, name: bot.name, holder },
       }
-      const session = sessions.create({ id: sessionId, projectId: bot.projectId, family: bot.family, actorId, cwd: lease.path, posture, bot: { id: bot.id, name: bot.name } })
+      const session = sessions.create({ id: sessionId, workspaceId: bot.projectId, family: bot.family, actorId, cwd: lease.path, posture, bot: { id: bot.id, name: bot.name } })
       const thread = holder.kind === 'console' ? consoleThread(bot, holder.id, actorId, session) : null
       return { bot, session, lease, thread, resumed: false, neutralised: resolved.neutralised, warnings: warningsOf(lease) }
     }
@@ -288,7 +288,7 @@ export function createBotSessionService(deps: BotSessionDeps, options: BotSessio
     lease(sessionId) {
       const session = sessions.get(sessionId)
       if (!session?.posture?.bot) return null
-      return worktrees.list(session.projectId, { includeReleased: true }).find(lease => lease.holder.kind === 'session' && lease.holder.id === sessionId) ?? null
+      return worktrees.list(session.workspaceId, { includeReleased: true }).find(lease => lease.holder.kind === 'session' && lease.holder.id === sessionId) ?? null
     },
     stop: () => unobserve(),
   }

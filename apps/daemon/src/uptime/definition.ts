@@ -1,5 +1,6 @@
 import { join } from 'node:path'
 import { MONITOR_SOURCES_PATH } from '@candy-mountain/shared'
+import type { ActivityEventTypeDeclaration } from '../activity/types'
 import { defineCapabilityDefinition, type CapabilityDefinition, type CapabilityRuntime } from '../capabilities/definition'
 import { MONITOR_SOURCE_REGISTRY } from './builtin-sources'
 import { uptimeCapability } from './manifest'
@@ -7,6 +8,14 @@ import { monitorRoutes, monitorSourceRoutes } from './routes'
 import { startUptimeScheduler, type UptimeSchedulerOptions } from './scheduler'
 import type { MonitorSourceRegistry } from './sources'
 import { startIncidentTracker } from './tracker'
+import { srcPath } from '../package-root'
+import * as uptimeSchema from './schema'
+
+/** Appended by the incident tracker. */
+export const UPTIME_ACTIVITY_EVENT_TYPES: readonly ActivityEventTypeDeclaration[] = [
+  { id: 'incident.opened', label: 'Incident opened', icon: 'i-lucide-triangle-alert', notifications: [{ id: 'incident.opened', label: 'An incident opens' }] },
+  { id: 'incident.closed', label: 'Incident closed', icon: 'i-lucide-circle-check', notifications: [{ id: 'incident.closed', label: 'An incident closes' }] },
+]
 
 /** The routes without the scheduler, for an app that only needs them answered. */
 export function uptimeRoutes(sources: MonitorSourceRegistry = MONITOR_SOURCE_REGISTRY): Pick<CapabilityRuntime, 'workspaceRoutes' | 'platformRoutes'> {
@@ -20,6 +29,8 @@ export function uptimeDefinition(options: UptimeSchedulerOptions = {}): Capabili
   return defineCapabilityDefinition({
     id: uptimeCapability.id,
     manifest: uptimeCapability,
+    schema: { schema: uptimeSchema, migrationsFolder: srcPath('uptime', 'migrations') },
+    activityEventTypes: UPTIME_ACTIVITY_EVENT_TYPES,
     start({ db, paths, scopeUrlPrefix }) {
       const scheduler = startUptimeScheduler({ db, key: paths.root, ownerFile: join(paths.run, 'uptime-scheduler.owner') }, options)
       const incidents = startIncidentTracker({ db, scheduler, scopeUrlPrefix })

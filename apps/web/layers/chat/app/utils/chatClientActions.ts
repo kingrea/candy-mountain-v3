@@ -56,14 +56,14 @@ export function chatActionState(toolCallId: string, ledger: ChatActionLedger | u
 
 /** The registry's own route for the view when it describes the same project, so the sidebar and the action agree. */
 export function chatNavigatePath(action: Extract<PlatformClientAction, { kind: 'navigate' }>, registry: RegistryResponse | null): string {
-  if (registry?.project.slug !== action.projectSlug) return action.to
+  if (registry?.workspace.slug !== action.workspaceSlug) return action.to
   return registry.views.find(view => view.id === action.viewId)?.to ?? action.to
 }
 
 function navigateTarget(action: Extract<PlatformClientAction, { kind: 'navigate' }>, registry: RegistryResponse | null): string {
-  const sameProject = registry?.project.slug === action.projectSlug
+  const sameProject = registry?.workspace.slug === action.workspaceSlug
   const view = sameProject ? registry.views.find(candidate => candidate.id === action.viewId)?.label : undefined
-  return `${view ?? action.viewId} for ${sameProject ? registry.project.name : action.projectSlug}`
+  return `${view ?? action.viewId} for ${sameProject ? registry.workspace.name : action.workspaceSlug}`
 }
 
 const VERBS: Record<PlatformClientAction['kind'], Record<ChatActionState, string>> = {

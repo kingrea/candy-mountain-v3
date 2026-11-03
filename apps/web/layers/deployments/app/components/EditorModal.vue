@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import {
   ENVIRONMENT_NAME_MAX_LENGTH,
-  projectEnvironmentPath,
-  projectEnvironmentsPath,
+  workspaceEnvironmentPath,
+  workspaceEnvironmentsPath,
   type Environment,
   type EnvironmentResponse,
   type LiveVersionSourceInfo,
@@ -83,8 +83,8 @@ async function onSubmit() {
   const environment = props.environment
   try {
     const response = environment
-      ? await $api<EnvironmentResponse>(projectEnvironmentPath(slug.value, environment.id), { method: 'PATCH', body: deploymentsUpdateBody(environment, fields.value, state) })
-      : await $api<EnvironmentResponse>(projectEnvironmentsPath(slug.value), { method: 'POST', body: deploymentsCreateBody(fields.value, state) })
+      ? await $api<EnvironmentResponse>(workspaceEnvironmentPath(slug.value, environment.id), { method: 'PATCH', body: deploymentsUpdateBody(environment, fields.value, state) })
+      : await $api<EnvironmentResponse>(workspaceEnvironmentsPath(slug.value), { method: 'POST', body: deploymentsCreateBody(fields.value, state) })
     emit('saved', response.environment, !environment)
     open.value = false
   }

@@ -14,7 +14,7 @@ function capability(id: RegistryCapability['id'], overrides: Partial<RegistryCap
 
 function registry(capabilities: RegistryCapability[]): RegistryResponse {
   return {
-    project: { id: 'p1', slug: 'acme', name: 'Acme' },
+    workspace: { id: 'p1', slug: 'acme', name: 'Acme' },
     admin: true,
     modules: [],
     groups: [],

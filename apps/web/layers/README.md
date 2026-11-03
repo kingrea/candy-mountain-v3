@@ -34,7 +34,7 @@ layers/<id>/
     composables/             auto-imported; every export carries the prefix
     utils/                   auto-imported; every export carries the prefix
     types/                   not auto-imported; import via #layers/<id>/app/types/...
-    plugins/                 Nuxt plugins; register panels, forms, icons, chat pieces, home cards and other contributions
+    plugins/                 Nuxt plugins; register panels, forms, icons, chat pieces, home cards, project form fields and rows, and other contributions
     assets/                  files the layer imports itself, such as a plugin type's icon
     app.config.ts            optional app config contributions
 ```
@@ -60,13 +60,13 @@ The prefix is the PascalCase layer id: `issues` -> `Issues`, `agent-hub` -> `Age
 
 Every capability page is project scoped. Core owns `app/pages/p/[project].vue`, which resolves the project from the slug (404 state if unknown, remembers the selection, applies the `dashboard` layout) and renders `<NuxtPage />`. Nuxt merges pages from all layers into one tree, so a layer page at `layers/<id>/app/pages/p/[project]/<id>/index.vue` becomes a child route at `/p/:project/<id>` rendered inside that parent: it gets the project check and the layout for free and reads the project with `useSelectedProject()`. A single-page layer may use `pages/p/[project]/<id>.vue` instead.
 
-The `p` in those URLs is the product's scope prefix, `PRODUCT.scope.urlPrefix` (`p` for Candy Mountain), not the directory name. Pages always live under `app/pages/p/`, in core and in every layer (`SCOPE_PAGES_DIR` in `apps/web/scope-routes.mjs`); the `pages:extend` hook in `nuxt.config.ts` moves the routes generated from that directory to `/<prefix>/`, and `projectPath` and `projectSwitchPath` in core's `app/utils/project-scope.ts` build links with the same prefix. A product with another prefix serves every scoped page there and `/p/` answers not found; no page moves and route names keep the directory's `p-project-...`. Never write `/p/` into a link: build it with `projectPath`. `test/unit/scope-routes.test.ts` loads the real page tree and proves both. URLs the daemon writes (registry view `to`, activity and notification links, from `projectViewRoute`, `chatThreadLink` and `uptimeMonitorLink` in `@candy-mountain/shared`) still say `/p/` until the daemon reads the product configuration.
+The `p` in those URLs is the product's scope prefix, `PRODUCT.scope.urlPrefix` (`p` for Candy Mountain), not the directory name. Pages always live under `app/pages/p/`, in core and in every layer (`SCOPE_PAGES_DIR` in `apps/web/scope-routes.mjs`); the `pages:extend` hook in `nuxt.config.ts` moves the routes generated from that directory to `/<prefix>/`, and `projectPath` and `projectSwitchPath` in core's `app/utils/project-scope.ts` build links with the same prefix. A product with another prefix serves every scoped page there and `/p/` answers not found; no page moves and route names keep the directory's `p-project-...`. Never write `/p/` into a link: build it with `projectPath`. `test/unit/scope-routes.test.ts` loads the real page tree and proves both. URLs the daemon writes (registry view `to`, activity and notification links, from `workspaceViewRoute`, `chatThreadLink` and `uptimeMonitorLink` in `@candy-mountain/shared`) still say `/p/` until the daemon reads the product configuration.
 
 Pages outside `p/[project]/<id>/` fail lint, which also keeps two layers from ever claiming the same route. The one exception is the project home, `/p/:project`: it belongs to the `overview` layer (its view path is `''`), whose page is `layers/overview/app/pages/p/[project]/index.vue`. Core deliberately has no `p/[project]/index.vue` (two pages at one path would collide), and lint stops any other layer from adding one (`PROJECT_HOME_LAYER` in the lint plugin). Overview belongs to no module and grants every role `read` (`everyoneRung`), so the home is always there and leads the sidebar. Build links with `projectPath(slug, '<id>', ...)` from core. The chat layer is not bound to this rule.
 
 ## Views, the sidebar and the gate
 
-A manifest view's `path` is its route relative to the project, so a view with `path: 'bots'` is the layer page `app/pages/p/[project]/bots/index.vue` (or `bots.vue`), and `path: 'issues/detail'` is `.../issues/detail.vue`. A view path must therefore start with its capability id, since `layer-pages` only allows a layer's pages under `p/[project]/<id>/`; the only `''` path (the project home) is Overview's. The daemon's registry answer (`GET /projects/:slug/registry`) carries each view's absolute `to`, and core renders the sidebar from it: there is no route table or nav list to edit, and a view the manifest does not declare never appears in the sidebar.
+A manifest view's `path` is its route relative to the project, so a view with `path: 'bots'` is the layer page `app/pages/p/[project]/bots/index.vue` (or `bots.vue`), and `path: 'issues/detail'` is `.../issues/detail.vue`. A view path must therefore start with its capability id, since `layer-pages` only allows a layer's pages under `p/[project]/<id>/`; the only `''` path (the project home) is Overview's. The daemon's registry answer (`GET /workspaces/:slug/registry`) carries each view's absolute `to`, and core renders the sidebar from it: there is no route table or nav list to edit, and a view the manifest does not declare never appears in the sidebar.
 
 View paths cannot hold route params, so a page for one item is an undeclared child route of its list view, gated with that view's id: `issues/[id].vue` (`/p/:project/issues/:id`) wraps itself in `<CapabilityViewGate capability="issues" view="issues">`.
 
@@ -151,6 +151,36 @@ The slots (`PROJECT_HOME_CARD_SLOTS`) are named places on the page:
 - `main`: the wide column, after Activity.
 
 `card.id` is unique within a slot, usually the contributing layer's id; registering the same id in the same slot again replaces the earlier card in its place. Cards in one slot render in registration order, and a slot nobody fills renders nothing, so removing a layer removes its cards. A card takes no props: it reads the project with core's `useSelectedProject()`, fetches its own data, renders its own `UCard` and renders nothing while it has nothing to show. The repository plugin-type layer contributes the repository facts (path, remote, issues tracked, checked) to `facts` this way. `layers/overview/test/unit/plugin-types.test.ts` guards that the overview layer itself names no plugin type, repository source or path verification.
+
+## Projects page contributions
+
+The Projects page (core's `app/pages/projects.vue`, its form modal and list) is platform: a project there has a name, slug, colour, organisation and archived state, and nothing else. Product data about a project, such as Candy Mountain's repository path, comes from layers through two contribution points, both in core and auto-imported, both called from the contributing layer's own Nuxt plugin.
+
+**Form fields** (`app/utils/project-form.ts`). `registerProjectFormField(field)` adds a field to the create/edit modal, after core's own fields, in registration order; registering the same `name` again replaces the earlier field in its place.
+
+- `name`: the field's key in the form state and the `name` of the `UFormField` its component renders.
+- `component`: receives `v-model` (the value) and `ProjectFormFieldProps` (`project`, null while creating, and `open`), and renders its own `UFormField` so core's `UForm` validates and shows errors on it.
+- `schema`: a zod schema for the value, merged into core's form schema, so the field validates with the rest of the form on submit.
+- `initial(project)`: the value when the modal opens.
+- `request(value, project)` (optional): fields merged into the create (project null) or update request body.
+- `errorCodes` (optional): API error codes core shows on this field instead of above the form.
+- `afterSave(project, { value, created })` (optional): runs after the create or update succeeded, with the saved project, for a layer that writes its own data through its own API. It may answer a `ProjectFormSaveNote` (`description`, `color`) that the page adds to its save toast. A throw keeps the modal open with the error; the project is already saved, so submitting again updates it rather than creating another.
+- `description` (optional): `{ create, edit }` copy for the modal's description; the first field that sets one wins, and with none the modal has no description.
+
+**Row items and actions** (`app/utils/project-list.ts`). `registerProjectRowItem(slot, item)` adds a component to every row of the list; it takes `ProjectRowItemProps` (`project`). The slots (`PROJECT_ROW_SLOTS`) are `detail`, under the name and slug, and `badges`, beside the row's actions menu; `item.id` is unique within a slot and items render in registration order. `registerProjectRowAction(action)` adds an entry to each row's actions menu after Edit: `run(project)` is awaited by the page, a throw shows above the list, the page refreshes the projects either way, and an answered `ProjectRowActionNote` (`title`, `description`) becomes a toast.
+
+With nothing contributed the form has only core's fields and the rows only the name, slug, archived badge and core's actions (`test/unit/project-form.test.ts`). The repository plugin-type layer contributes the local path field with its live path check (`POST /workspaces/repository/check`), the path under each row's name, the verification facts beside the menu and the "Re-check path" action (`POST /workspaces/:slug/repository/verify`). The project body carries no path: the field's `afterSave` writes it with `PUT /workspaces/:slug/repository` once the project is saved, and the row items, the facts card and the form read the stored repository through the layer's `useRepository(slug)` composable (`GET /workspaces/:slug/repository`, null when the workspace has none; keyed `repository:<slug>`, so core's `refreshProjectData()` refreshes it too):
+
+```ts
+// layers/repository/app/plugins/repository.ts
+export default defineNuxtPlugin((nuxtApp) => {
+  const api: RepositoryApi = (path, options) => nuxtApp.$api(path, options)
+  registerProjectFormField(repositoryFormField(defineAsyncComponent(() => import('#layers/repository/app/components/FormPath.vue')), api))
+  registerProjectRowItem('detail', { id: 'repository', component: defineAsyncComponent(() => import('#layers/repository/app/components/RowPath.vue')) })
+  registerProjectRowItem('badges', { id: 'repository', component: defineAsyncComponent(() => import('#layers/repository/app/components/RowFacts.vue')) })
+  registerProjectRowAction(repositoryRecheckAction(api))
+})
+```
 
 ## Chat contributions
 

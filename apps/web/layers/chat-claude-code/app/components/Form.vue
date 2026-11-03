@@ -87,7 +87,7 @@ async function persist(secrets?: Record<string, string>): Promise<PluginInstance
     : await createPlugin({
         type: props.type.id,
         scope: props.scope,
-        project: props.scope === 'project' ? slug.value : null,
+        workspace: props.scope === 'workspace' ? slug.value : null,
         config: path ? { authMode: mode.value, claudePath: path } : { authMode: mode.value },
         secrets,
       })

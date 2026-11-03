@@ -42,7 +42,7 @@ describe('resolveDaemonUrl', () => {
 describe('toDaemonPath', () => {
   it('strips the api prefix and keeps the query', () => {
     expect(toDaemonPath('/api/health')).toBe('/health')
-    expect(toDaemonPath('/api/projects/a?x=1')).toBe('/projects/a?x=1')
+    expect(toDaemonPath('/api/workspaces/a?x=1')).toBe('/workspaces/a?x=1')
     expect(toDaemonPath('/api')).toBe('/')
     expect(toDaemonPath('/api?x=1')).toBe('/?x=1')
   })

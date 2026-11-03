@@ -20,7 +20,7 @@ const repository: PluginTypeInfo = {
   name: 'Repository',
   description: 'The remote.',
   reach: ['Read branches.'],
-  scopes: ['project'],
+  scopes: ['workspace'],
   singleInstance: true,
   configFields: [
     { kind: 'select', name: 'host', label: 'Host', options: [{ value: 'github', label: 'GitHub' }, { value: 'bitbucket', label: 'Bitbucket' }], required: true },
@@ -39,9 +39,9 @@ function instance(overrides: Partial<PluginInstance> = {}): PluginInstance {
   return {
     id: 'i1',
     type: 'repository',
-    scope: 'project',
-    projectId: 'p1',
-    projectSlug: 'acme',
+    scope: 'workspace',
+    workspaceId: 'p1',
+    workspaceSlug: 'acme',
     config: { host: 'github', owner: 'jack', verbose: false },
     secrets: { token: 'set', extra: 'unset' },
     health: null,
@@ -102,17 +102,17 @@ describe('plugin form helpers', () => {
 
 describe('plugin availability', () => {
   it('offers a single-instance type only for scopes without an instance', () => {
-    const both: PluginTypeInfo = { ...repository, scopes: ['project', 'global'] }
-    expect(availablePluginScopes(both, [])).toEqual(['project', 'global'])
+    const both: PluginTypeInfo = { ...repository, scopes: ['workspace', 'global'] }
+    expect(availablePluginScopes(both, [])).toEqual(['workspace', 'global'])
     expect(availablePluginScopes(both, [instance()])).toEqual(['global'])
-    expect(availablePluginScopes({ ...both, singleInstance: false }, [instance()])).toEqual(['project', 'global'])
+    expect(availablePluginScopes({ ...both, singleInstance: false }, [instance()])).toEqual(['workspace', 'global'])
   })
 
   it('maps plugin readiness reasons to the capabilities waiting on them', () => {
     const registry = {
       capabilities: [
         { label: 'Bots', reasons: [{ kind: 'plugin', plugin: 'repository', message: '' }, { kind: 'plugin-any', plugins: ['claude-code', 'codex'], message: '' }] },
-        { label: 'Team', reasons: [{ kind: 'plugin', plugin: 'repository', message: '' }, { kind: 'project-fact', fact: 'hasBots', message: '' }] },
+        { label: 'Team', reasons: [{ kind: 'plugin', plugin: 'repository', message: '' }, { kind: 'workspace-fact', fact: 'hasBots', message: '' }] },
       ],
     } as unknown as RegistryResponse
     expect(pluginsNeededBy(registry)).toEqual({ 'repository': ['Bots', 'Team'], 'claude-code': ['Bots'], 'codex': ['Bots'] })

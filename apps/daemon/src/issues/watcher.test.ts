@@ -5,11 +5,13 @@ import { join } from 'node:path'
 import { promisify } from 'node:util'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PlatformDatabase } from '../db'
-import { archiveProject, createProject, deleteProject, unarchiveProject } from '../projects'
+import { archiveWorkspace, deleteWorkspace, unarchiveWorkspace } from '../workspaces'
 import { openTestDatabase } from '../testing'
 import { runBd } from './bd-runner'
 import { createTempBeadsWorkspace, hasBd, type TempBeadsWorkspace } from './test-workspace'
 import { ISSUE_WATCH_MIN_INTERVAL_MS, startIssueWatcher, type IssueWatcher } from './watcher'
+import { repositoryPaths } from '../repository/service'
+import { createWorkspaceWithRepository } from '../repository/test-support'
 
 const execFileAsync = promisify(execFile)
 
@@ -42,7 +44,7 @@ describe.skipIf(!hasBd)('issue watcher against a real workspace', () => {
   beforeEach(async () => {
     workspace = createTempBeadsWorkspace('wt')
     database = openTestDatabase()
-    const project = await createProject(database.db, { name: 'Watched', slug: 'watched', source: { kind: 'local-path', path: workspace.path } })
+    const project = await createWorkspaceWithRepository(database.db, { name: 'Watched', slug: 'watched', path: workspace.path })
     projectId = project.id
     invalidate.mockReset()
   }, 30_000)
@@ -56,7 +58,7 @@ describe.skipIf(!hasBd)('issue watcher against a real workspace', () => {
 
   // Only the burst test keeps the production spacing between notifications; the rest would just wait it out.
   async function start(minIntervalMs = 0): Promise<{ events: number[] }> {
-    watcher = startIssueWatcher({ db: database.db, invalidate, minIntervalMs })
+    watcher = startIssueWatcher({ db: database.db, repository: repositoryPaths(database.db), invalidate, minIntervalMs })
     const events: number[] = []
     watcher.subscribe(projectId, () => events.push(Date.now()))
     // Lets the baseline fingerprint settle so the first write is compared against it.
@@ -117,21 +119,21 @@ describe.skipIf(!hasBd)('issue watcher against a real workspace', () => {
   it('stops watching deleted and archived projects and resumes on unarchive', async () => {
     const { events } = await start()
 
-    archiveProject(database.db, 'watched')
+    archiveWorkspace(database.db, 'watched')
     watcher!.reconcile()
     expect(watcher!.isWatching(projectId)).toBe(false)
     await bd(workspace.path, 'create', '--title', 'While archived')
     await sleep(800)
     expect(events).toHaveLength(0)
 
-    unarchiveProject(database.db, 'watched')
+    unarchiveWorkspace(database.db, 'watched')
     watcher!.reconcile()
     expect(watcher!.isWatching(projectId)).toBe(true)
     await sleep(200)
     await bd(workspace.path, 'create', '--title', 'After unarchive')
     await waitFor(() => events.length === 1, 2000)
 
-    deleteProject(database.db, 'watched')
+    deleteWorkspace(database.db, 'watched')
     watcher!.reconcile()
     expect(watcher!.isWatching(projectId)).toBe(false)
     await bd(workspace.path, 'create', '--title', 'After delete')
@@ -143,7 +145,7 @@ describe.skipIf(!hasBd)('issue watcher against a real workspace', () => {
     await start()
     const other = createTempBeadsWorkspace('wo')
     try {
-      const project = await createProject(database.db, { name: 'Later', slug: 'later', source: { kind: 'local-path', path: other.path } })
+      const project = await createWorkspaceWithRepository(database.db, { name: 'Later', slug: 'later', path: other.path })
       expect(watcher!.isWatching(project.id)).toBe(false)
       watcher!.reconcile()
       expect(watcher!.isWatching(project.id)).toBe(true)
@@ -189,8 +191,8 @@ describe('issue watcher without a tracker', () => {
   })
 
   it('tolerates projects without .beads or with a missing checkout, and aborts its signal on close', async () => {
-    const plain = await createProject(database.db, { name: 'Plain', slug: 'plain', source: { kind: 'local-path', path: bare } })
-    watcher = startIssueWatcher({ db: database.db, invalidate: () => {} })
+    const plain = await createWorkspaceWithRepository(database.db, { name: 'Plain', slug: 'plain', path: bare })
+    watcher = startIssueWatcher({ db: database.db, repository: repositoryPaths(database.db), invalidate: () => {} })
     expect(watcher.isWatching(plain.id)).toBe(false)
 
     rmSync(bare, { recursive: true, force: true })

@@ -1,4 +1,4 @@
-export const projectAssigneesPath = (slug: string) => `/projects/${slug}/assignees`
+export const workspaceAssigneesPath = (slug: string) => `/workspaces/${slug}/assignees`
 
 export const ASSIGNEE_NAME_MAX_LENGTH = 100
 

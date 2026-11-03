@@ -1,13 +1,13 @@
-import type { CapabilityId, PlatformFactId, ProjectFactId } from './capabilities'
+import type { CapabilityId, PlatformFactId, WorkspaceFactId } from './capabilities'
 import type { ModuleId } from './modules'
 import type { ScopeLabel } from './product'
 import type { BotWriteScope } from './bots'
 import type { AgentSessionFamily } from './sessions'
 
-export const projectRegistryPath = (slug: string) => `/projects/${slug}/registry`
+export const workspaceRegistryPath = (slug: string) => `/workspaces/${slug}/registry`
 
-/** The web route of a project view under the product's scope URL prefix; a manifest path of '' is the project home. */
-export const projectViewRoute = (prefix: string, slug: string, path: string) => (path === '' ? `/${prefix}/${slug}` : `/${prefix}/${slug}/${path}`)
+/** The web route of a workspace view under the product's scope URL prefix; a manifest path of '' is the workspace home. */
+export const workspaceViewRoute = (prefix: string, slug: string, path: string) => (path === '' ? `/${prefix}/${slug}` : `/${prefix}/${slug}/${path}`)
 
 export interface RegistryNavEntry {
   /** The view id, or a fixed id in the system group. */
@@ -28,7 +28,7 @@ export interface RegistryNavGroup {
   icon: string
   kind: RegistryGroupKind
   entries: RegistryNavEntry[]
-  /** True for the admin when a member capability is not ready for the project; always false for other roles. */
+  /** True for the admin when a member capability is not ready for the workspace; always false for other roles. */
   degraded: boolean
 }
 
@@ -51,7 +51,7 @@ export interface RegistryView {
   capabilityId: CapabilityId
   label: string
   icon: string
-  /** As declared in the manifest, relative to the project. */
+  /** As declared in the manifest, relative to the workspace. */
   path: string
   /** Absolute web route. */
   to: string
@@ -65,7 +65,7 @@ export interface RegistryAgent {
   description: string
   family?: AgentSessionFamily
   avatar?: string
-  /** Set for a project bot run from the console; its threads work in a worktree of their own, not the project checkout. */
+  /** Set for a workspace bot run from the console; its threads work in a worktree of their own, not the workspace checkout. */
   kind?: 'bot'
   bot?: RegistryAgentBot
 }
@@ -80,7 +80,7 @@ export interface RegistryAgentBot {
 export type ReadinessReason =
   | { kind: 'plugin', plugin: string, message: string }
   | { kind: 'plugin-any', plugins: string[], message: string }
-  | { kind: 'project-fact', fact: ProjectFactId, message: string }
+  | { kind: 'workspace-fact', fact: WorkspaceFactId, message: string }
   | { kind: 'platform-fact', fact: PlatformFactId, message: string }
 
 export interface RegistryCapability {
@@ -106,19 +106,19 @@ export interface DegradedModule {
   reasons: (ReadinessReason & { capabilityId: CapabilityId })[]
 }
 
-/** One answer for an actor and a project; the sidebar, chat rail, view gating and setup pages all read it. */
+/** One answer for an actor and a workspace; the sidebar, chat rail, view gating and setup pages all read it. */
 export interface RegistryResponse {
-  project: { id: string, slug: string, name: string }
+  workspace: { id: string, slug: string, name: string }
   admin: boolean
-  /** Modules enabled for the project. */
+  /** Modules enabled for the workspace. */
   modules: ModuleId[]
-  /** A standalone project-home capability first, then one per enabled module with something to show, then other standalone capabilities, then the system group last. */
+  /** A standalone workspace-home capability first, then one per enabled module with something to show, then other standalone capabilities, then the system group last. */
   groups: RegistryNavGroup[]
   /** Every view the actor's rung shows, ready or not. */
   views: RegistryView[]
   /** Agents the actor may chat with: the rung allows chat and the capability is ready. */
   agents: RegistryAgent[]
-  /** Every granted capability that is a candidate for the project. */
+  /** Every granted capability that is a candidate for the workspace. */
   capabilities: RegistryCapability[]
   /** Admin only; empty for other roles. */
   degraded: DegradedModule[]

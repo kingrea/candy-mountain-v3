@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  projectTeamPath,
+  workspaceTeamPath,
   SLACK_MEMBER_ID_PATTERN,
   TEAM_EMAIL_MAX_LENGTH,
   TEAM_NAME_MAX_LENGTH,
@@ -88,8 +88,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   const member = props.member
   try {
     const response = member
-      ? await $api<TeamMemberResponse>(`${projectTeamPath(slug.value)}/${member.id}`, { method: 'PATCH', body: body(event.data) })
-      : await $api<TeamMemberResponse>(projectTeamPath(slug.value), { method: 'POST', body: body(event.data) })
+      ? await $api<TeamMemberResponse>(`${workspaceTeamPath(slug.value)}/${member.id}`, { method: 'PATCH', body: body(event.data) })
+      : await $api<TeamMemberResponse>(workspaceTeamPath(slug.value), { method: 'POST', body: body(event.data) })
     emit('saved', response.member, !member)
     open.value = false
   }

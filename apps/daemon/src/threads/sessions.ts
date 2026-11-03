@@ -9,11 +9,11 @@ import type { SessionFamilyRegistry } from './families'
 import { appendSessionEvent, findSession, insertSession, listSessionEvents, listSessions, resetSessionStatuses, updateSession, type SessionPatch } from '../sessions/store'
 
 export interface CreateSessionInput {
-  projectId: string
+  workspaceId: string
   family: AgentSessionFamily
   actorId: string
-  /** Absolute checkout or worktree; the REST route passes the project checkout. */
-  cwd: string
+  /** Absolute worktree or checkout; absent, the attached driver names the workspace's checkout, and with no driver the session has none. */
+  cwd?: string
   posture?: AgentSessionPosture | null
   /** Chosen by the caller when something (a worktree lease) must be keyed on the id before the row exists. */
   id?: string
@@ -42,7 +42,9 @@ export interface SessionDriver {
   prompt(id: string, text: string): Promise<AgentSession>
   /** Reached once no native turn of the session was found to abort. */
   cancel(id: string, row: AgentSession): Promise<AgentSession>
-  configOptions(projectId: string, family: AgentSessionFamily): SessionConfigOption[][]
+  configOptions(workspaceId: string, family: AgentSessionFamily): SessionConfigOption[][]
+  /** The checkout a session of the family starts in, or null when the workspace has none; throws when the family cannot run without one. */
+  workingDirectory(workspaceId: string, family: AgentSessionFamily): string | null
 }
 
 export interface SessionStoreDeps {
@@ -61,7 +63,7 @@ export interface SessionStore {
   /** Aborted by close(); streams end on it. */
   readonly signal: AbortSignal
   create(input: CreateSessionInput): AgentSession
-  list(projectId: string): AgentSession[]
+  list(workspaceId: string): AgentSession[]
   get(id: string): AgentSession | null
   /** The row, or a not_found SessionError. */
   require(id: string): AgentSession
@@ -78,8 +80,8 @@ export interface SessionStore {
   /** Writes the status and publishes it. */
   setStatus(id: string, status: AgentSessionStatus): void
   update(id: string, patch: SessionPatch): void
-  /** What the family's agent offered to configure in this project since boot, from the driver; none without one. */
-  configOptions(projectId: string, family: AgentSessionFamily): SessionConfigOption[][]
+  /** What the family's agent offered to configure in this workspace since boot, from the driver; none without one. */
+  configOptions(workspaceId: string, family: AgentSessionFamily): SessionConfigOption[][]
   /** One per store; a second throws. */
   attach(driver: SessionDriver): void
   close(): Promise<void>
@@ -158,13 +160,15 @@ export function createSessionStore({ db, families }: SessionStoreDeps, options: 
 
     create(input) {
       if (input.posture) driver?.assertPosture(input.family, input.posture)
+      // Native families run in-process and need no directory, so a workspace without a checkout still gets a session.
+      const cwd = input.cwd ?? driver?.workingDirectory(input.workspaceId, input.family) ?? ''
       const at = new Date(now()).toISOString()
       const session = insertSession(db, {
         id: input.id ?? randomUUID(),
-        projectId: input.projectId,
+        workspaceId: input.workspaceId,
         family: input.family,
         actorId: input.actorId,
-        cwd: input.cwd,
+        cwd,
         upstreamSessionId: null,
         status: 'idle',
         posture: input.posture ?? null,
@@ -172,7 +176,7 @@ export function createSessionStore({ db, families }: SessionStoreDeps, options: 
         lastActivityAt: at,
       })
       appendActivityEvent(db, {
-        projectId: input.projectId,
+        workspaceId: input.workspaceId,
         type: 'session.started',
         title: input.bot ? `Bot "${input.bot.name}" session started` : `${families.nameOf(input.family)} session started`,
         payload: { sessionId: session.id, family: input.family, actorId: input.actorId, ...(input.bot ? { botId: input.bot.id, botName: input.bot.name } : {}) },
@@ -180,7 +184,7 @@ export function createSessionStore({ db, families }: SessionStoreDeps, options: 
       return session
     },
 
-    list: projectId => listSessions(db, projectId),
+    list: workspaceId => listSessions(db, workspaceId),
     get: id => findSession(db, id),
     require: getRow,
     events: (id, options) => listSessionEvents(db, id, options),
@@ -250,7 +254,7 @@ export function createSessionStore({ db, families }: SessionStoreDeps, options: 
       write(id, () => { updateSession(db, id, patch); return true })
     },
 
-    configOptions: (projectId, family) => driver?.configOptions(projectId, family) ?? [],
+    configOptions: (workspaceId, family) => driver?.configOptions(workspaceId, family) ?? [],
 
     attach(next) {
       if (driver) throw new Error('The session store already has a driver.')

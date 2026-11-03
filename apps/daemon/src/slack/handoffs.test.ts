@@ -5,11 +5,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { listActivityEvents } from '../activity'
 import { CLAUDE_FIXTURE, fakeBins } from '../acp/test-support'
 import { createBot, parseCreateBot, recordBotPersonaCheck, type BotReadDeps } from '../bots'
-import { pluginInstances, slackTurns } from '../db/schema'
+import { pluginInstances } from '../db/schema'
+import { slackTurns } from '../bots/schema'
 import { createPluginInstance } from '../plugins/instances/instances'
 import { GOOD_TOKEN, stubHosts } from '../plugins/repository/fake-hosts'
 import { createSlackClient, createSlackOperations } from '../plugins/slack'
-import { createProject } from '../projects/projects'
 import { startAcpPlatform, type AcpPlatform } from '../chat-claude-code/test-support'
 import { MasterKey } from '../secrets'
 import { addTeamMember } from '../team'
@@ -20,6 +20,7 @@ import { SLACK_HANDOFF_DONE_ACTION, issueShortId, slackHandoffMessage } from './
 import { startSlackHandoffs, type SlackHandoffs } from './handoffs'
 import { startSlackRouter, type SlackRouter, type SlackTurnEnd } from './router'
 import { findSlackThread } from './threads'
+import { createWorkspaceWithRepository } from '../repository/test-support'
 
 const CLAUDE_PERSONA = '---\nname: ana\ndescription: Ana fixes small issues.\n---\nYou are Ana. Keep changes small.\n'
 const JACK = 'U0JACK'
@@ -126,8 +127,8 @@ function commitFile(path: string, text: string): void {
 }
 
 function setHealth(p: AcpPlatform, projectId: string, type: 'repository' | 'claude-code', config: Record<string, unknown> = {}, secrets: Record<string, string> = {}): void {
-  const existing = p.db.select().from(pluginInstances).where(eq(pluginInstances.projectId, projectId)).all().find(row => row.typeId === type)
-  const id = existing?.id ?? createPluginInstance({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly }, { type, scope: 'project', projectId, config, secrets }).id
+  const existing = p.db.select().from(pluginInstances).where(eq(pluginInstances.workspaceId, projectId)).all().find(row => row.typeId === type)
+  const id = existing?.id ?? createPluginInstance({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly }, { type, scope: 'workspace', workspaceId: projectId, config, secrets }).id
   p.db.update(pluginInstances).set({ health: { healthy: true }, healthCheckedAt: new Date().toISOString() }).where(eq(pluginInstances.id, id)).run()
 }
 
@@ -139,7 +140,7 @@ async function setup({ scopeUrlPrefix = 'p', permalinks = true } = {}) {
   stubHosts()
   temp = createTempDataDir()
   const p = platform = startAcpPlatform(temp.root, { secretsKey: MasterKey.generate(), acp: { bins: fakeBins, killTimeoutMs: 1000 } })
-  const project = await createProject(p.db, { name: 'alpha', slug: 'alpha', source: { kind: 'local-path', path: repo.clone } })
+  const project = await createWorkspaceWithRepository(p.db, { name: 'alpha', slug: 'alpha', path: repo.clone })
   setHealth(p, project.id, 'repository', { host: 'github', owner: 'jack', repo: 'candy' }, { token: GOOD_TOKEN })
   setHealth(p, project.id, 'claude-code', { claudePath: slackClaude(temp.root) })
   const bot = await createBot(readDeps(p), project.id, parseCreateBot({ name: 'Ana Bot', family: 'claude-code', writeScope: 'write-confirm', personaName: 'ana', answersIn: { channels: ['C01LISTED'] } }))

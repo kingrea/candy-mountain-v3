@@ -27,7 +27,7 @@ export const pluginInstancePath = (id: string, action?: string) =>
 export const pluginTypeActionPath = (typeId: string, action: string) => `${PLUGIN_TYPES_PATH}/${typeId}/${action}`
 
 export const PLUGIN_SCOPE_LABELS: Record<PluginScope, string> = {
-  project: `This ${SCOPE.singular}`,
+  workspace: `This ${SCOPE.singular}`,
   global: 'Platform-wide',
 }
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { projectBotsPath, type Bot, type BotPersonaCheckResponse, type BotListResponse } from '@candy-mountain/shared'
+import { workspaceBotsPath, type Bot, type BotPersonaCheckResponse, type BotListResponse } from '@candy-mountain/shared'
 import ProjectsConfirmModal from '~/components/projects/ProjectsConfirmModal.vue'
 
 /** `null` opens the editor for a new bot, `undefined` closes it. */
@@ -47,7 +47,7 @@ async function recordPersonaCheck(bot: Bot): Promise<BotPersonaCheckResponse | n
   if (!slug.value) return null
   checking.value = bot.id
   try {
-    const response = await $api<BotPersonaCheckResponse>(`${projectBotsPath(slug.value)}/${bot.id}/check-persona`, { method: 'POST' })
+    const response = await $api<BotPersonaCheckResponse>(`${workspaceBotsPath(slug.value)}/${bot.id}/check-persona`, { method: 'POST' })
     replaceBot(response.bot)
     return response
   }
@@ -96,7 +96,7 @@ async function remove(bot: Bot) {
   if (!confirmed || !slug.value) return
   actionError.value = null
   try {
-    await $api(`${projectBotsPath(slug.value)}/${bot.id}`, { method: 'DELETE' })
+    await $api(`${workspaceBotsPath(slug.value)}/${bot.id}`, { method: 'DELETE' })
     toast.add({ title: `Deleted ${bot.name}`, color: 'success' })
   }
   catch (error) {

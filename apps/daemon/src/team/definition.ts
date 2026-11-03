@@ -1,6 +1,8 @@
 import { defineCapabilityDefinition, type CapabilityDefinition, type CapabilityRuntime } from '../capabilities/definition'
 import { teamCapability } from './manifest'
 import { teamMemberRoutes } from './routes'
+import { srcPath } from '../package-root'
+import * as teamSchema from './schema'
 
 /** The routes alone, for tests that need no platform. */
 export function teamRoutes(): Pick<CapabilityRuntime, 'workspaceRoutes'> {
@@ -11,6 +13,7 @@ export function teamDefinition(): CapabilityDefinition {
   return defineCapabilityDefinition({
     id: teamCapability.id,
     manifest: teamCapability,
+    schema: { schema: teamSchema, migrationsFolder: srcPath('team', 'migrations') },
     start: () => teamRoutes(),
   })
 }

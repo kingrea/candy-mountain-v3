@@ -2,7 +2,8 @@ import { randomUUID } from 'node:crypto'
 import type { CreateTeamMemberRequest, TeamBotScope, TeamMember, UpdateTeamMemberRequest } from '@candy-mountain/shared'
 import { and, asc, eq, sql } from 'drizzle-orm'
 import type { Db } from '../db'
-import { bots, teamMembers } from '../db/schema'
+import { bots } from '../bots/schema'
+import { teamMembers } from './schema'
 import { TeamError } from './errors'
 
 type Row = typeof teamMembers.$inferSelect

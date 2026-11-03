@@ -25,7 +25,8 @@ useHead({ title: 'Activity' })
 const type = ref<ActivityEventType | 'all'>('all')
 const range = ref<(typeof ACTIVITY_SINCE_OPTIONS)[number]['value']>('all')
 
-const typeItems = [{ label: 'All types', value: 'all' }, ...ACTIVITY_TYPE_ITEMS]
+const activityTypes = useActivityTypes()
+const typeItems = computed(() => [{ label: 'All types', value: 'all' }, ...activityTypes.items.value.map(({ label, value }) => ({ label, value }))])
 const rangeItems = ACTIVITY_SINCE_OPTIONS.map(({ label, value }) => ({ label, value }))
 
 // Computed when the range changes, not per render, so the fetch key stays stable between filter edits.

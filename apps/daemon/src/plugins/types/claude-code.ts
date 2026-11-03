@@ -57,7 +57,7 @@ export const claudeCodePluginType = definePluginType({
     'Chat with Claude Code about this project from the chat panel.',
     'Run this project\'s bots and agent sessions on the configured Claude account.',
   ],
-  scopes: ['project'],
+  scopes: ['workspace'],
   singleInstance: true,
   configFields: [
     {

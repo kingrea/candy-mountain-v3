@@ -5,7 +5,7 @@ const STATUS: Record<PluginInstanceErrorCode, ContentfulStatusCode> = {
   invalid_request: 400,
   not_found: 404,
   action_not_found: 404,
-  project_not_found: 422,
+  workspace_not_found: 422,
   type_not_found: 422,
   unsupported_scope: 422,
   invalid_config: 422,

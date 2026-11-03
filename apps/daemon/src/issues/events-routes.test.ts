@@ -1,18 +1,19 @@
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
-import { ISSUE_CHANGED_EVENT, PROJECTS_PATH, projectIssueEventsPath, projectIssuePath, type ApiErrorBody } from '@candy-mountain/shared'
+import { ISSUE_CHANGED_EVENT, WORKSPACES_PATH, workspaceIssueEventsPath, workspaceIssuePath, type ApiErrorBody } from '@candy-mountain/shared'
 import { Hono } from 'hono'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createTestApp } from '../testing/platform'
 import type { AppEnv } from '../app'
 import { dataPaths } from '../data-dir'
 import type { PlatformDatabase } from '../db'
-import { createProject } from '../projects'
 import { openTestDatabase } from '../testing'
 import { issuesRoutes } from './definition'
 import { issueEventRoutes } from './events-routes'
 import { createTempBeadsWorkspace, hasBd, type TempBeadsWorkspace } from './test-workspace'
 import { startIssueWatcher, type IssueChangeListener, type IssueWatcher } from './watcher'
+import { repositoryPaths } from '../repository/service'
+import { createWorkspaceWithRepository } from '../repository/test-support'
 
 const execFileAsync = promisify(execFile)
 
@@ -87,7 +88,7 @@ describe('issue event stream', () => {
 
   beforeEach(async () => {
     database = openTestDatabase()
-    projectId = (await createProject(database.db, { name: 'Events', slug: 'events', source: { kind: 'local-path', path: process.cwd() } })).id
+    projectId = (await createWorkspaceWithRepository(database.db, { name: 'Events', slug: 'events', path: process.cwd() })).id
   })
 
   afterEach(() => database.close())
@@ -98,13 +99,13 @@ describe('issue event stream', () => {
       c.set('db', database.db)
       await next()
     })
-    app.route(PROJECTS_PATH, issueEventRoutes(watcher, { heartbeatMs }))
+    app.route(WORKSPACES_PATH, issueEventRoutes(watcher, { heartbeatMs }))
     return app
   }
 
   it('opens an SSE stream, relays changes as events and sends heartbeats', async () => {
     const { watcher, emit } = fakeWatcher()
-    const res = await appWith(watcher, 50).request(projectIssueEventsPath('events'))
+    const res = await appWith(watcher, 50).request(workspaceIssueEventsPath('events'))
     expect(res.status).toBe(200)
     expect(res.headers.get('content-type')).toBe('text/event-stream')
 
@@ -119,8 +120,8 @@ describe('issue event stream', () => {
   it('subscribes once per connection and unsubscribes when the client goes away', async () => {
     const { watcher, count } = fakeWatcher()
     const app = appWith(watcher)
-    const first = new StreamReader((await app.request(projectIssueEventsPath('events'))).body!)
-    const second = new StreamReader((await app.request(projectIssueEventsPath('events'))).body!)
+    const first = new StreamReader((await app.request(workspaceIssueEventsPath('events'))).body!)
+    const second = new StreamReader((await app.request(workspaceIssueEventsPath('events'))).body!)
     await first.until(': connected')
     await second.until(': connected')
     expect(count(projectId)).toBe(2)
@@ -133,22 +134,22 @@ describe('issue event stream', () => {
 
   it('ends open streams when the watcher closes', async () => {
     const { watcher } = fakeWatcher()
-    const stream = new StreamReader((await appWith(watcher).request(projectIssueEventsPath('events'))).body!)
+    const stream = new StreamReader((await appWith(watcher).request(workspaceIssueEventsPath('events'))).body!)
     await stream.until(': connected')
     watcher.close()
     expect(await stream.ended()).toBe(true)
   })
 
   it('answers 404 for an unknown project', async () => {
-    const res = await appWith(fakeWatcher().watcher).request(projectIssueEventsPath('nope'))
+    const res = await appWith(fakeWatcher().watcher).request(workspaceIssueEventsPath('nope'))
     expect(res.status).toBe(404)
     expect((await res.json() as ApiErrorBody).error.code).toBe('not_found')
   })
 
   it('is mounted by createTestApp ahead of the issue detail route', async () => {
     const { watcher } = fakeWatcher()
-    const app = createTestApp({ db: database.db, paths: dataPaths('/unused'), runtime: issuesRoutes(watcher) })
-    const res = await app.request(projectIssuePath('events', 'events'))
+    const app = createTestApp({ db: database.db, paths: dataPaths('/unused'), runtime: issuesRoutes(repositoryPaths(database.db), watcher) })
+    const res = await app.request(workspaceIssuePath('events', 'events'))
     expect(res.headers.get('content-type')).toBe('text/event-stream')
     await res.body!.cancel()
   })
@@ -162,8 +163,8 @@ describe.skipIf(!hasBd)('issue event stream against a real workspace', () => {
   beforeEach(async () => {
     workspace = createTempBeadsWorkspace('ev')
     database = openTestDatabase()
-    await createProject(database.db, { name: 'Live', slug: 'live', source: { kind: 'local-path', path: workspace.path } })
-    watcher = startIssueWatcher({ db: database.db })
+    await createWorkspaceWithRepository(database.db, { name: 'Live', slug: 'live', path: workspace.path })
+    watcher = startIssueWatcher({ db: database.db, repository: repositoryPaths(database.db) })
   }, 30_000)
 
   afterEach(() => {
@@ -173,8 +174,8 @@ describe.skipIf(!hasBd)('issue event stream against a real workspace', () => {
   })
 
   it('emits changed on the stream when bd create runs in the checkout', async () => {
-    const app = createTestApp({ db: database.db, paths: dataPaths('/unused'), runtime: issuesRoutes(watcher) })
-    const stream = new StreamReader((await app.request(projectIssueEventsPath('live'))).body!)
+    const app = createTestApp({ db: database.db, paths: dataPaths('/unused'), runtime: issuesRoutes(repositoryPaths(database.db), watcher) })
+    const stream = new StreamReader((await app.request(workspaceIssueEventsPath('live'))).body!)
     await stream.until(': connected')
     await new Promise(resolve => setTimeout(resolve, 200))
 

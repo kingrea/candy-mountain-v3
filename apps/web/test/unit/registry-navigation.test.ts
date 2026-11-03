@@ -12,7 +12,7 @@ function capability(id: RegistryCapability['id'], ready: boolean, admin = true):
 
 function registry(overrides: Partial<RegistryResponse> = {}): RegistryResponse {
   return {
-    project: { id: 'p1', slug: 'acme', name: 'Acme' },
+    workspace: { id: 'p1', slug: 'acme', name: 'Acme' },
     admin: true,
     modules: ['agent-hub'],
     groups: [
@@ -132,10 +132,10 @@ describe('lockoutActions', () => {
     expect(to([PLUGIN_REASON, { kind: 'plugin-any', plugins: ['claude-code', 'codex'], message: 'Needs one of Claude Code, Codex.' }])).toEqual(['/p/acme/setup/plugins'])
   })
 
-  it('sends a missing bot to the Bots page and a path fact to Projects', () => {
+  it('sends a missing bot to the Bots page and a repository fact to Projects', () => {
     expect(to([
-      { kind: 'project-fact', fact: 'hasBots', message: 'The project has no bots.' },
-      { kind: 'project-fact', fact: 'hasBeads', message: 'The project has no .beads directory.' },
+      { kind: 'workspace-fact', fact: 'hasBots', message: 'The project has no bots.' },
+      { kind: 'workspace-fact', fact: 'hasBeads', message: 'The project has no .beads directory.' },
     ])).toEqual(['/p/acme/bots', '/projects'])
   })
 

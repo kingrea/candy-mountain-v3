@@ -1,4 +1,4 @@
-import { BOTS_CAPABILITY_ID, botIdOfAgent, PLATFORM_AGENT_CAPABILITY_ID, PLATFORM_AGENT_ID, projectViewRoute, type PlatformActionResult, type PlatformAgentToolId, type PlatformDescribeResult, type PlatformToolRefusal } from '@candy-mountain/shared'
+import { BOTS_CAPABILITY_ID, botIdOfAgent, PLATFORM_AGENT_CAPABILITY_ID, PLATFORM_AGENT_ID, workspaceViewRoute, type PlatformActionResult, type PlatformAgentToolId, type PlatformDescribeResult, type PlatformToolRefusal } from '@candy-mountain/shared'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
 import { checkChat, checkTool, checkView, type GateRefusal } from '../registry'
@@ -23,8 +23,8 @@ export function openView(turn: PlatformTurnContext, viewId: string): PlatformAct
   if (!result.allowed) return refusal(result)
   return {
     refused: false,
-    action: { kind: 'navigate', to: projectViewRoute(turn.scopeUrlPrefix, turn.project.slug, view.path), projectSlug: turn.project.slug, viewId, capabilityId: owner.id },
-    summary: `The browser opens ${view.label} for ${turn.project.name}.`,
+    action: { kind: 'navigate', to: workspaceViewRoute(turn.scopeUrlPrefix, turn.workspace.slug, view.path), workspaceSlug: turn.workspace.slug, viewId, capabilityId: owner.id },
+    summary: `The browser opens ${view.label} for ${turn.workspace.name}.`,
   }
 }
 
@@ -64,7 +64,7 @@ export function describePlatform(turn: PlatformTurnContext): PlatformDescribeRes
   const { registry, actor } = turn
   return {
     refused: false,
-    project: { slug: registry.project.slug, name: registry.project.name },
+    workspace: { slug: registry.workspace.slug, name: registry.workspace.name },
     actor: { displayName: actor.displayName, admin: registry.admin },
     modules: registry.groups.filter(group => group.kind === 'module').map(group => ({ id: group.id, label: group.label })),
     views: registry.views.map(view => ({ id: view.id, label: view.label, capabilityId: view.capabilityId, to: view.to, ready: view.ready })),

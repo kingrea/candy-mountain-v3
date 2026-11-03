@@ -44,7 +44,7 @@ describe('product configuration at boot', () => {
   })
 
   it('names every mismatch at once', () => {
-    refuses(configured({ name: 'Home', capabilities: ['overview'], modules: [] }), 'Product \'Home\' configuration does not match the daemon: capability \'issues\' is supplied but not listed;')
+    refuses(configured({ name: 'Home', capabilities: ['overview'], modules: [] }), 'Product \'Home\' configuration does not match the daemon: capability \'repository\' is supplied but not listed; capability \'issues\' is supplied but not listed;')
     expect(() => startPlatform(temp.root, { product: configured({ modules: [] }) })).toThrow('module \'issues\' is supplied but not listed; module \'agent-hub\' is supplied but not listed; module \'operations\' is supplied but not listed.')
   })
 })

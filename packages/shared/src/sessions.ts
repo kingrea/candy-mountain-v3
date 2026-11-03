@@ -1,7 +1,7 @@
 import type { BotSessionHolder } from './bot-sessions'
 import type { DecisionEventPayload } from './decisions'
 import type { PlatformClientAction } from './platform-agent'
-import { PROJECTS_PATH } from './projects'
+import { WORKSPACES_PATH } from './workspaces'
 
 export type AgentSessionFamily = string
 
@@ -42,7 +42,7 @@ export interface AgentSessionPosture {
 
 export interface AgentSession {
   id: string
-  projectId: string
+  workspaceId: string
   family: AgentSessionFamily
   actorId: string
   cwd: string
@@ -108,20 +108,20 @@ export interface SessionListResponse {
   sessions: AgentSession[]
 }
 
-export function projectSessionsPath(projectSlug: string): string {
-  return `${PROJECTS_PATH}/${encodeURIComponent(projectSlug)}/sessions`
+export function workspaceSessionsPath(workspaceSlug: string): string {
+  return `${WORKSPACES_PATH}/${encodeURIComponent(workspaceSlug)}/sessions`
 }
 
-export function projectSessionPath(projectSlug: string, sessionId: string): string {
-  return `${projectSessionsPath(projectSlug)}/${encodeURIComponent(sessionId)}`
+export function workspaceSessionPath(workspaceSlug: string, sessionId: string): string {
+  return `${workspaceSessionsPath(workspaceSlug)}/${encodeURIComponent(sessionId)}`
 }
 
-export const sessionPromptPath = (projectSlug: string, sessionId: string) => `${projectSessionPath(projectSlug, sessionId)}/prompt`
-export const sessionCancelPath = (projectSlug: string, sessionId: string) => `${projectSessionPath(projectSlug, sessionId)}/cancel`
+export const sessionPromptPath = (workspaceSlug: string, sessionId: string) => `${workspaceSessionPath(workspaceSlug, sessionId)}/prompt`
+export const sessionCancelPath = (workspaceSlug: string, sessionId: string) => `${workspaceSessionPath(workspaceSlug, sessionId)}/cancel`
 
 /** SSE stream: replays the log after `after` (default 0), then follows live. */
-export function sessionEventsPath(projectSlug: string, sessionId: string, after?: number): string {
-  const base = `${projectSessionPath(projectSlug, sessionId)}/events`
+export function sessionEventsPath(workspaceSlug: string, sessionId: string, after?: number): string {
+  const base = `${workspaceSessionPath(workspaceSlug, sessionId)}/events`
   return after ? `${base}?after=${after}` : base
 }
 

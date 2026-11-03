@@ -13,7 +13,7 @@ export type PlatformClientActionKind = (typeof PLATFORM_CLIENT_ACTION_KINDS)[num
 
 /** What the browser applies on the agent's behalf; the daemon never navigates or opens panels itself. */
 export type PlatformClientAction =
-  | { kind: 'navigate', to: string, projectSlug: string, viewId: string, capabilityId: CapabilityId }
+  | { kind: 'navigate', to: string, workspaceSlug: string, viewId: string, capabilityId: CapabilityId }
   | { kind: 'open_thread', agentId: string, threadId?: string }
 
 /** A tool answer the agent relays in words instead of acting on. */
@@ -34,7 +34,7 @@ export type PlatformActionResult = PlatformToolAction | PlatformToolRefusal
 
 export interface PlatformDescription {
   refused: false
-  project: { slug: string, name: string }
+  workspace: { slug: string, name: string }
   actor: { displayName: string, admin: boolean }
   modules: { id: string, label: string }[]
   views: { id: string, label: string, capabilityId: CapabilityId, to: string, ready: boolean }[]

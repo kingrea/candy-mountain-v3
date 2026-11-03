@@ -1,11 +1,10 @@
-import { existsSync, mkdtempSync, rmSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { CAPABILITY_CATALOG_PATH, MODULES_PATH, MONITOR_SOURCES_PATH, PROJECTS_PATH, type ApiErrorBody, type CapabilityCatalogResponse, type ModuleListResponse } from '@candy-mountain/shared'
+import { CAPABILITY_CATALOG_PATH, MODULES_PATH, MONITOR_SOURCES_PATH, WORKSPACES_PATH, type ApiErrorBody, type CapabilityCatalogResponse, type ModuleListResponse } from '@candy-mountain/shared'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { Platform } from '../platform'
 import { CAPABILITY_DEFINITIONS, createTestApp, platformApp, startTestPlatform, withoutCapabilities } from '../testing/platform'
-import { createProject, findProjectBySlug } from '../projects/projects'
+import { createWorkspace, findWorkspaceBySlug } from '../workspaces/workspaces'
 import { createTempDataDir, type TempDataDir } from '../testing'
 import { CapabilityDefinitionError } from './definition'
 import { cloneManifest, fixtureCapability, fixtureDefinition } from './fixtures'
@@ -86,7 +85,7 @@ describe('daemon boot from the capability definition list', () => {
   it('boots Candy Mountain with the capabilities, modules, plugin types and families the boot log has always listed', async () => {
     const booted = await surface(start({}))
 
-    expect(booted.capabilities).toEqual(['overview', 'issues', 'slack', 'bots', 'team', 'chat-claude-code', 'chat-codex', 'uptime', 'deployments', 'platform-agent'])
+    expect(booted.capabilities).toEqual(['overview', 'repository', 'issues', 'slack', 'bots', 'team', 'chat-claude-code', 'chat-codex', 'uptime', 'deployments', 'platform-agent'])
     expect(booted.modules.map(m => m.id)).toEqual(['issues', 'agent-hub', 'operations'])
     expect(booted.pluginTypes).toEqual(['repository', 'slack', 'claude-code', 'codex', 'heroku', 'netlify'])
     expect(booted.families).toEqual(['claude-code', 'codex', 'platform'])
@@ -95,13 +94,13 @@ describe('daemon boot from the capability definition list', () => {
   it('serves the uptime routes with its scheduler running when its definition is in the list', async () => {
     const { platform, app } = start({})
 
-    expect(platform.runtime.started.map(s => s.definition.id)).toEqual(['threads', 'overview', 'issues', 'slack', 'chat-claude-code', 'chat-codex', 'bots', 'team', 'uptime', 'deployments', 'platform-agent'])
+    expect(platform.runtime.started.map(s => s.definition.id)).toEqual(['threads', 'overview', 'repository', 'issues', 'slack', 'chat-claude-code', 'chat-codex', 'bots', 'team', 'uptime', 'deployments', 'platform-agent'])
     expect(existsSync(join(platform.paths.run, 'uptime-scheduler.owner'))).toBe(true)
     expect((await app.request(MONITOR_SOURCES_PATH)).status).toBe(200)
-    const monitors = await app.request(`${PROJECTS_PATH}/nope/monitors`)
+    const monitors = await app.request(`${WORKSPACES_PATH}/nope/monitors`)
     expect(monitors.status).toBe(404)
     expect(((await monitors.json()) as ApiErrorBody).error.code).toBe('not_found')
-    expect((await app.request(PROJECTS_PATH)).status).toBe(200)
+    expect((await app.request(WORKSPACES_PATH)).status).toBe(200)
   })
 
   it('boots without uptime, its routes answer not found and everything else is unchanged', async () => {
@@ -111,8 +110,8 @@ describe('daemon boot from the capability definition list', () => {
     const sources = await app.request(MONITOR_SOURCES_PATH)
     expect(sources.status).toBe(404)
     expect(await sources.text()).toBe('404 Not Found')
-    expect((await app.request(`${PROJECTS_PATH}/nope/monitors`)).status).toBe(404)
-    expect((await app.request(PROJECTS_PATH)).status).toBe(200)
+    expect((await app.request(`${WORKSPACES_PATH}/nope/monitors`)).status).toBe(404)
+    expect((await app.request(WORKSPACES_PATH)).status).toBe(200)
 
     const full = await surface(start({}))
     const dropUptime = (ids: string[]) => ids.filter(id => id !== 'uptime')
@@ -144,32 +143,27 @@ describe('daemon boot from the capability definition list', () => {
     expect(existsSync(dir.root)).toBe(false)
   })
 
-  it('runs deletion hooks dependents first before deleting a project, and keeps the project when one throws', async () => {
+  it('runs deletion hooks dependents first before deleting a workspace, and keeps the workspace when one throws', async () => {
     const order: string[] = []
     const team = fixtureDefinition('team', {
       start: () => ({
-        onWorkspaceDeleted(project) {
-          if (project.slug === 'beta') throw new Error('team keeps beta')
-          order.push(`team ${project.slug}`)
+        onWorkspaceDeleted(workspace) {
+          if (workspace.slug === 'beta') throw new Error('team keeps beta')
+          order.push(`team ${workspace.slug}`)
         },
       }),
     })
-    const bots = fixtureDefinition('bots', { dependsOn: ['team'], start: () => ({ onWorkspaceDeleted: async project => void order.push(`bots ${project.slug}`) }) })
+    const bots = fixtureDefinition('bots', { dependsOn: ['team'], start: () => ({ onWorkspaceDeleted: async workspace => void order.push(`bots ${workspace.slug}`) }) })
     const { platform, app } = start({ capabilities: [team, bots], modules: [] })
-    const checkout = mkdtempSync(join(tmpdir(), 'candy-mountain-boot-'))
-    try {
-      for (const name of ['alpha', 'beta']) await createProject(platform.db, { name, source: { kind: 'local-path', path: checkout } })
+    // No repository capability is booted, so the workspaces have no repository record.
+    for (const name of ['alpha', 'beta']) createWorkspace(platform.db, { name })
 
-      expect((await app.request(`${PROJECTS_PATH}/alpha`, { method: 'DELETE' })).status).toBe(204)
-      expect(order).toEqual(['bots alpha', 'team alpha'])
-      expect(findProjectBySlug(platform.db, 'alpha')).toBeNull()
+    expect((await app.request(`${WORKSPACES_PATH}/alpha`, { method: 'DELETE' })).status).toBe(204)
+    expect(order).toEqual(['bots alpha', 'team alpha'])
+    expect(findWorkspaceBySlug(platform.db, 'alpha')).toBeNull()
 
-      expect((await app.request(`${PROJECTS_PATH}/beta`, { method: 'DELETE' })).status).toBe(500)
-      expect(order).toEqual(['bots alpha', 'team alpha', 'bots beta'])
-      expect(findProjectBySlug(platform.db, 'beta')).not.toBeNull()
-    }
-    finally {
-      rmSync(checkout, { recursive: true, force: true })
-    }
+    expect((await app.request(`${WORKSPACES_PATH}/beta`, { method: 'DELETE' })).status).toBe(500)
+    expect(order).toEqual(['bots alpha', 'team alpha', 'bots beta'])
+    expect(findWorkspaceBySlug(platform.db, 'beta')).not.toBeNull()
   })
 })

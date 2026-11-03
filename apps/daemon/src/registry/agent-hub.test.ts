@@ -1,30 +1,30 @@
 import { randomUUID } from 'node:crypto'
-import { projectRegistryPath, type Project, type RegistryResponse } from '@candy-mountain/shared'
+import { workspaceRegistryPath, type Workspace, type RegistryResponse } from '@candy-mountain/shared'
 import { afterEach, describe, expect, it } from 'vitest'
-import { bots } from '../db/schema'
+import { bots } from '../bots/schema'
 import { addRole } from '../grants/test-access'
 import { fixturePluginType } from '../plugins/fixtures'
 import { createPluginInstance, testPluginInstance } from '../plugins/instances/instances'
 import { instanceHarness, type InstanceHarness } from '../plugins/instances/test-support'
-import { setEnabledModules } from '../project-modules/enablement'
+import { setEnabledModules } from '../workspace-modules/enablement'
 
 let h: InstanceHarness
 afterEach(() => h.close())
 
-async function setup(healthy: readonly string[]): Promise<Project> {
+async function setup(healthy: readonly string[]): Promise<Workspace> {
   h = instanceHarness([fixturePluginType('repository'), fixturePluginType('claude-code'), fixturePluginType('codex')])
-  const project = await h.createProject('alpha')
-  setEnabledModules(h.database.db, project.id, ['agent-hub'])
+  const workspace = await h.createWorkspace('alpha')
+  setEnabledModules(h.database.db, workspace.id, ['agent-hub'])
   for (const type of healthy) {
-    const instance = createPluginInstance(h.deps, { type, scope: 'project', projectId: project.id, config: { account: 'jack' }, secrets: { token: 't' } })
+    const instance = createPluginInstance(h.deps, { type, scope: 'workspace', workspaceId: workspace.id, config: { account: 'jack' }, secrets: { token: 't' } })
     await testPluginInstance(h.deps, instance.id)
   }
-  return project
+  return workspace
 }
 
 /** Scoped to Bots and Team; the chat capabilities in the same module have their own tests. */
 async function registry(roles?: string[]): Promise<RegistryResponse> {
-  const res = await h.app(roles).request(projectRegistryPath('alpha'))
+  const res = await h.app(roles).request(workspaceRegistryPath('alpha'))
   expect(res.status).toBe(200)
   const body = await res.json() as RegistryResponse
   const ours = (id: string) => id === 'bots' || id === 'team'
@@ -35,24 +35,24 @@ async function registry(roles?: string[]): Promise<RegistryResponse> {
   }
 }
 
-function addBot(projectId: string) {
+function addBot(workspaceId: string) {
   const now = new Date().toISOString()
-  h.database.db.insert(bots).values({ id: randomUUID(), projectId, name: 'Candy', family: 'claude-code', writeScope: 'read-only', answersIn: { anywhere: true }, createdAt: now, updatedAt: now }).run()
+  h.database.db.insert(bots).values({ id: randomUUID(), projectId: workspaceId, name: 'Candy', family: 'claude-code', writeScope: 'read-only', answersIn: { anywhere: true }, createdAt: now, updatedAt: now }).run()
 }
 
 describe('Agent Hub bots and team', () => {
   it('shows Bots once Repository and Claude Code are healthy, and holds Team back until a bot exists', async () => {
-    const project = await setup(['repository', 'claude-code'])
+    const workspace = await setup(['repository', 'claude-code'])
 
     const before = await registry()
     expect(before.groups.find(g => g.id === 'agent-hub')).toMatchObject({ id: 'agent-hub', label: 'Agent Hub', entries: [{ id: 'bots', to: '/p/alpha/bots' }, { id: 'team', to: '/p/alpha/team' }] })
     expect(before.capabilities).toEqual([
       expect.objectContaining({ id: 'bots', rung: 'manage', ready: true, reasons: [], modules: ['agent-hub'] }),
-      expect.objectContaining({ id: 'team', rung: 'manage', ready: false, reasons: [{ kind: 'project-fact', fact: 'hasBots', message: 'The project has no bots yet; add one on the Bots page.' }] }),
+      expect.objectContaining({ id: 'team', rung: 'manage', ready: false, reasons: [{ kind: 'workspace-fact', fact: 'hasBots', message: 'The project has no bots yet; add one on the Bots page.' }] }),
     ])
     expect(before.views.map(v => [v.id, v.path, v.ready])).toEqual([['overview', '', true], ['bots', 'bots', true], ['team', 'team', false]])
 
-    addBot(project.id)
+    addBot(workspace.id)
     const after = await registry()
     expect(after.capabilities.map(c => [c.id, c.ready])).toEqual([['bots', true], ['team', true]])
     expect(after.degraded).toEqual([])

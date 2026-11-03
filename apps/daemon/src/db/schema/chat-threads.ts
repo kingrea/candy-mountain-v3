@@ -1,10 +1,10 @@
 import { index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { agentSessions } from './agent-sessions'
-import { projects } from './projects'
+import { workspaces } from './workspaces'
 
 export const chatThreads = sqliteTable('chat_threads', {
   id: text('id').primaryKey(),
-  projectId: text('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  workspaceId: text('workspace_id').notNull().references(() => workspaces.id, { onDelete: 'cascade' }),
   actorId: text('actor_id').notNull(),
   agentId: text('agent_id').notNull(),
   currentSessionId: text('current_session_id').notNull().references(() => agentSessions.id, { onDelete: 'cascade' }),
@@ -18,7 +18,7 @@ export const chatThreads = sqliteTable('chat_threads', {
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 }, table => [
-  index('chat_threads_project_actor_activity_idx').on(table.projectId, table.actorId, table.lastActivityAt),
+  index('chat_threads_workspace_actor_activity_idx').on(table.workspaceId, table.actorId, table.lastActivityAt),
   index('chat_threads_current_session_idx').on(table.currentSessionId),
 ])
 

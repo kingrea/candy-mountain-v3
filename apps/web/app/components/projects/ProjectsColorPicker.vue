@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { PROJECT_COLOR_PALETTE } from '@candy-mountain/shared'
+import { WORKSPACE_COLOR_PALETTE } from '@candy-mountain/shared'
 
 const color = defineModel<string>({ required: true })
 
 // The API accepts any hex colour, so a project saved elsewhere may sit outside the palette.
 const swatches = computed<string[]>(() =>
-  (PROJECT_COLOR_PALETTE as readonly string[]).includes(color.value) || !color.value
-    ? [...PROJECT_COLOR_PALETTE]
-    : [...PROJECT_COLOR_PALETTE, color.value],
+  (WORKSPACE_COLOR_PALETTE as readonly string[]).includes(color.value) || !color.value
+    ? [...WORKSPACE_COLOR_PALETTE]
+    : [...WORKSPACE_COLOR_PALETTE, color.value],
 )
 </script>
 

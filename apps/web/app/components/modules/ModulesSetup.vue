@@ -16,7 +16,7 @@ const cards = computed(() => modules.value.map(mod => ({
 <template>
   <div class="flex max-w-3xl flex-col gap-6">
     <p class="text-sm text-muted">
-      Enable a module to add its pages to {{ registry.project.name }}. A plugin configured once serves every module that needs it.
+      Enable a module to add its pages to {{ registry.workspace.name }}. A plugin configured once serves every module that needs it.
     </p>
 
     <UAlert
@@ -39,7 +39,7 @@ const cards = computed(() => modules.value.map(mod => ({
       :enabled="card.enabled"
       :saving="saving === card.module.id"
       :disabled="saving !== null"
-      :slug="registry.project.slug"
+      :slug="registry.workspace.slug"
       :capabilities="registry.capabilities"
       :reasons="card.reasons"
       :plugins="card.plugins"

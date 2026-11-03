@@ -1,4 +1,5 @@
-import { LIVE_VERSION_SOURCES_PATH } from '@candy-mountain/shared'
+import { DEPLOY_OUTCOMES, LIVE_VERSION_SOURCES_PATH } from '@candy-mountain/shared'
+import type { ActivityEventTypeDeclaration } from '../activity/types'
 import { defineCapabilityDefinition, type CapabilityDefinition, type CapabilityRuntime } from '../capabilities/definition'
 import { LIVE_VERSION_SOURCE_REGISTRY, LIVE_VERSION_SOURCES } from '../environments/builtin-sources'
 import { environmentRoutes, liveVersionSourceRoutes, type EnvironmentRouteOptions } from '../environments/routes'
@@ -9,8 +10,23 @@ import type { PluginTypeRegistry } from '../plugins/registry'
 import { herokuPluginType } from '../plugins/types/heroku'
 import { netlifyPluginType } from '../plugins/types/netlify'
 import { deploymentsCapability } from './manifest'
+import { srcPath } from '../package-root'
+import * as deploymentsSchema from './schema'
 
 export const DEPLOYMENTS_PLUGIN_TYPES: readonly AnyPluginType[] = [herokuPluginType, netlifyPluginType]
+
+/** One type for every attempt; the payload's `outcome` says which notification it raises, and an attempt without one raises none. */
+export const DEPLOYMENT_ACTIVITY_EVENT_TYPES: readonly ActivityEventTypeDeclaration[] = [
+  {
+    id: 'deploy.attempted',
+    label: 'Deploy',
+    icon: 'i-lucide-rocket',
+    notifications: [
+      { id: 'deploy.succeeded', label: 'A deploy succeeds', matches: payload => payload?.outcome === DEPLOY_OUTCOMES[0] },
+      { id: 'deploy.failed', label: 'A deploy fails', matches: payload => payload?.outcome === DEPLOY_OUTCOMES[1] },
+    ],
+  },
+]
 
 export interface DeploymentsOptions {
   sources?: readonly LiveVersionSource[]
@@ -39,7 +55,9 @@ export function deploymentsDefinition({ sources = LIVE_VERSION_SOURCES, fetch }:
   return defineCapabilityDefinition({
     id: deploymentsCapability.id,
     manifest: deploymentsCapability,
+    schema: { schema: deploymentsSchema, migrationsFolder: srcPath('deployments', 'migrations') },
     pluginTypes: DEPLOYMENTS_PLUGIN_TYPES,
+    activityEventTypes: DEPLOYMENT_ACTIVITY_EVENT_TYPES,
     start: ({ secrets, pluginTypes }) => deploymentsRoutes(secrets, { sources: liveVersionSourceRegistryFor(sources, pluginTypes), fetch }),
   })
 }

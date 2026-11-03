@@ -18,6 +18,7 @@ const PRODUCT_FOLDERS = [
   'environments',
   'issues',
   'posture',
+  'repository',
   'sessions',
   'slack',
   'team',

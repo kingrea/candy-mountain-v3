@@ -1,12 +1,10 @@
-export const NOTIFICATION_KINDS = ['bot.finished', 'incident.opened', 'incident.closed', 'deploy.succeeded', 'deploy.failed'] as const
-export type NotificationKind = (typeof NOTIFICATION_KINDS)[number]
+/** Declared by the capability whose events raise it and registered at boot, so any string the daemon lists. */
+export type NotificationKind = string
 
-export const NOTIFICATION_KIND_LABELS: Record<NotificationKind, string> = {
-  'bot.finished': 'A bot finishes',
-  'incident.opened': 'An incident opens',
-  'incident.closed': 'An incident closes',
-  'deploy.succeeded': 'A deploy succeeds',
-  'deploy.failed': 'A deploy fails',
+export interface NotificationKindInfo {
+  id: NotificationKind
+  /** What the rules page shows, e.g. 'A bot finishes'. */
+  label: string
 }
 
 /** A channel post or a direct message to one member; Slack ids, not names. */
@@ -27,6 +25,8 @@ export interface NotificationRule {
 export type NotificationRules = Record<NotificationKind, NotificationRule>
 
 export interface NotificationRulesResponse {
+  /** The registered kinds in order; `rules` has one entry for each. */
+  kinds: NotificationKindInfo[]
   rules: NotificationRules
 }
 
@@ -43,7 +43,7 @@ export interface UpdateNotificationRulesRequest {
 export const NOTIFICATION_ERROR_CODES = ['invalid_request'] as const
 export type NotificationErrorCode = (typeof NOTIFICATION_ERROR_CODES)[number]
 
-export const projectNotificationsPath = (slug: string) => `/projects/${slug}/notifications`
+export const workspaceNotificationsPath = (slug: string) => `/workspaces/${slug}/notifications`
 
 /** What a `deploy.attempted` activity payload's `outcome` must be for notifications to tell success from failure. */
 export const DEPLOY_OUTCOMES = ['succeeded', 'failed'] as const

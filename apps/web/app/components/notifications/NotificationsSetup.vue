@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { NOTIFICATION_KINDS, type RegistryResponse } from '@candy-mountain/shared'
+import type { RegistryResponse } from '@candy-mountain/shared'
 
 const props = defineProps<{ registry: RegistryResponse }>()
 
-const { rules, identity, identityLoading, status, error, saving, errors, save, refresh } = useNotificationRules()
+const { kinds, rules, identity, identityLoading, status, error, saving, errors, save, refresh } = useNotificationRules()
 
-const pluginsTo = computed(() => projectPluginsPagePath(props.registry.project.slug))
+const pluginsTo = computed(() => projectPluginsPagePath(props.registry.workspace.slug))
 </script>
 
 <template>
   <div class="flex max-w-3xl flex-col gap-6">
     <p class="text-sm text-muted">
-      Send Slack messages from {{ registry.project.name }} when these events happen. Slack IDs, not names, identify where each one goes.
+      Send Slack messages from {{ registry.workspace.name }} when these events happen. Slack IDs, not names, identify where each one goes.
     </p>
 
     <UAlert
@@ -40,16 +40,18 @@ const pluginsTo = computed(() => projectPluginsPagePath(props.registry.project.s
     <template v-else-if="!rules">
       <USkeleton v-for="n in 5" :key="n" class="h-32 w-full" />
     </template>
-    <NotificationsRuleRow
-      v-for="kind in NOTIFICATION_KINDS"
-      v-else
-      :key="kind"
-      :kind="kind"
-      :rule="rules[kind]"
-      :saving="saving === kind"
-      :disabled="saving !== null"
-      :server-error="errors[kind]"
-      @save="save(kind, $event)"
-    />
+    <template v-else>
+      <NotificationsRuleRow
+        v-for="kind in kinds"
+        :key="kind.id"
+        :kind="kind.id"
+        :label="kind.label"
+        :rule="rules[kind.id] ?? emptyNotificationRule"
+        :saving="saving === kind.id"
+        :disabled="saving !== null"
+        :server-error="errors[kind.id]"
+        @save="save(kind.id, $event)"
+      />
+    </template>
   </div>
 </template>

@@ -1,10 +1,10 @@
 import {
-  projectIssueClosePath,
-  projectIssueCommentPath,
-  projectIssueCommentsPath,
-  projectIssuePath,
-  projectIssuesBulkPath,
-  projectIssuesPath,
+  workspaceIssueClosePath,
+  workspaceIssueCommentPath,
+  workspaceIssueCommentsPath,
+  workspaceIssuePath,
+  workspaceIssuesBulkPath,
+  workspaceIssuesPath,
   type BulkUpdateIssuesRequest,
   type BulkUpdateIssuesResponse,
   type CloseIssueRequest,
@@ -24,23 +24,23 @@ export function useIssuesApi() {
   const { $api } = useNuxtApp()
 
   return {
-    list: (slug: string) => $api<IssueListResponse>(projectIssuesPath(slug)),
-    show: (slug: string, id: string) => $api<IssueResponse>(projectIssuePath(slug, id)),
+    list: (slug: string) => $api<IssueListResponse>(workspaceIssuesPath(slug)),
+    show: (slug: string, id: string) => $api<IssueResponse>(workspaceIssuePath(slug, id)),
     dependencies: (slug: string, ids: readonly string[]) =>
-      $api<IssueDependencyListResponse>(`${projectIssuesPath(slug)}/dependencies`, { query: { ids: ids.join(',') } }),
-    comments: (slug: string, id: string) => $api<IssueCommentListResponse>(projectIssueCommentsPath(slug, id)),
+      $api<IssueDependencyListResponse>(`${workspaceIssuesPath(slug)}/dependencies`, { query: { ids: ids.join(',') } }),
+    comments: (slug: string, id: string) => $api<IssueCommentListResponse>(workspaceIssueCommentsPath(slug, id)),
 
     create: (slug: string, body: CreateIssueRequest) =>
-      $api<CreateIssueResponse>(projectIssuesPath(slug), { method: 'POST', body }),
+      $api<CreateIssueResponse>(workspaceIssuesPath(slug), { method: 'POST', body }),
     update: (slug: string, id: string, body: UpdateIssueRequest) =>
-      $api<IssueResponse>(projectIssuePath(slug, id), { method: 'PATCH', body }),
+      $api<IssueResponse>(workspaceIssuePath(slug, id), { method: 'PATCH', body }),
     close: (slug: string, id: string, body: CloseIssueRequest = {}) =>
-      $api<IssueResponse>(projectIssueClosePath(slug, id), { method: 'POST', body }),
+      $api<IssueResponse>(workspaceIssueClosePath(slug, id), { method: 'POST', body }),
     bulkUpdate: (slug: string, body: BulkUpdateIssuesRequest) =>
-      $api<BulkUpdateIssuesResponse>(projectIssuesBulkPath(slug), { method: 'POST', body }),
+      $api<BulkUpdateIssuesResponse>(workspaceIssuesBulkPath(slug), { method: 'POST', body }),
     addComment: (slug: string, id: string, text: string) =>
-      $api<IssueCommentResponse>(projectIssueCommentsPath(slug, id), { method: 'POST', body: { text } }),
+      $api<IssueCommentResponse>(workspaceIssueCommentsPath(slug, id), { method: 'POST', body: { text } }),
     editComment: (slug: string, id: string, commentId: string, text: string) =>
-      $api<IssueCommentResponse>(projectIssueCommentPath(slug, id, commentId), { method: 'PATCH', body: { text } }),
+      $api<IssueCommentResponse>(workspaceIssueCommentPath(slug, id, commentId), { method: 'PATCH', body: { text } }),
   }
 }

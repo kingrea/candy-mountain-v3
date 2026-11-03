@@ -1,17 +1,24 @@
-import { MANIFEST_ID_PATTERN, type AgentSessionFamily, type AnyCapabilityManifest, type NotificationDestination, type NotificationKind, type Project, type ScopeLabel } from '@candy-mountain/shared'
+import { FACT_ID_PATTERN, MANIFEST_ID_PATTERN, type AgentSessionFamily, type AnyCapabilityManifest, type NotificationDestination, type NotificationKind, type Workspace, type ScopeLabel } from '@candy-mountain/shared'
 import type { Hono } from 'hono'
+import type { ActivityEventTypeDeclaration } from '../activity/types'
 import type { AgentMcpHost, AgentMcpServerDefinition } from '../agent-mcp/host'
 import type { AppEnv } from '../app'
 import type { DataPaths } from '../data-dir'
-import type { Db } from '../db'
+import type { Db, MigrationSchema } from '../db'
 import type { ModuleRegistry } from '../modules/registry'
 import { assertPluginType, PluginTypeError, type AnyPluginType } from '../plugins/definition'
 import type { PluginTypeRegistry } from '../plugins/registry'
+import type { WorkspaceFactDeclaration, WorkspaceFactRegistry } from '../registry/facts'
 import type { SecretsStore } from '../secrets/store'
 import type { SessionFamily, SessionFamilyRegistry } from '../threads/families'
 import type { NativeFamilyRunner } from '../threads/service'
 import { assertCapability, duplicates } from './manifest'
 import type { CapabilityRegistry } from './registry'
+
+// The platform tables a capability's schema may reference, so a definition and its foreign keys import from one place.
+export { agentSessions } from '../db/schema/agent-sessions'
+export { chatThreads } from '../db/schema/chat-threads'
+export { organisations, workspaces } from '../db/schema/workspaces'
 
 /** Thrown while defining or validating runtime definitions, so a bad definition stops the daemon at boot. */
 export class CapabilityDefinitionError extends Error {
@@ -66,6 +73,13 @@ export interface NotificationChannel {
   deliver(delivery: NotificationDelivery, signal: AbortSignal): Promise<boolean>
 }
 
+/** Applied at boot after the platform's set and the dependencies' sets, under a migrations table named for the capability. */
+export interface CapabilitySchema {
+  schema: MigrationSchema
+  /** Absolute; a drizzle-kit output folder with `meta/_journal.json` inside. */
+  migrationsFolder: string
+}
+
 /** What a definition's start may use; `service` resolves only keys bound by a declared dependency. */
 export interface CapabilityContext {
   db: Db
@@ -75,6 +89,8 @@ export interface CapabilityContext {
   modules: ModuleRegistry
   pluginTypes: PluginTypeRegistry
   families: SessionFamilyRegistry
+  /** Every fact the definition list declares, for a definition that computes the registry itself. */
+  workspaceFacts: WorkspaceFactRegistry
   agentMcp: Pick<AgentMcpHost, 'serversFor'>
   /** The product's `scope.urlPrefix`, for links into the web app. */
   scopeUrlPrefix: string
@@ -87,15 +103,15 @@ export interface CapabilityContext {
 export interface CapabilityRuntime {
   /** Must bind exactly the keys the definition `provides`. */
   services?: readonly ServiceBinding[]
-  /** Mounted under the workspace prefix (today `/projects`), so handlers see `/:slug/...` as they do now. */
+  /** Mounted under the workspace prefix `/workspaces`, so handlers see `/:slug/...` as they do now. */
   workspaceRoutes?: readonly Hono<AppEnv>[]
   platformRoutes?: readonly PlatformRouteMount[]
   mcpServers?: readonly AgentMcpServerDefinition[]
   /** Families prompted in-process; a family absent here runs through the session service. */
   chatFamilies?: Readonly<Partial<Record<AgentSessionFamily, NativeFamilyRunner>>>
   notificationChannels?: readonly NotificationChannel[]
-  /** Runs before the platform deletes the workspace row, dependents first; a throw stops the delete. */
-  onWorkspaceDeleted?(workspace: Project): void | Promise<void>
+  /** Runs in the deletion's transaction before the platform deletes the workspace row, dependents first; a throw rolls every row back. */
+  onWorkspaceDeleted?(workspace: Workspace): void | Promise<void>
   /** Called in reverse start order. */
   close?(): void | Promise<void>
 }
@@ -111,6 +127,11 @@ export interface CapabilityDefinition {
   sessionFamilies?: readonly SessionFamily[]
   /** Keys `start` binds for dependents and platform services. */
   provides?: readonly ServiceKey<unknown>[]
+  schema?: CapabilitySchema
+  /** The event types this capability appends, and the notification kinds they raise; registered before boot touches disk. */
+  activityEventTypes?: readonly ActivityEventTypeDeclaration[]
+  /** The workspace facts this capability answers for the registry, from its own tables; registered before boot touches disk. */
+  workspaceFacts?: readonly WorkspaceFactDeclaration[]
   start?(context: CapabilityContext): CapabilityRuntime
 }
 
@@ -123,6 +144,7 @@ export const isCapabilityDefinition = (entry: AnyCapabilityManifest | Capability
 
 const quoted = (values: readonly string[]) => values.map(v => `'${v}'`).join(', ')
 const isId = (value: unknown): value is string => typeof value === 'string' && MANIFEST_ID_PATTERN.test(value)
+const isFactId = (value: unknown): value is string => typeof value === 'string' && FACT_ID_PATTERN.test(value)
 
 export function assertCapabilityDefinition(definition: CapabilityDefinition): void {
   const fail = (msg: string): never => {
@@ -164,6 +186,19 @@ export function assertCapabilityDefinition(definition: CapabilityDefinition): vo
   const badKeys = provided.filter(name => !isId(name))
   if (badKeys.length) fail(`provides invalid service key(s) ${quoted(badKeys.map(String))}.`)
   if (duplicates(provided).length) fail(`provides service ${quoted(duplicates(provided))} more than once.`)
+
+  if (definition.schema !== undefined) {
+    const { schema } = definition
+    if (typeof schema !== 'object' || schema === null) fail('schema must declare a schema object and a migrations folder.')
+    if (typeof schema.schema !== 'object' || schema.schema === null) fail('schema.schema must be a Drizzle schema object.')
+    if (typeof schema.migrationsFolder !== 'string' || schema.migrationsFolder === '') fail('schema.migrationsFolder must be a non-empty path.')
+  }
+
+  const facts = definition.workspaceFacts ?? []
+  const badFacts = facts.filter(f => !isFactId(f?.id) || typeof f.compute !== 'function' || typeof f.message !== 'function')
+  if (badFacts.length) fail(`declares invalid workspace fact(s) ${quoted(badFacts.map(f => String(f?.id)))}; a fact is a camelCase id with compute and message functions.`)
+  const dupFacts = duplicates(facts.map(f => f.id))
+  if (dupFacts.length) fail(`declares workspace fact ${quoted(dupFacts)} more than once.`)
 
   if (definition.start !== undefined && typeof definition.start !== 'function') fail('start must be a function.')
 }

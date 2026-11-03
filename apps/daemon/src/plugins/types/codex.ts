@@ -14,7 +14,7 @@ export function createCodexPluginType(attempts: CodexLoginAttempts) {
       'Run the Codex CLI\'s device login and login status commands in a private Codex home for this project.',
       'Start Codex agent sessions with that login.',
     ],
-    scopes: ['project'],
+    scopes: ['workspace'],
     singleInstance: true,
     configFields: [
       { kind: 'string', name: 'codexPath', label: 'Codex CLI path', description: 'Absolute path to the codex executable. Leave blank to use codex on the daemon\'s PATH.', placeholder: '/usr/local/bin/codex', pattern: '/.+' },

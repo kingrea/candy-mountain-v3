@@ -7,8 +7,8 @@ import {
 import { Hono, type Context } from 'hono'
 import type { AppEnv } from '../app'
 import { requireAdmin } from '../auth/admin'
-import { ProjectError } from '../projects/errors'
-import { getProjectBySlug } from '../projects/projects'
+import { WorkspaceError } from '../workspaces/errors'
+import { getWorkspaceBySlug } from '../workspaces/workspaces'
 import { requireCapability } from '../registry/gate'
 import { MONITOR_SOURCE_REGISTRY } from './builtin-sources'
 import { listMonitorChecks } from './checks'
@@ -57,13 +57,13 @@ export function monitorRoutes(sources: MonitorSourceRegistry = MONITOR_SOURCE_RE
   const admin = requireAdmin()
   const manage = requireCapability({ capability: 'uptime', tool: UPTIME_MANAGE_TOOL })
   app.onError((error, c) => {
-    if (error instanceof MonitorError || error instanceof ProjectError) {
+    if (error instanceof MonitorError || error instanceof WorkspaceError) {
       return c.json<ApiErrorBody>({ error: { code: error.code, message: error.message } }, error.status)
     }
     throw error
   })
 
-  const projectIdOf = (c: Context<AppEnv>) => getProjectBySlug(c.var.db, c.req.param('slug')!).id
+  const projectIdOf = (c: Context<AppEnv>) => getWorkspaceBySlug(c.var.db, c.req.param('slug')!).id
 
   app.get('/:slug/monitors', read, c => c.json<MonitorListResponse>({ monitors: listMonitors(c.var.db, projectIdOf(c)) }))
 

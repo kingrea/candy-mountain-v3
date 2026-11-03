@@ -1,17 +1,17 @@
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { LIVE_VERSION_SOURCES_PATH, PROJECTS_PATH, type EnvironmentListResponse, type LiveVersionSourceListResponse, type LiveVersionsResponse } from '@candy-mountain/shared'
+import { LIVE_VERSION_SOURCES_PATH, WORKSPACES_PATH, type EnvironmentListResponse, type LiveVersionSourceListResponse, type LiveVersionsResponse } from '@candy-mountain/shared'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createEnvironment } from '../environments/service'
 import { createLiveVersionSourceRegistry, defineLiveVersionSource, LiveVersionSourceError } from '../environments/sources'
 import { LIVE_VERSION_SOURCES } from '../environments/builtin-sources'
 import type { Platform } from '../platform'
 import { CAPABILITY_DEFINITIONS, createTestApp, startTestPlatform, withoutCapabilities, type TestPlatformOptions } from '../testing/platform'
-import { setEnabledModules } from '../project-modules'
-import { createProject } from '../projects/projects'
+import { setEnabledModules } from '../workspace-modules'
 import { createTempDataDir, type TempDataDir } from '../testing'
 import { deploymentsDefinition } from './definition'
+import { createWorkspaceWithRepository } from '../repository/test-support'
 
 const pinned = defineLiveVersionSource({
   id: 'pinned',
@@ -40,7 +40,7 @@ describe('the deployments definition', () => {
     mkdirSync(join(checkout, '.beads'))
     const platform = startTestPlatform(temp.root, options)
     open.push(platform)
-    const project = await createProject(platform.db, { name: 'Alpha', slug: 'alpha', source: { kind: 'local-path', path: checkout } })
+    const project = await createWorkspaceWithRepository(platform.db, { name: 'Alpha', slug: 'alpha', path: checkout })
     setEnabledModules(platform.db, project.id, platform.modules.list().map(m => m.id))
     const app = createTestApp({ db: platform.db, paths: platform.paths, capabilities: platform.capabilities, modules: platform.modules, pluginTypes: platform.pluginTypes, runtime: platform.runtime })
     return { platform, app, project }
@@ -52,7 +52,7 @@ describe('the deployments definition', () => {
     expect(platform.runtime.started.map(s => s.definition.id)).toContain('deployments')
     expect(platform.pluginTypes.has('netlify')).toBe(true)
     expect(platform.pluginTypes.has('heroku')).toBe(true)
-    const environments = await app.request(`${PROJECTS_PATH}/alpha/environments`)
+    const environments = await app.request(`${WORKSPACES_PATH}/alpha/environments`)
     expect(environments.status).toBe(200)
     expect(await environments.json()).toEqual<EnvironmentListResponse>({ environments: [] })
     const sources = await app.request(LIVE_VERSION_SOURCES_PATH)
@@ -68,7 +68,7 @@ describe('the deployments definition', () => {
 
     const sources = (await (await app.request(LIVE_VERSION_SOURCES_PATH)).json()) as LiveVersionSourceListResponse
     expect(sources.sources.map(s => s.id)).toEqual(['pinned'])
-    const { environments } = (await (await app.request(`${PROJECTS_PATH}/alpha/live-versions`)).json()) as LiveVersionsResponse
+    const { environments } = (await (await app.request(`${WORKSPACES_PATH}/alpha/live-versions`)).json()) as LiveVersionsResponse
     expect(environments.map(e => e.live)).toEqual([{ ok: true, version: { version: 'v42' } }])
     expect(fetch).toHaveBeenCalledOnce()
   })
@@ -80,12 +80,12 @@ describe('the deployments definition', () => {
     expect(platform.pluginTypes.has('netlify')).toBe(false)
     expect(platform.pluginTypes.has('heroku')).toBe(false)
     expect(platform.pluginTypes.has('repository')).toBe(true)
-    for (const path of [`${PROJECTS_PATH}/alpha/environments`, `${PROJECTS_PATH}/alpha/live-versions`, LIVE_VERSION_SOURCES_PATH]) {
+    for (const path of [`${WORKSPACES_PATH}/alpha/environments`, `${WORKSPACES_PATH}/alpha/live-versions`, LIVE_VERSION_SOURCES_PATH]) {
       const res = await app.request(path)
       expect(res.status, path).toBe(404)
       expect(await res.text(), path).toBe('404 Not Found')
     }
-    expect((await app.request(`${PROJECTS_PATH}/alpha`)).status).toBe(200)
+    expect((await app.request(`${WORKSPACES_PATH}/alpha`)).status).toBe(200)
   })
 
   it('refuses boot when a source reads a plugin type nothing registers', () => {

@@ -2,11 +2,11 @@ import { randomUUID } from 'node:crypto'
 import {
   validateLiveVersionSettings,
   type CreateEnvironmentRequest, type Environment, type EnvironmentLiveVersion, type LiveVersionResult,
-  type LiveVersionSettings, type Project, type UpdateEnvironmentRequest,
+  type LiveVersionSettings, type Workspace, type UpdateEnvironmentRequest,
 } from '@candy-mountain/shared'
 import { and, asc, eq, ne, sql } from 'drizzle-orm'
 import type { Db } from '../db'
-import { environments } from '../db/schema'
+import { environments } from '../deployments/schema'
 import type { PluginInstanceDeps } from '../plugins/instances/instances'
 import { LIVE_VERSION_SOURCE_REGISTRY } from './builtin-sources'
 import { EnvironmentError } from './errors'
@@ -118,7 +118,7 @@ export interface ReadLiveVersionOptions {
 
 const messageOf = (error: unknown) => (error instanceof Error ? error.message : String(error))
 
-export async function readEnvironmentLiveVersion(deps: LiveVersionDeps, project: Project, environment: Environment, options: ReadLiveVersionOptions = {}): Promise<EnvironmentLiveVersion> {
+export async function readEnvironmentLiveVersion(deps: LiveVersionDeps, project: Workspace, environment: Environment, options: ReadLiveVersionOptions = {}): Promise<EnvironmentLiveVersion> {
   const { sources = LIVE_VERSION_SOURCE_REGISTRY, timeoutMs = LIVE_VERSION_READ_TIMEOUT_MS } = options
   const timeout = AbortSignal.timeout(timeoutMs)
   const signal = options.signal ? AbortSignal.any([options.signal, timeout]) : timeout
@@ -142,6 +142,6 @@ export async function readEnvironmentLiveVersion(deps: LiveVersionDeps, project:
 }
 
 /** Reads every environment in parallel; one failing source never fails the others. */
-export function readLiveVersions(deps: LiveVersionDeps, project: Project, options: ReadLiveVersionOptions = {}): Promise<EnvironmentLiveVersion[]> {
+export function readLiveVersions(deps: LiveVersionDeps, project: Workspace, options: ReadLiveVersionOptions = {}): Promise<EnvironmentLiveVersion[]> {
   return Promise.all(listEnvironments(deps.db, project.id).map(environment => readEnvironmentLiveVersion(deps, project, environment, options)))
 }

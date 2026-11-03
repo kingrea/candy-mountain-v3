@@ -26,7 +26,7 @@ export function useChatClientActions(
     if (action.kind === 'navigate') {
       const path = chatNavigatePath(action, registry.value)
       const threadId = panel.state.value.threadId
-      await navigateTo(threadId && action.projectSlug === slug.value ? chatThreadLink(threadId, path) : path)
+      await navigateTo(threadId && action.workspaceSlug === slug.value ? chatThreadLink(threadId, path) : path)
       return
     }
     const threadId = action.threadId ?? (await threads.create({ agentId: action.agentId })).thread.id

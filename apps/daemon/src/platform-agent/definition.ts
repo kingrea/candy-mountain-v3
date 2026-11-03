@@ -60,8 +60,8 @@ export function platformAgentDefinition(options: PlatformAgentOptions = {}): Cap
     dependsOn: [THREADS_CAPABILITY_ID],
     sessionFamilies: [PLATFORM_FAMILY],
     provides: [PLATFORM_AGENT],
-    start({ db, paths, secrets, capabilities, modules, pluginTypes, scopeUrlPrefix, scopeLabel, service }) {
-      const agent = startPlatformAgent({ db, paths, capabilities, modules, pluginTypes, secrets: secrets.writeOnly, secretsReader: secrets, scopeUrlPrefix, scopeLabel, sessions: service(THREAD_SESSIONS) }, options)
+    start({ db, paths, secrets, capabilities, modules, pluginTypes, workspaceFacts, scopeUrlPrefix, scopeLabel, service }) {
+      const agent = startPlatformAgent({ db, paths, capabilities, modules, pluginTypes, workspaceFacts, secrets: secrets.writeOnly, secretsReader: secrets, scopeUrlPrefix, scopeLabel, sessions: service(THREAD_SESSIONS) }, options)
       return {
         services: [bindService(PLATFORM_AGENT, agent)],
         chatFamilies: { [PLATFORM_FAMILY.id]: agent.run },

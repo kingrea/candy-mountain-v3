@@ -1,52 +1,52 @@
 <script setup lang="ts">
 import {
-  PROJECT_COLOR_PALETTE,
-  PROJECT_COLOR_PATTERN,
-  PROJECTS_PATH,
+  WORKSPACE_COLOR_PALETTE,
+  WORKSPACE_COLOR_PATTERN,
+  WORKSPACES_PATH,
   SLUG_MAX_LENGTH,
   SLUG_PATTERN,
   slugify,
-  type CreateProjectRequest,
+  type CreateWorkspaceRequest,
   type Organisation,
-  type PathVerification,
-  type Project,
-  type ProjectResponse,
-  type UpdateProjectRequest,
-  type VerifyPathResponse,
+  type Workspace,
+  type WorkspaceResponse,
+  type UpdateWorkspaceRequest,
 } from '@candy-mountain/shared'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import * as z from 'zod'
 
 const props = defineProps<{
-  project: Project | null
+  project: Workspace | null
   organisations: Organisation[]
 }>()
 
 const emit = defineEmits<{
-  saved: [project: Project, created: boolean]
+  saved: [project: Workspace, created: boolean, notes: ProjectFormSaveNote[]]
 }>()
 
 const open = defineModel<boolean>('open', { required: true })
 
 const NO_ORGANISATION = 'none'
-const PREVIEW_DELAY_MS = 400
 
-const schema = z.object({
+const baseSchema = z.object({
   name: z.string().trim().min(1, 'Name is required').max(200, 'At most 200 characters'),
   slug: z.string().trim()
     .min(1, 'Slug is required')
     .max(SLUG_MAX_LENGTH, `At most ${SLUG_MAX_LENGTH} characters`)
     .regex(SLUG_PATTERN, 'Lowercase letters and digits joined by single hyphens'),
-  color: z.string().regex(PROJECT_COLOR_PATTERN, 'Pick a colour'),
+  color: z.string().regex(WORKSPACE_COLOR_PATTERN, 'Pick a colour'),
   organisationId: z.string(),
-  path: z.string().trim()
-    .min(1, 'Path is required')
-    .refine(isAbsoluteish, 'Use an absolute path, such as /home/you/code/app or ~/code/app'),
 })
-type Schema = z.output<typeof schema>
+type Schema = z.output<typeof baseSchema> & Record<string, unknown>
+
+const fields = projectFormFields()
+const schema = projectFormSchema(baseSchema)
 
 const { $api } = useNuxtApp()
 const form = useTemplateRef('form')
+// Once a create succeeds, a retry after a failed field hook updates that project instead of creating another.
+const saved = ref<Workspace | null>(null)
+const target = computed(() => saved.value ?? props.project)
 const isEdit = computed(() => props.project !== null)
 const state = reactive<Schema>(initialState())
 const slugTouched = ref(false)
@@ -63,71 +63,15 @@ function initialState(): Schema {
   return {
     name: project?.name ?? '',
     slug: project?.slug ?? '',
-    color: project?.color ?? PROJECT_COLOR_PALETTE[0],
+    color: project?.color ?? WORKSPACE_COLOR_PALETTE[0],
     organisationId: project?.organisationId ?? NO_ORGANISATION,
-    path: project?.source.path ?? '',
+    ...projectFormInitial(project),
   }
-}
-
-function isAbsoluteish(path: string): boolean {
-  return path.startsWith('/') || path === '~' || path.startsWith('~/')
 }
 
 watch(() => state.name, (name) => {
   if (!slugTouched.value) state.slug = slugify(name)
 })
-
-const preview = reactive<{
-  checking: boolean
-  path: string
-  verification: PathVerification | null
-  error: ApiErrorInfo | null
-}>({ checking: false, path: '', verification: null, error: null })
-let previewTimer: ReturnType<typeof setTimeout> | undefined
-let previewRequest = 0
-
-function resetPreview() {
-  clearTimeout(previewTimer)
-  previewRequest++
-  Object.assign(preview, {
-    checking: false,
-    path: props.project?.source.path ?? '',
-    verification: props.project?.verification ?? null,
-    error: null,
-  })
-}
-
-async function runPreview(path: string) {
-  const request = ++previewRequest
-  preview.checking = true
-  try {
-    const { verification } = await $api<VerifyPathResponse>(`${PROJECTS_PATH}/verify-path`, { method: 'POST', body: { path } })
-    if (request !== previewRequest) return
-    Object.assign(preview, { path, verification, error: null })
-  }
-  catch (error) {
-    if (request !== previewRequest) return
-    Object.assign(preview, { path, verification: null, error: toApiError(error) })
-  }
-  finally {
-    if (request === previewRequest) preview.checking = false
-  }
-}
-
-watch(() => state.path, (raw) => {
-  clearTimeout(previewTimer)
-  const path = raw.trim()
-  if (!open.value || path === preview.path) return
-  previewRequest++
-  if (!isAbsoluteish(path)) {
-    Object.assign(preview, { checking: false, path: '', verification: null, error: null })
-    return
-  }
-  Object.assign(preview, { checking: true, path: '', verification: null, error: null })
-  previewTimer = setTimeout(() => runPreview(path), PREVIEW_DELAY_MS)
-})
-
-onBeforeUnmount(() => clearTimeout(previewTimer))
 
 watch(open, (isOpen) => {
   if (!isOpen) return
@@ -135,17 +79,11 @@ watch(open, (isOpen) => {
   // Renaming an existing project never changes its slug, matching the daemon.
   slugTouched.value = isEdit.value
   formError.value = null
-  resetPreview()
+  saved.value = null
 }, { immediate: true })
 
-const previewIsStored = computed(() =>
-  isEdit.value && preview.verification !== null && preview.verification === props.project?.verification,
-)
-
-const FIELD_FOR_CODE: Record<string, keyof Schema> = {
+const FIELD_FOR_CODE: Record<string, string> = {
   slug_taken: 'slug',
-  invalid_path: 'path',
-  path_not_found: 'path',
   organisation_not_found: 'organisationId',
 }
 
@@ -153,40 +91,49 @@ function organisationId(value: string): string | null {
   return value === NO_ORGANISATION ? null : value
 }
 
-function createBody(data: Schema): CreateProjectRequest {
+function createBody(data: Schema): Partial<CreateWorkspaceRequest> {
   return {
     name: data.name,
     slug: slugTouched.value ? data.slug : undefined,
     color: data.color,
     organisationId: organisationId(data.organisationId),
-    source: { kind: 'local-path', path: data.path },
+    ...projectFormRequest(data, null),
   }
 }
 
-function updateBody(data: Schema, project: Project): UpdateProjectRequest {
+function updateBody(data: Schema, project: Workspace): UpdateWorkspaceRequest {
   return {
     name: data.name,
     slug: data.slug === project.slug ? undefined : data.slug,
     color: data.color,
     organisationId: organisationId(data.organisationId),
-    source: { kind: 'local-path', path: data.path },
+    ...projectFormRequest(data, project),
   }
 }
 
 async function onSubmit(event: FormSubmitEvent<Schema>) {
   formError.value = null
   saving.value = true
-  const project = props.project
+  const project = target.value
   try {
     const response = project
-      ? await $api<ProjectResponse>(`${PROJECTS_PATH}/${project.slug}`, { method: 'PATCH', body: updateBody(event.data, project) })
-      : await $api<ProjectResponse>(PROJECTS_PATH, { method: 'POST', body: createBody(event.data) })
-    emit('saved', response.project, !project)
-    open.value = false
+      ? await $api<WorkspaceResponse>(`${WORKSPACES_PATH}/${project.slug}`, { method: 'PATCH', body: updateBody(event.data, project) })
+      : await $api<WorkspaceResponse>(WORKSPACES_PATH, { method: 'POST', body: createBody(event.data) })
+    const created = !props.project
+    saved.value = response.workspace
+    try {
+      const notes = await projectFormAfterSave(response.workspace, event.data, created)
+      emit('saved', response.workspace, created, notes)
+      open.value = false
+    }
+    catch (error) {
+      emit('saved', response.workspace, created, [])
+      throw error
+    }
   }
   catch (error) {
     const apiError = toApiError(error)
-    const field = FIELD_FOR_CODE[apiError.code]
+    const field = FIELD_FOR_CODE[apiError.code] ?? projectFormErrorField(apiError.code)
     if (field) form.value?.setErrors([{ name: field, message: apiError.message }])
     else formError.value = apiError
   }
@@ -200,7 +147,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   <UModal
     v-model:open="open"
     :title="isEdit ? `Edit ${project?.name}` : `New ${SCOPE.singular}`"
-    :description="isEdit ? 'Saving re-checks the path.' : 'Register a local codebase.'"
+    :description="projectFormDescription(isEdit)"
     :ui="{ footer: 'justify-end' }"
   >
     <template #body>
@@ -243,24 +190,14 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
           <USelect v-model="state.organisationId" :items="organisationItems" class="w-full" />
         </UFormField>
 
-        <UFormField name="path" label="Local path" required>
-          <UInput
-            v-model="state.path"
-            class="w-full font-mono"
-            placeholder="~/code/my-app"
-            :loading="preview.checking"
-          />
-          <template #help>
-            <div class="flex min-h-6 flex-wrap items-center gap-2" data-testid="path-preview">
-              <span v-if="preview.checking" class="text-muted">Checking path…</span>
-              <span v-else-if="preview.error" class="text-error">{{ preview.error.message }}</span>
-              <template v-else-if="preview.verification">
-                <ProjectsVerificationFacts :verification="preview.verification" />
-                <span v-if="previewIsStored" class="text-xs text-dimmed">as last saved</span>
-              </template>
-            </div>
-          </template>
-        </UFormField>
+        <component
+          :is="field.component"
+          v-for="field in fields"
+          :key="field.name"
+          v-model="state[field.name]"
+          :project="project"
+          :open="open"
+        />
       </UForm>
     </template>
 

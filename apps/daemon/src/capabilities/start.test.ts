@@ -1,4 +1,4 @@
-import { PROJECTS_PATH } from '@candy-mountain/shared'
+import { WORKSPACES_PATH } from '@candy-mountain/shared'
 import { Hono } from 'hono'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { AppEnv } from '../app'
@@ -102,9 +102,9 @@ describe('startCapabilities', () => {
     expect(started.chatFamilies).toEqual({ helper: runner })
 
     const app = new Hono<AppEnv>()
-    for (const r of started.workspaceRoutes) app.route(PROJECTS_PATH, r)
+    for (const r of started.workspaceRoutes) app.route(WORKSPACES_PATH, r)
     for (const { path, routes: r } of started.platformRoutes) app.route(path, r)
-    expect(await (await app.request(`${PROJECTS_PATH}/alpha/widgets`)).json()).toEqual({ slug: 'alpha' })
+    expect(await (await app.request(`${WORKSPACES_PATH}/alpha/widgets`)).json()).toEqual({ slug: 'alpha' })
     expect(await (await app.request('/widget-sources')).json()).toEqual({ ok: true })
   })
 

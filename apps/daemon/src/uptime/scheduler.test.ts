@@ -1,23 +1,24 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { Monitor, Project } from '@candy-mountain/shared'
+import type { Monitor, Workspace } from '@candy-mountain/shared'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PlatformDatabase } from '../db'
-import { uptimeChecks } from '../db/schema'
-import { createProject, deleteProject } from '../projects/projects'
+import { uptimeChecks } from './schema'
+import { deleteWorkspace } from '../workspaces/workspaces'
 import { openTestDatabase } from '../testing'
 import type { MonitorCheckContext, MonitorCheckResult } from './check'
 import { listMonitorChecks } from './checks'
 import { startUptimeScheduler, type UptimeScheduler, type UptimeSchedulerDeps, type UptimeSchedulerOptions } from './scheduler'
 import { createMonitor, deleteMonitor, setMonitorEnabled, updateMonitor } from './service'
 import { createMonitorSourceRegistry, defineMonitorSource } from './sources'
+import { createWorkspaceWithRepository } from '../repository/test-support'
 
 const T0 = Date.parse('2026-10-01T00:00:00.000Z')
 
 let database: PlatformDatabase
 let root: string
-let project: Project
+let project: Workspace
 let started: UptimeScheduler[]
 let calls: { target: string, at: number }[]
 let latencyMs: number
@@ -57,7 +58,7 @@ beforeEach(async () => {
   database = openTestDatabase()
   root = mkdtempSync(join(tmpdir(), 'candy-mountain-scheduler-'))
   mkdirSync(join(root, '.beads'))
-  project = await createProject(database.db, { name: 'Alpha', source: { kind: 'local-path', path: root } })
+  project = await createWorkspaceWithRepository(database.db, { name: 'Alpha', path: root })
   started = []
   calls = []
   latencyMs = 0
@@ -165,7 +166,7 @@ describe('uptime scheduler', () => {
     await advance(30)
     expect(callTimes(a.target)).toEqual([0, 60, 90])
 
-    deleteProject(database.db, project.slug)
+    deleteWorkspace(database.db, project.slug)
     await advance(30)
     expect(scheduler.scheduled()).toEqual([])
     expect(callTimes(a.target)).toEqual([0, 60, 90])

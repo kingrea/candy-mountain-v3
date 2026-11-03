@@ -1,5 +1,6 @@
 export * from './definition'
 export * from './manifest'
+export * from './migration-sets'
 export * from './registry'
 export * from './start'
 export { capabilityRoutes } from './routes'

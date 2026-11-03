@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { and, eq } from 'drizzle-orm'
 import type { Db } from '../db'
-import { slackDeliveries, slackThreads, type SlackThreadState } from '../db/schema'
+import { slackDeliveries, slackThreads, type SlackThreadState } from '../bots/schema'
 
 export interface SlackThread {
   id: string

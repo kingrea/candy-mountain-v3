@@ -1,4 +1,4 @@
-import type { Organisation, Project } from '@candy-mountain/shared'
+import type { Organisation, Workspace } from '@candy-mountain/shared'
 import { PRODUCT } from '../../shared/utils/product'
 
 export const PROJECT_ROUTE_PREFIX = `/${PRODUCT.scope.urlPrefix}`
@@ -10,7 +10,7 @@ export const UNGROUPED_LABEL = 'Ungrouped'
 
 export interface ProjectGroup {
   organisation: Organisation | null
-  projects: Project[]
+  projects: Workspace[]
 }
 
 export type ProjectPickerItem =
@@ -22,7 +22,7 @@ function byNameThenSlug(a: { name: string, slug: string }, b: { name: string, sl
 }
 
 export function groupProjectsByOrganisation(
-  projects: readonly Project[],
+  projects: readonly Workspace[],
   organisations: readonly Organisation[],
 ): ProjectGroup[] {
   const visible = projects.filter(project => !project.archived).sort(byNameThenSlug)
@@ -59,7 +59,7 @@ export function projectPickerItems(groups: readonly ProjectGroup[]): ProjectPick
 export function navigationProjectSlug(
   routeSlug: string | null,
   lastSlug: string | null,
-  projects: readonly Project[],
+  projects: readonly Workspace[],
 ): string | null {
   if (routeSlug) return routeSlug
   return projects.some(project => project.slug === lastSlug && !project.archived) ? lastSlug : null

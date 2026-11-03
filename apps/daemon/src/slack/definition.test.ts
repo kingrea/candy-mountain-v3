@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { CAPABILITY_CATALOG_PATH, GRANTS_PATH, MODULES_PATH, PROJECTS_PATH, botSlackConnectionPath, projectNotificationsPath, type CapabilityCatalogResponse, type GrantListResponse, type ModuleListResponse, type NotificationRulesResponse } from '@candy-mountain/shared'
+import { CAPABILITY_CATALOG_PATH, GRANTS_PATH, MODULES_PATH, WORKSPACES_PATH, botSlackConnectionPath, workspaceNotificationsPath, type CapabilityCatalogResponse, type GrantListResponse, type ModuleListResponse, type NotificationRulesResponse } from '@candy-mountain/shared'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fakeBins } from '../acp/test-support'
 import { appendActivityEvent } from '../activity/events'
@@ -15,11 +15,11 @@ import { createTestApp, startTestPlatform, type TestPlatformOptions } from '../t
 import { PLUGIN_TYPES } from '../plugins'
 import { createPluginInstance } from '../plugins/instances/instances'
 import { slackPluginType } from '../plugins/types/slack'
-import { createProject } from '../projects/projects'
 import { MasterKey } from '../secrets'
 import { createTempDataDir, type TempDataDir } from '../testing'
 import { SLACK_CONNECTIONS } from './definition'
 import { SLACK_NOTIFICATION_CHANNEL_ID } from './notifications'
+import { createWorkspaceWithRepository } from '../repository/test-support'
 
 const WEB_URL = 'http://web.test:4300'
 const MCP_SERVER = 'candy_mountain_slack'
@@ -54,20 +54,21 @@ describe('the slack definition', () => {
   }
 
   const withSlack = (): TestPlatformOptions => ({ capabilities: capabilityDefinitions({ chatClaudeCode: { acp }, slack: { fetch: fakeFetch } }) })
-  // Bots depend on slack, so a product without it leaves them out too.
+  // Bots depend on slack, and team on the hasBots fact bots declares, so a product without it leaves both out too.
+  const gone = new Set(['slack', 'bots', 'team'])
   const withoutSlack = (): TestPlatformOptions => ({
-    capabilities: capabilityDefinitions({ chatClaudeCode: { acp } }).filter(c => c.id !== 'slack' && c.id !== 'bots'),
-    modules: MODULES.map(m => ({ ...m, capabilities: m.capabilities.filter(c => c.capabilityId !== 'bots') })),
+    capabilities: capabilityDefinitions({ chatClaudeCode: { acp } }).filter(c => !gone.has(c.id)),
+    modules: MODULES.map(m => ({ ...m, capabilities: m.capabilities.filter(c => !gone.has(c.capabilityId)) })),
   })
 
   async function projectWithRule(platform: Platform, app: ReturnType<typeof createTestApp>, checkout: string) {
-    const project = await createProject(platform.db, { name: 'alpha', source: { kind: 'local-path', path: checkout } })
-    const res = await app.request(projectNotificationsPath('alpha'), { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ rules: { 'incident.opened': { enabled: true, destination: { channelId: 'C777' } } } }) })
+    const project = await createWorkspaceWithRepository(platform.db, { name: 'alpha', path: checkout })
+    const res = await app.request(workspaceNotificationsPath('alpha'), { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ rules: { 'incident.opened': { enabled: true, destination: { channelId: 'C777' } } } }) })
     expect(res.status).toBe(200)
     return project
   }
 
-  const rules = async (app: ReturnType<typeof createTestApp>) => ((await (await app.request(projectNotificationsPath('alpha'))).json()) as NotificationRulesResponse).rules
+  const rules = async (app: ReturnType<typeof createTestApp>) => ((await (await app.request(workspaceNotificationsPath('alpha'))).json()) as NotificationRulesResponse).rules
 
   it('offers the connections to bots, brings the plugin type, and is in no catalog, module or grant', async () => {
     const { platform, app } = start(withSlack())
@@ -100,9 +101,9 @@ describe('the slack definition', () => {
     const sessions = platform.runtime.service(ACP_SESSIONS)!
     const checkout = mkdtempSync(join(tmpdir(), 'candy-mountain-slack-'))
     try {
-      const project = await createProject(platform.db, { name: 'alpha', source: { kind: 'local-path', path: checkout } })
-      const plain = sessions.create({ projectId: project.id, family: 'claude-code', actorId: 'u', cwd: checkout })
-      const held = sessions.create({ projectId: project.id, family: 'claude-code', actorId: 'u', cwd: checkout, posture: { bot: { id: 'b', name: 'B', holder: { kind: 'slack', id: 'b:C1:1.1' } } } })
+      const project = await createWorkspaceWithRepository(platform.db, { name: 'alpha', path: checkout })
+      const plain = sessions.create({ workspaceId: project.id, family: 'claude-code', actorId: 'u', cwd: checkout })
+      const held = sessions.create({ workspaceId: project.id, family: 'claude-code', actorId: 'u', cwd: checkout, posture: { bot: { id: 'b', name: 'B', holder: { kind: 'slack', id: 'b:C1:1.1' } } } })
 
       expect(platform.runtime.mcpServers.map(s => s.name)).toEqual([MCP_SERVER])
       expect(await platform.agentMcp.serversFor(plain)).toEqual([])
@@ -119,9 +120,9 @@ describe('the slack definition', () => {
     try {
       expect(platform.runtime.notificationChannels.map(c => c.id)).toEqual([SLACK_NOTIFICATION_CHANNEL_ID])
       const project = await projectWithRule(platform, app, checkout)
-      createPluginInstance({ db: platform.db, pluginTypes: platform.pluginTypes, secrets: platform.secrets.writeOnly }, { type: 'slack', scope: 'global', projectId: null, config: {}, secrets: { botToken: 'xoxb-plugin' } })
+      createPluginInstance({ db: platform.db, pluginTypes: platform.pluginTypes, secrets: platform.secrets.writeOnly }, { type: 'slack', scope: 'global', workspaceId: null, config: {}, secrets: { botToken: 'xoxb-plugin' } })
 
-      appendActivityEvent(platform.db, { projectId: project.id, type: 'incident.opened', title: 'API <down> & out', link: '/p/alpha/uptime' })
+      appendActivityEvent(platform.db, { workspaceId: project.id, type: 'incident.opened', title: 'API <down> & out', link: '/p/alpha/uptime' })
       await platform.notifications.idle()
 
       expect(posts).toEqual([{ token: 'xoxb-plugin', body: { channel: 'C777', text: `API &lt;down&gt; &amp; out\n<${WEB_URL}/p/alpha/uptime|Open in Candy Mountain>` } }])
@@ -169,10 +170,10 @@ describe('the slack definition', () => {
       const status = await app.request(botSlackConnectionPath('nope', 'b1'))
       expect(status.status).toBe(404)
       expect(await status.text()).toBe('404 Not Found')
-      expect((await app.request(PROJECTS_PATH)).status).toBe(200)
+      expect((await app.request(WORKSPACES_PATH)).status).toBe(200)
 
       const project = await projectWithRule(platform, app, checkout)
-      appendActivityEvent(platform.db, { projectId: project.id, type: 'incident.opened', title: 'down' })
+      appendActivityEvent(platform.db, { workspaceId: project.id, type: 'incident.opened', title: 'down' })
       await platform.notifications.idle()
       expect((await rules(app))['incident.opened']).toMatchObject({ lastDeliveredAt: null, lastFailureReason: 'No delivery channel: no capability offers one.' })
       expect(posts).toEqual([])

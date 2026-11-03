@@ -11,8 +11,7 @@ import { pluginInstances, platformMeta } from '../db/schema'
 import { createPluginInstance } from '../plugins/instances/instances'
 import { GOOD_TOKEN, stubHosts } from '../plugins/repository/fake-hosts'
 import { createSlackClient, createSlackOperations } from '../plugins/slack'
-import { setEnabledModules } from '../project-modules/enablement'
-import { createProject } from '../projects/projects'
+import { setEnabledModules } from '../workspace-modules/enablement'
 import { startAcpPlatform, type AcpPlatform, type AcpPlatformOptions } from '../chat-claude-code/test-support'
 import { MasterKey } from '../secrets'
 import type { SessionMessage } from '../sessions'
@@ -24,6 +23,7 @@ import { startSlackDecisions } from './decisions'
 import { createSlackEventBus, type SlackEventBus, type SlackInteractiveBotEvent, type SlackMessageBotEvent } from './events'
 import { startSlackRouter } from './router'
 import { findSlackThread } from './threads'
+import { createWorkspaceWithRepository } from '../repository/test-support'
 
 const CLAUDE_PERSONA = '---\nname: ana\ndescription: Ana fixes small issues.\n---\nYou are Ana. Keep changes small.\n'
 const JACK = 'U0JACK'
@@ -105,8 +105,8 @@ function commitFile(path: string, text: string): void {
 }
 
 function setHealth(p: AcpPlatform, projectId: string, type: 'repository' | 'claude-code', config: Record<string, unknown> = {}, secrets: Record<string, string> = {}): void {
-  const existing = p.db.select().from(pluginInstances).where(eq(pluginInstances.projectId, projectId)).all().find(row => row.typeId === type)
-  const id = existing?.id ?? createPluginInstance({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly }, { type, scope: 'project', projectId, config, secrets }).id
+  const existing = p.db.select().from(pluginInstances).where(eq(pluginInstances.workspaceId, projectId)).all().find(row => row.typeId === type)
+  const id = existing?.id ?? createPluginInstance({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly }, { type, scope: 'workspace', workspaceId: projectId, config, secrets }).id
   p.db.update(pluginInstances).set({ health: { healthy: true }, healthCheckedAt: new Date().toISOString() }).where(eq(pluginInstances.id, id)).run()
 }
 
@@ -137,7 +137,7 @@ async function setup(decisions?: AcpPlatformOptions['decisions']) {
   temp = createTempDataDir()
   const key = MasterKey.generate()
   const p = boot(temp.root, key, decisions)
-  const project = await createProject(p.db, { name: 'alpha', slug: 'alpha', source: { kind: 'local-path', path: repo.clone } })
+  const project = await createWorkspaceWithRepository(p.db, { name: 'alpha', slug: 'alpha', path: repo.clone })
   setHealth(p, project.id, 'repository', { host: 'github', owner: 'jack', repo: 'candy' }, { token: GOOD_TOKEN })
   setHealth(p, project.id, 'claude-code', { claudePath: fakeClaude(temp.root) })
   // The panel's session routes are gated on the Agent Hub's chat capabilities.

@@ -33,19 +33,19 @@ async function created(body: unknown): Promise<PluginInstance> {
 describe('plugin instance routes', () => {
   it('creates, reads, updates, tests and deletes without ever returning a secret', async () => {
     h = instanceHarness([fixturePluginType('repository'), multiPluginType()])
-    const project = await h.createProject('alpha')
+    const workspace = await h.createWorkspace('alpha')
     const bodies: string[] = []
     const record = async (res: Response) => {
       bodies.push(await res.clone().text())
       return res
     }
 
-    const instance = await created({ type: 'repository', scope: 'project', project: 'alpha', config: { account: 'jack' }, secrets: { token: 'route-secret-1' } })
-    expect(instance).toMatchObject({ projectId: project.id, projectSlug: 'alpha', secrets: { token: 'set' }, health: null })
+    const instance = await created({ type: 'repository', scope: 'workspace', workspace: 'alpha', config: { account: 'jack' }, secrets: { token: 'route-secret-1' } })
+    expect(instance).toMatchObject({ workspaceId: workspace.id, workspaceSlug: 'alpha', secrets: { token: 'set' }, health: null })
     await created({ type: 'codex', scope: 'global', secrets: { apiKey: 'route-secret-2' } })
 
-    const list = await record(await call('GET', '?project=alpha'))
-    expect((await list.json() as PluginInstanceListResponse).instances.map(i => `${i.type}:${i.scope}`)).toEqual(['repository:project', 'codex:global'])
+    const list = await record(await call('GET', '?workspace=alpha'))
+    expect((await list.json() as PluginInstanceListResponse).instances.map(i => `${i.type}:${i.scope}`)).toEqual(['repository:workspace', 'codex:global'])
     expect((await (await record(await call('GET', ''))).json() as PluginInstanceListResponse).instances.map(i => i.type)).toEqual(['codex'])
     await record(await call('GET', `/${instance.id}`))
 
@@ -64,17 +64,17 @@ describe('plugin instance routes', () => {
 
   it('returns error bodies for bad requests', async () => {
     h = instanceHarness([fixturePluginType('repository'), slackPluginType])
-    await h.createProject('alpha')
-    const good = { type: 'repository', scope: 'project', project: 'alpha', config: { account: 'jack' }, secrets: { token: 't' } }
+    await h.createWorkspace('alpha')
+    const good = { type: 'repository', scope: 'workspace', workspace: 'alpha', config: { account: 'jack' }, secrets: { token: 't' } }
     const cases: [unknown, number, string][] = [
       ['{', 400, 'invalid_request'],
       [{ ...good, scope: 'team' }, 400, 'invalid_request'],
       [{ ...good, secrets: { token: 3 } }, 400, 'invalid_request'],
-      [{ ...good, project: undefined }, 400, 'invalid_request'],
+      [{ ...good, workspace: undefined }, 400, 'invalid_request'],
       [{ ...good, type: 'gitlab' }, 422, 'type_not_found'],
-      [{ ...good, project: 'ghost' }, 422, 'project_not_found'],
-      [{ ...good, scope: 'global', project: undefined }, 422, 'unsupported_scope'],
-      [{ type: 'slack', scope: 'project', project: 'alpha', secrets: { botToken: 'x' } }, 422, 'unsupported_scope'],
+      [{ ...good, workspace: 'ghost' }, 422, 'workspace_not_found'],
+      [{ ...good, scope: 'global', workspace: undefined }, 422, 'unsupported_scope'],
+      [{ type: 'slack', scope: 'workspace', workspace: 'alpha', secrets: { botToken: 'x' } }, 422, 'unsupported_scope'],
       [{ ...good, config: { account: '!' } }, 422, 'invalid_config'],
       [{ ...good, secrets: {} }, 422, 'invalid_secrets'],
     ]
@@ -87,14 +87,14 @@ describe('plugin instance routes', () => {
     const second = await call('POST', '', good)
     expect(second.status).toBe(409)
     expect(await second.json()).toMatchObject({ error: { code: 'instance_exists' } })
-    expect((await call('GET', '?project=ghost')).status).toBe(422)
+    expect((await call('GET', '?workspace=ghost')).status).toBe(422)
     expect((await call('PATCH', '/missing', {})).status).toBe(404)
   })
 
   it('reports locked secrets as a conflict', async () => {
     h = instanceHarness([fixturePluginType('repository')], { locked: true })
-    await h.createProject('alpha')
-    const res = await call('POST', '', { type: 'repository', scope: 'project', project: 'alpha', config: { account: 'jack' }, secrets: { token: 't' } })
+    await h.createWorkspace('alpha')
+    const res = await call('POST', '', { type: 'repository', scope: 'workspace', workspace: 'alpha', config: { account: 'jack' }, secrets: { token: 't' } })
     expect(res.status).toBe(409)
     expect(await res.json()).toMatchObject({ error: { code: 'secrets_locked' } })
   })
@@ -118,23 +118,23 @@ describe('plugin instance routes', () => {
     expect(types[0]).not.toHaveProperty('healthCheck')
   })
 
-  it('deletes a project\'s instance secrets with the project', async () => {
+  it('deletes a workspace\'s instance secrets with the workspace', async () => {
     h = instanceHarness([fixturePluginType('repository')])
-    await h.createProject('alpha')
-    const instance = await created({ type: 'repository', scope: 'project', project: 'alpha', config: { account: 'jack' }, secrets: { token: 't' } })
-    expect((await h.app().request('/projects/alpha', { method: 'DELETE' })).status).toBe(204)
+    await h.createWorkspace('alpha')
+    const instance = await created({ type: 'repository', scope: 'workspace', workspace: 'alpha', config: { account: 'jack' }, secrets: { token: 't' } })
+    expect((await h.app().request('/workspaces/alpha', { method: 'DELETE' })).status).toBe(204)
     expect(h.store.isSet(pluginSecretOwner(instance.id), 'token')).toBe(false)
     expect((await call('GET', `/${instance.id}`)).status).toBe(404)
   })
 })
 
 describe('repository instance actions', () => {
-  const repository = (host: string, token: string) => ({ type: 'repository', scope: 'project', project: 'alpha', config: { host, owner: 'jack', repo: 'candy' }, secrets: { token } })
+  const repository = (host: string, token: string) => ({ type: 'repository', scope: 'workspace', workspace: 'alpha', config: { host, owner: 'jack', repo: 'candy' }, secrets: { token } })
 
   it.each(['github', 'bitbucket'])('tests the connection and lists branches on %s', async (host) => {
     stubHosts()
     h = instanceHarness([repositoryPluginType])
-    await h.createProject('alpha')
+    await h.createWorkspace('alpha')
     const instance = await created(repository(host, GOOD_TOKEN))
 
     const tested = (await (await call('POST', `/${instance.id}/test`)).json() as PluginInstanceResponse).instance
@@ -154,7 +154,7 @@ describe('repository instance actions', () => {
   it.each(['github', 'bitbucket'])('records the host\'s reason for a wrong token on %s and maps branch errors', async (host) => {
     stubHosts()
     h = instanceHarness([repositoryPluginType])
-    await h.createProject('alpha')
+    await h.createWorkspace('alpha')
     const instance = await created(repository(host, 'wrong-token'))
 
     const tested = (await (await call('POST', `/${instance.id}/test`)).json() as PluginInstanceResponse).instance
@@ -168,7 +168,7 @@ describe('repository instance actions', () => {
   it('passes rate limits through with Retry-After', async () => {
     stubHosts(() => json(429, { message: 'slow down' }, { 'retry-after': '30' }))
     h = instanceHarness([repositoryPluginType])
-    await h.createProject('alpha')
+    await h.createWorkspace('alpha')
     const instance = await created(repository('github', GOOD_TOKEN))
     const res = await call('GET', `/${instance.id}/branches`)
     expect(res.status).toBe(503)
@@ -178,7 +178,7 @@ describe('repository instance actions', () => {
 
   it('answers 404 for an action the type does not have', async () => {
     h = instanceHarness([repositoryPluginType])
-    await h.createProject('alpha')
+    await h.createWorkspace('alpha')
     const instance = await created(repository('github', GOOD_TOKEN))
     for (const [method, path] of [['POST', 'branches'], ['GET', 'deploy'], ['GET', 'test'], ['GET', 'constructor']]) {
       const res = await call(method!, `/${instance.id}/${path}`)
@@ -194,7 +194,7 @@ describe('instance action extension point', () => {
     name: 'Login fixture',
     description: 'Registers its own instance actions.',
     reach: ['Nothing real.'],
-    scopes: ['project'],
+    scopes: ['workspace'],
     singleInstance: true,
     configFields: [{ kind: 'string', name: 'label', label: 'Label' }],
     secretFields: [{ name: 'session', label: 'Session' }],
@@ -222,8 +222,8 @@ describe('instance action extension point', () => {
 
   it('mounts a type\'s actions with typed context, raw responses and error bodies', async () => {
     h = instanceHarness([loginType()])
-    await h.createProject('alpha')
-    const instance = await created({ type: 'claude-code', scope: 'project', project: 'alpha', secrets: { session: 's' } })
+    await h.createWorkspace('alpha')
+    const instance = await created({ type: 'claude-code', scope: 'workspace', workspace: 'alpha', secrets: { session: 's' } })
 
     const started = await call('POST', `/${instance.id}/login-start`, { mode: 'device' })
     expect(await started.json()).toEqual({ instance: instance.id, mode: 'device', hasSession: true, root: expect.any(String) })

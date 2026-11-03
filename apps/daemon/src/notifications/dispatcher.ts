@@ -1,8 +1,9 @@
-import { DEPLOY_OUTCOMES, projectViewRoute, type ActivityEvent, type NotificationKind } from '@candy-mountain/shared'
+import { workspaceViewRoute, type ActivityEvent, type NotificationKind } from '@candy-mountain/shared'
 import { subscribeActivityEvents } from '../activity/events'
+import { activityEventTypesFor } from '../activity/types'
 import type { NotificationChannel, NotificationDelivery } from '../capabilities/definition'
 import type { Db } from '../db'
-import { findProjectById } from '../projects/projects'
+import { findWorkspaceById } from '../workspaces/workspaces'
 import { DEFAULT_WEB_URL } from './config'
 import { claimNotificationEvent, readNotificationRules, recordNotificationOutcome } from './rules'
 
@@ -30,21 +31,6 @@ export interface NotificationDispatcher {
 
 export const NOTIFICATION_TIMEOUT_MS = 10_000
 
-export function notificationKindOf(event: Pick<ActivityEvent, 'type' | 'payload'>): NotificationKind | null {
-  switch (event.type) {
-    case 'bot.handoff': return 'bot.finished'
-    case 'incident.opened': return 'incident.opened'
-    case 'incident.closed': return 'incident.closed'
-    case 'deploy.attempted': {
-      const outcome = event.payload?.outcome
-      if (outcome === DEPLOY_OUTCOMES[0]) return 'deploy.succeeded'
-      if (outcome === DEPLOY_OUTCOMES[1]) return 'deploy.failed'
-      return null
-    }
-    default: return null
-  }
-}
-
 export function absoluteLink(webUrl: string, path: string): string {
   return `${webUrl.replace(/\/+$/, '')}${path.startsWith('/') ? path : `/${path}`}`
 }
@@ -59,9 +45,9 @@ export function startNotificationDispatcher(deps: NotificationDispatcherDeps, { 
   let closed = false
 
   async function send(event: ActivityEvent, kind: NotificationKind, destination: { channelId: string } | { memberId: string }, signal: AbortSignal) {
-    const slug = findProjectById(deps.db, event.projectId)?.slug
-    const url = absoluteLink(webUrl, event.link ?? (slug ? projectViewRoute(deps.scopeUrlPrefix, slug, '') : '/'))
-    const delivery: NotificationDelivery = { workspaceId: event.projectId, kind, destination, title: event.title, url }
+    const slug = findWorkspaceById(deps.db, event.workspaceId)?.slug
+    const url = absoluteLink(webUrl, event.link ?? (slug ? workspaceViewRoute(deps.scopeUrlPrefix, slug, '') : '/'))
+    const delivery: NotificationDelivery = { workspaceId: event.workspaceId, kind, destination, title: event.title, url }
     for (const channel of deps.channels) {
       if (await channel.deliver(delivery, signal)) return
     }
@@ -72,13 +58,13 @@ export function startNotificationDispatcher(deps: NotificationDispatcherDeps, { 
     const signal = AbortSignal.timeout(timeoutMs)
     try {
       await send(event, kind, destination, signal)
-      recordNotificationOutcome(deps.db, event.projectId, kind, { ok: true, at: new Date().toISOString() })
+      recordNotificationOutcome(deps.db, event.workspaceId, kind, { ok: true, at: new Date().toISOString() })
     }
     catch (error) {
       const reason = error instanceof Error ? error.message : String(error)
       log.error(`Notification ${kind} for event ${event.id} failed: ${reason}`)
       try {
-        recordNotificationOutcome(deps.db, event.projectId, kind, { ok: false, at: new Date().toISOString(), reason })
+        recordNotificationOutcome(deps.db, event.workspaceId, kind, { ok: false, at: new Date().toISOString(), reason })
       }
       catch (recordError) {
         log.error('Recording the notification failure failed:', recordError)
@@ -88,11 +74,11 @@ export function startNotificationDispatcher(deps: NotificationDispatcherDeps, { 
 
   function notify(event: ActivityEvent) {
     if (closed) return
-    const kind = notificationKindOf(event)
+    const kind = activityEventTypesFor(deps.db).notificationKindOf(event)
     if (!kind) return
-    const rule = readNotificationRules(deps.db, event.projectId)[kind]
-    if (!rule.enabled || !rule.destination) return
-    if (!claimNotificationEvent(deps.db, event.projectId, event.id)) return
+    const rule = readNotificationRules(deps.db, event.workspaceId)[kind]
+    if (!rule?.enabled || !rule.destination) return
+    if (!claimNotificationEvent(deps.db, event.workspaceId, event.id)) return
     const task = deliver(event, kind, rule.destination).finally(() => inFlight.delete(task))
     inFlight.add(task)
   }

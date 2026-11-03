@@ -12,7 +12,6 @@ import { createPluginInstance } from '../plugins/instances/instances'
 import { GOOD_TOKEN, stubHosts } from '../plugins/repository/fake-hosts'
 import { createSlackClient, createSlackOperations } from '../plugins/slack'
 import { assertPostureNotWidened, PostureError, resolveBotPosture } from '../posture'
-import { createProject } from '../projects/projects'
 import { startAcpPlatform, type AcpPlatform } from '../chat-claude-code/test-support'
 import { MasterKey } from '../secrets'
 import { addTeamMember } from '../team'
@@ -24,6 +23,7 @@ import { createSlackEventBus, type SlackEventBus, type SlackMessageBotEvent } fr
 import { slackMcpServer } from './mcp'
 import { startSlackRouter, type SlackRouter } from './router'
 import { findSlackThread } from './threads'
+import { createWorkspaceWithRepository } from '../repository/test-support'
 
 const TARGET = { channel: 'C01LISTED', threadTs: '1.1' }
 const SECTION = { type: 'section', text: { type: 'mrkdwn', text: '*Build* passed' } }
@@ -137,9 +137,9 @@ describe('MCP host', () => {
   it('serves only the session it issued the token to, over loopback POST', async () => {
     temp = createTempDataDir()
     platform = startAcpPlatform(temp.root, { secretsKey: MasterKey.generate() })
-    const project = await createProject(platform.db, { name: 'beta', slug: 'beta', source: { kind: 'local-path', path: temp.root } })
-    const plain = platform.sessions.create({ projectId: project.id, family: 'claude-code', actorId: 'u', cwd: temp.root })
-    const bot = platform.sessions.create({ projectId: project.id, family: 'claude-code', actorId: 'u', cwd: temp.root, posture: { bot: { id: 'b', name: 'B', holder: { kind: 'slack', id: 'b:C1:1.1' } } } })
+    const project = await createWorkspaceWithRepository(platform.db, { name: 'beta', slug: 'beta', path: temp.root })
+    const plain = platform.sessions.create({ workspaceId: project.id, family: 'claude-code', actorId: 'u', cwd: temp.root })
+    const bot = platform.sessions.create({ workspaceId: project.id, family: 'claude-code', actorId: 'u', cwd: temp.root, posture: { bot: { id: 'b', name: 'B', holder: { kind: 'slack', id: 'b:C1:1.1' } } } })
     host = startAgentMcpHost({ db: platform.db, servers: [slackMcpServer({ db: platform.db, slack: { web: () => null } })] })
     expect(await host.serversFor(plain)).toEqual([])
     const [registration] = await host.serversFor(bot)
@@ -258,9 +258,9 @@ describe('Block Kit tool end to end', () => {
     const claudePath = join(temp.root, 'claude')
     writeFileSync(claudePath, `#!/bin/sh\nexec '${process.execPath}' '${script}' "$@"\n`)
     chmodSync(claudePath, 0o755)
-    const project = await createProject(p.db, { name: 'alpha', slug: 'alpha', source: { kind: 'local-path', path: repo.clone } })
+    const project = await createWorkspaceWithRepository(p.db, { name: 'alpha', slug: 'alpha', path: repo.clone })
     const health = (type: 'repository' | 'claude-code', config: Record<string, unknown>, secrets: Record<string, string> = {}) => {
-      const id = createPluginInstance({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly }, { type, scope: 'project', projectId: project.id, config, secrets }).id
+      const id = createPluginInstance({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly }, { type, scope: 'workspace', workspaceId: project.id, config, secrets }).id
       p.db.update(pluginInstances).set({ health: { healthy: true }, healthCheckedAt: new Date().toISOString() }).where(eq(pluginInstances.id, id)).run()
     }
     health('repository', { host: 'github', owner: 'jack', repo: 'candy' }, { token: GOOD_TOKEN })
@@ -295,7 +295,7 @@ describe('Block Kit tool end to end', () => {
     expect(agentText().at(-1)).toContain('"isError":true')
     expect(agentText().at(-1)).toContain('channel \\"C02OTHER\\"')
 
-    const plain = p.sessions.create({ projectId: project.id, family: 'claude-code', actorId: 'u', cwd: repo!.clone })
+    const plain = p.sessions.create({ workspaceId: project.id, family: 'claude-code', actorId: 'u', cwd: repo!.clone })
     await p.sessions.prompt(plain.id, 'which mcp')
     await expect.poll(() => p.sessions.events(plain.id).find(e => e.kind === 'text' && e.role === 'agent'), { timeout: 20_000 }).toMatchObject({ text: 'mcp: none strict: false' })
     expect(transport.calls.filter(call => call.body.blocks !== undefined)).toHaveLength(1)

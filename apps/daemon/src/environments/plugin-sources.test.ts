@@ -1,4 +1,4 @@
-import type { ApiErrorBody, Environment, LiveVersionsResponse, Project } from '@candy-mountain/shared'
+import type { ApiErrorBody, Environment, LiveVersionsResponse, Workspace } from '@candy-mountain/shared'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DEPLOYMENTS_PLUGIN_TYPES, deploymentsRoutes } from '../deployments/definition'
 import { PLUGIN_TYPES } from '../plugins'
@@ -64,7 +64,7 @@ function stubVendors() {
 }
 
 let h: InstanceHarness
-let shop: Project
+let shop: Workspace
 let urls: string[]
 beforeEach(async () => {
   vendors.publishedDeploy = PUBLISHED
@@ -72,7 +72,7 @@ beforeEach(async () => {
   vendors.releases = [release(3, 'slug-3', true), release(2, 'slug-2')]
   urls = stubVendors()
   h = instanceHarness([...PLUGIN_TYPES, ...DEPLOYMENTS_PLUGIN_TYPES])
-  shop = await h.createProject('shop')
+  shop = await h.createWorkspace('shop')
 })
 afterEach(() => {
   h.close()
@@ -82,14 +82,14 @@ afterEach(() => {
 const call = (method: string, path: string, body?: unknown, roles?: string[]) =>
   h.app(roles, deploymentsRoutes(h.store)).request(path, { method, headers: { 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) })
 const errorOf = async (res: Response) => ((await res.json()) as ApiErrorBody).error
-const saveEnvironment = (name: string, liveSourceKind: string) => call('POST', `/projects/${shop.slug}/environments`, { name, liveSourceKind })
-const liveVersions = async () => ((await (await call('GET', `/projects/${shop.slug}/live-versions`, undefined, ['viewer'])).json()) as LiveVersionsResponse).environments
+const saveEnvironment = (name: string, liveSourceKind: string) => call('POST', `/workspaces/${shop.slug}/environments`, { name, liveSourceKind })
+const liveVersions = async () => ((await (await call('GET', `/workspaces/${shop.slug}/live-versions`, undefined, ['viewer'])).json()) as LiveVersionsResponse).environments
 
 function addNetlify(token = NETLIFY_TOKEN) {
-  return createPluginInstance(h.deps, { type: 'netlify', scope: 'project', projectId: shop.id, config: { siteId: SITE_ID }, secrets: { token } })
+  return createPluginInstance(h.deps, { type: 'netlify', scope: 'workspace', workspaceId: shop.id, config: { siteId: SITE_ID }, secrets: { token } })
 }
 function addHeroku(apiKey = HEROKU_KEY) {
-  return createPluginInstance(h.deps, { type: 'heroku', scope: 'project', projectId: shop.id, config: { appName: 'candy-mountain' }, secrets: { apiKey } })
+  return createPluginInstance(h.deps, { type: 'heroku', scope: 'workspace', workspaceId: shop.id, config: { appName: 'candy-mountain' }, secrets: { apiKey } })
 }
 
 describe('netlify live version', () => {
@@ -161,7 +161,7 @@ describe('heroku live version', () => {
   it('cannot be saved without a healthy Heroku plugin, including when switching an environment to it', async () => {
     await testPluginInstance(h.deps, addNetlify().id)
     const { environment } = await (await saveEnvironment('Production', 'netlify')).json() as { environment: Environment }
-    const patch = () => call('PATCH', `/projects/${shop.slug}/environments/${environment.id}`, { liveSourceKind: 'heroku' })
+    const patch = () => call('PATCH', `/workspaces/${shop.slug}/environments/${environment.id}`, { liveSourceKind: 'heroku' })
     expect(await errorOf(await patch())).toMatchObject({ code: 'invalid_settings', message: 'The Heroku plugin is not set up for this project; add it on the Plugins page.' })
 
     const instance = addHeroku('heroku-wrong-key')

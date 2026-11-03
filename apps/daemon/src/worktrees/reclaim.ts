@@ -3,8 +3,10 @@ import { readdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { and, asc, eq, lte } from 'drizzle-orm'
 import type { DataPaths } from '../data-dir'
-import { schema, type Db } from '../db'
-import { listProjects, sourcePath } from '../projects/projects'
+import type { Db } from '../db'
+import { worktreeLeases } from '../bots/schema'
+import { listWorkspaces } from '../workspaces/workspaces'
+import type { RepositoryPaths } from '../repository/service'
 import { resolveWorktreeSettings } from './config'
 import { inspectWorktree } from './inspect'
 import type { WorktreeLease, WorktreePool } from './pool'
@@ -23,7 +25,7 @@ export interface ReconcileReport {
   removed: string[]
   /** Directories with no active lease that were left in place because removing them could lose work. */
   dirty: { path: string, reason: string }[]
-  /** Project clones whose `git worktree prune` succeeded. */
+  /** Workspace clones whose `git worktree prune` succeeded. */
   pruned: string[]
 }
 
@@ -31,6 +33,7 @@ export interface WorktreeReclaimerDeps {
   db: Db
   paths: Pick<DataPaths, 'worktrees'>
   pool: WorktreePool
+  repository: RepositoryPaths
   now?: () => Date
   log?: Pick<Console, 'log' | 'warn' | 'error'>
 }
@@ -50,10 +53,9 @@ export interface WorktreeReclaimer {
   close(): void
 }
 
-const { worktreeLeases } = schema
 const defaults = resolveWorktreeSettings({})
 
-export function startWorktreeReclaimer({ db, paths, pool, now = () => new Date(), log = console }: WorktreeReclaimerDeps, { idleTimeoutMs = defaults.idleTimeoutMs, reclaimIntervalMs = defaults.reclaimIntervalMs, reconcileOnStart = true }: WorktreeReclaimerOptions = {}): WorktreeReclaimer {
+export function startWorktreeReclaimer({ db, paths, pool, repository, now = () => new Date(), log = console }: WorktreeReclaimerDeps, { idleTimeoutMs = defaults.idleTimeoutMs, reclaimIntervalMs = defaults.reclaimIntervalMs, reconcileOnStart = true }: WorktreeReclaimerOptions = {}): WorktreeReclaimer {
   let closed = false
 
   const activeLeases = (projectId?: string) => db
@@ -133,9 +135,10 @@ export function startWorktreeReclaimer({ db, paths, pool, now = () => new Date()
       })
     }
 
-    for (const project of listProjects(db, { includeArchived: true })) {
+    for (const project of listWorkspaces(db, { includeArchived: true })) {
       if (closed) return report
-      const clone = sourcePath(project.source)
+      const clone = repository.find(project.id)
+      if (clone === null) continue
       const ok = await pool.withProjectLock(project.id, () => pool.git(clone, ['worktree', 'prune']).then(() => true, () => false))
       if (ok) report.pruned.push(clone)
     }

@@ -13,7 +13,7 @@ function capability(id: RegistryCapability['id'], overrides: Partial<RegistryCap
 
 function registry(capabilities: RegistryCapability[], admin = true): RegistryResponse {
   return {
-    project: { id: 'p1', slug: 'acme', name: 'Acme' },
+    workspace: { id: 'p1', slug: 'acme', name: 'Acme' },
     admin,
     modules: [],
     groups: [],
@@ -37,9 +37,9 @@ function instance(overrides: Partial<PluginInstance> = {}): PluginInstance {
   return {
     id: 'i1',
     type: 'repository',
-    scope: 'project',
-    projectId: 'p1',
-    projectSlug: 'acme',
+    scope: 'workspace',
+    workspaceId: 'p1',
+    workspaceSlug: 'acme',
     config: {},
     secrets: { token: 'set' },
     health: { healthy: true, checkedAt: '2026-10-28T00:00:00Z' },
@@ -72,17 +72,17 @@ describe('issuesRunThreadTitle', () => {
 describe('issuesRunRepository', () => {
   it('is ready with a healthy project or global instance', () => {
     expect(repo([instance()])).toEqual({ state: 'ready' })
-    expect(repo([instance({ scope: 'global', projectId: null, projectSlug: null })])).toEqual({ state: 'ready' })
+    expect(repo([instance({ scope: 'global', workspaceId: null, workspaceSlug: null })])).toEqual({ state: 'ready' })
   })
 
   it('prefers the project instance over the global one', () => {
-    const global = instance({ id: 'g', scope: 'global', projectId: null, projectSlug: null })
+    const global = instance({ id: 'g', scope: 'global', workspaceId: null, workspaceSlug: null })
     const own = instance({ health: { healthy: false, reason: 'bad token', checkedAt: '2026-10-28T00:00:00Z' } })
     expect(repo([global, own])).toEqual({ state: 'missing', reason: 'The Repository plugin is unhealthy: bad token' })
   })
 
   it('ignores another project\'s instance', () => {
-    expect(repo([instance({ projectSlug: 'other' })])).toEqual({ state: 'missing', reason: 'No Repository plugin is configured for this project or the platform.' })
+    expect(repo([instance({ workspaceSlug: 'other' })])).toEqual({ state: 'missing', reason: 'No Repository plugin is configured for this project or the platform.' })
   })
 
   it('names missing secrets and untested instances', () => {

@@ -3,7 +3,7 @@ import {
   ORGANISATIONS_PATH,
   type Organisation,
   type OrganisationResponse,
-  type Project,
+  type Workspace,
 } from '@candy-mountain/shared'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import * as z from 'zod'
@@ -11,7 +11,7 @@ import ProjectsConfirmModal from './ProjectsConfirmModal.vue'
 
 const props = defineProps<{
   organisations: Organisation[]
-  projects: Project[]
+  projects: Workspace[]
 }>()
 
 const schema = z.object({

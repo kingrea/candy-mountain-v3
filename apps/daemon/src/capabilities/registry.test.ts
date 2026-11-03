@@ -23,7 +23,7 @@ describe('createCapabilityRegistry', () => {
   it('loads the real definition list', () => {
     const registry = createCapabilityRegistry([...platformDefinitions(), ...CAPABILITY_DEFINITIONS], { pluginTypeIds: PLUGIN_TYPES.map(t => t.id) })
     expect(registry.get('bots')).toMatchObject({ views: [{ id: 'bots', path: 'bots' }], requiresPlugins: ['repository'], requiresAnyPlugins: [['claude-code', 'codex']] })
-    expect(registry.get('team')).toMatchObject({ views: [{ id: 'team', path: 'team' }], requiresPlugins: [], requiresProjectFacts: ['hasBots'] })
+    expect(registry.get('team')).toMatchObject({ views: [{ id: 'team', path: 'team' }], requiresPlugins: [], requiresWorkspaceFacts: ['hasBots'] })
     for (const id of ['bots', 'team']) expect(registry.get(id).ladder.map(r => r.name)).toEqual(['none', 'manage'])
     expect(registry.get('deployments')).toMatchObject({ views: [{ id: 'deployments', path: 'deployments' }], requiresPlugins: ['repository'] })
     expect(registry.get('deployments').ladder.map(r => r.name)).toEqual(['none', 'read', 'manage'])

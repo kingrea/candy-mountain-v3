@@ -16,7 +16,7 @@ describe('scope label', () => {
   it('flows from the product configuration into platform copy', () => {
     expect(registryNavGroups(null, null, false).systemGroup.entries.map(entry => entry.label)).toEqual(['Apps', 'Activity', 'Settings'])
     expect(pluginHealth('repository', [], []).detail).toBe('Not configured for this app or the platform.')
-    expect(PLUGIN_SCOPE_LABELS.project).toBe('This app')
+    expect(PLUGIN_SCOPE_LABELS.workspace).toBe('This app')
     expect(SCOPE.aSingular).toBe('an app')
   })
 

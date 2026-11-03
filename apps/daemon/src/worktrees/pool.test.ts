@@ -1,12 +1,12 @@
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import type { Project } from '@candy-mountain/shared'
+import type { Workspace } from '@candy-mountain/shared'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { BOT_WORKTREES } from '../bots/definition'
 import type { PlatformDatabase } from '../db'
 import { capabilityDefinitions } from '../definitions'
 import { startTestPlatform } from '../testing/platform'
-import { createProject, deleteProject } from '../projects/projects'
+import { deleteWorkspace } from '../workspaces/workspaces'
 import { createTempDataDir, openTestDatabase, type TempDataDir } from '../testing'
 import { resolveWorktreeSettings } from './config'
 import { WorktreeError } from './errors'
@@ -14,20 +14,22 @@ import { createGitRunner, GitError } from './git'
 import { createKeyedLock } from './lock'
 import { botBranchName, createWorktreePool, type WorktreeHolder, type WorktreePool } from './pool'
 import { createTempGitRepo, TEST_GIT_ENV, type TempGitRepo } from './test-repo'
+import { repositoryPaths } from '../repository/service'
+import { createWorkspaceWithRepository } from '../repository/test-support'
 
 let database: PlatformDatabase
 let repo: TempGitRepo
 let data: TempDataDir
 let pool: WorktreePool
-let project: Project
+let project: Workspace
 
 const holder = (id: string): WorktreeHolder => ({ kind: 'session', id })
 const gitRunner = createGitRunner({ env: TEST_GIT_ENV })
 
 async function setUp({ remote = true, maxPerProject = 4 }: { remote?: boolean, maxPerProject?: number } = {}) {
   repo = createTempGitRepo({ remote })
-  project = await createProject(database.db, { name: 'alpha', source: { kind: 'local-path', path: repo.clone } })
-  pool = createWorktreePool({ db: database.db, paths: { worktrees: join(data.root, 'worktrees') }, git: gitRunner }, { maxPerProject })
+  project = await createWorkspaceWithRepository(database.db, { name: 'alpha', path: repo.clone })
+  pool = createWorktreePool({ db: database.db, repository: repositoryPaths(database.db), paths: { worktrees: join(data.root, 'worktrees') }, git: gitRunner }, { maxPerProject })
 }
 
 function cloneState() {
@@ -141,7 +143,7 @@ describe('acquire', () => {
     expect(await failure(pool.acquire({ projectId: project.id, holder: holder('s1'), baseBranch: '-x', branchName: 'ok' }))).toMatchObject({ code: 'invalid_request' })
     expect(await failure(pool.acquire({ projectId: project.id, holder: holder('s1'), baseBranch: 'nope' }))).toMatchObject({ code: 'base_branch_not_found' })
     expect(await failure(pool.acquire({ projectId: 'missing', holder: holder('s1'), baseBranch: 'main' }))).toMatchObject({ code: 'not_found' })
-    const plain = await createProject(database.db, { name: 'plain', source: { kind: 'local-path', path: repo.root } })
+    const plain = await createWorkspaceWithRepository(database.db, { name: 'plain', path: repo.root })
     expect(await failure(pool.acquire({ projectId: plain.id, holder: holder('s1'), baseBranch: 'main' }))).toMatchObject({ code: 'clone_unavailable' })
     expect(pool.list(project.id)).toEqual([])
   })
@@ -223,7 +225,7 @@ describe('release', () => {
     expect(await pool.release(lease.id, { force: true })).toMatchObject({ state: 'released', unpushedWork: false })
     expect(existsSync(lease.path)).toBe(false)
 
-    deleteProject(database.db, project.slug)
+    deleteWorkspace(database.db, project.slug)
     expect(pool.get(other.id)).toBeNull()
     expect(pool.list(project.id, { includeReleased: true })).toEqual([])
   })
@@ -280,7 +282,7 @@ describe('settings and platform', () => {
     try {
       const worktrees = platform.runtime.services('bots').get(BOT_WORKTREES)
       repo = createTempGitRepo()
-      const created = await createProject(platform.db, { name: 'beta', source: { kind: 'local-path', path: repo.clone } })
+      const created = await createWorkspaceWithRepository(platform.db, { name: 'beta', path: repo.clone })
       const lease = await worktrees.acquire({ projectId: created.id, holder: holder('s1'), baseBranch: 'main' })
       expect(lease.path).toBe(join(platform.paths.worktrees, created.id, lease.id))
       expect(await failure(worktrees.acquire({ projectId: created.id, holder: holder('s2'), baseBranch: 'main' }))).toMatchObject({ code: 'cap_reached' })

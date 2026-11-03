@@ -1,6 +1,6 @@
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { chatAgentOptionsPath, projectRegistryPath, projectThreadPath, projectThreadsPath, threadCancelPath, threadPromptPath, threadReadPath, type Actor, type AgentSessionEvent, type AgentSessionEventKind, type ApiErrorBody, type ChatAgentOptionsResponse, type ChatThread, type ChatThreadListResponse, type ChatThreadPromptResponse, type ChatThreadResponse, type PluginTypeId, type Project, type RegistryResponse } from '@candy-mountain/shared'
+import { chatAgentOptionsPath, workspaceRegistryPath, workspaceThreadPath, workspaceThreadsPath, threadCancelPath, threadPromptPath, threadReadPath, type Actor, type AgentSessionEvent, type AgentSessionEventKind, type ApiErrorBody, type ChatAgentOptionsResponse, type ChatThread, type ChatThreadListResponse, type ChatThreadPromptResponse, type ChatThreadResponse, type PluginTypeId, type Workspace, type RegistryResponse } from '@candy-mountain/shared'
 import { eq } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { FAKE_ACP_AGENT, fakeBins, fakeClaude } from '../acp/test-support'
@@ -10,12 +10,13 @@ import type { AuthStrategy } from '../auth'
 import { pluginInstances } from '../db/schema'
 import { addRole } from '../grants/test-access'
 import { createPluginInstance } from '../plugins/instances/instances'
-import { setEnabledModules } from '../project-modules/enablement'
-import { createProject, sourcePath } from '../projects/projects'
+import { setEnabledModules } from '../workspace-modules/enablement'
+import { repositoryPaths } from '../repository/service'
 import { startAcpPlatform, type AcpPlatform } from '../chat-claude-code/test-support'
 import type { SessionManager, SessionMessage } from '../sessions'
 import { createTempDataDir, type TempDataDir } from '../testing'
 import { threadTitle } from './service'
+import { createWorkspaceWithRepository } from '../repository/test-support'
 
 let temp: TempDataDir | undefined
 let platform: AcpPlatform | undefined
@@ -58,26 +59,26 @@ async function errorOf(res: Response) {
   return { status: res.status, code: ((await res.json()) as ApiErrorBody).error.code }
 }
 
-async function project(p: AcpPlatform, slug = 'alpha'): Promise<Project> {
+async function workspace(p: AcpPlatform, slug = 'alpha'): Promise<Workspace> {
   const path = join(temp!.root, '..', 'repos', slug)
   mkdirSync(path, { recursive: true })
-  const created = await createProject(p.db, { name: slug, slug, source: { kind: 'local-path', path } })
+  const created = await createWorkspaceWithRepository(p.db, { name: slug, slug, path })
   setEnabledModules(p.db, created.id, ['agent-hub'])
   return created
 }
 
 /** Stands in for a passing connection test: readiness only reads the stored result. */
-function healthyPlugin(p: AcpPlatform, projectId: string, type: PluginTypeId, config: Record<string, unknown> = {}): void {
-  const instance = createPluginInstance({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly }, { type, scope: 'project', projectId, config, secrets: {} })
+function healthyPlugin(p: AcpPlatform, workspaceId: string, type: PluginTypeId, config: Record<string, unknown> = {}): void {
+  const instance = createPluginInstance({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly }, { type, scope: 'workspace', workspaceId, config, secrets: {} })
   p.db.update(pluginInstances).set({ health: { healthy: true }, healthCheckedAt: new Date().toISOString() }).where(eq(pluginInstances.id, instance.id)).run()
 }
 
 async function createThread(p: AcpPlatform, body: unknown, actor: Actor = ADMIN): Promise<ChatThreadResponse> {
-  return json<ChatThreadResponse>(await call(p, 'POST', projectThreadsPath('alpha'), body, actor), 201)
+  return json<ChatThreadResponse>(await call(p, 'POST', workspaceThreadsPath('alpha'), body, actor), 201)
 }
 
 async function getThread(p: AcpPlatform, id: string, actor: Actor = ADMIN): Promise<ChatThreadResponse> {
-  return json<ChatThreadResponse>(await call(p, 'GET', projectThreadPath('alpha', id), undefined, actor), 200)
+  return json<ChatThreadResponse>(await call(p, 'GET', workspaceThreadPath('alpha', id), undefined, actor), 200)
 }
 
 async function until(read: () => Promise<boolean> | boolean, timeoutMs = 10_000): Promise<void> {
@@ -108,8 +109,8 @@ async function grantDeveloper(p: AcpPlatform, rungs: Record<string, string>): Pr
 describe('chat agents in the registry', () => {
   it('lists Claude Code once its plugin is healthy, and Codex once that one is too', async () => {
     const p = boot()
-    const alpha = await project(p)
-    const agents = async () => (await json<RegistryResponse>(await call(p, 'GET', projectRegistryPath('alpha')), 200)).agents
+    const alpha = await workspace(p)
+    const agents = async () => (await json<RegistryResponse>(await call(p, 'GET', workspaceRegistryPath('alpha')), 200)).agents
 
     expect(await agents()).toEqual([])
     healthyPlugin(p, alpha.id, 'claude-code')
@@ -120,11 +121,11 @@ describe('chat agents in the registry', () => {
 
   it('hides an agent from a role below the chat rung', async () => {
     const p = boot()
-    const alpha = await project(p)
+    const alpha = await workspace(p)
     healthyPlugin(p, alpha.id, 'claude-code')
     healthyPlugin(p, alpha.id, 'codex')
     await grantDeveloper(p, { 'chat-claude-code': 'none' })
-    const registry = await json<RegistryResponse>(await call(p, 'GET', projectRegistryPath('alpha'), undefined, DEVELOPER), 200)
+    const registry = await json<RegistryResponse>(await call(p, 'GET', workspaceRegistryPath('alpha'), undefined, DEVELOPER), 200)
     expect(registry.agents.map(agent => agent.id)).toEqual(['codex'])
   })
 })
@@ -132,7 +133,7 @@ describe('chat agents in the registry', () => {
 describe('chat threads', () => {
   it('records a run.started event with the issue ids and a thread link only for runs', async () => {
     const p = boot()
-    const alpha = await project(p)
+    const alpha = await workspace(p)
     healthyPlugin(p, alpha.id, 'codex')
 
     await createThread(p, { agentId: 'codex' })
@@ -145,25 +146,25 @@ describe('chat threads', () => {
       link: `/p/alpha?thread=${run.thread.id}`,
       payload: { threadId: run.thread.id, agentId: 'codex', sessionId: run.session.id, issueIds: ['cm-1', 'cm-2'] },
     })
-    expect((await errorOf(await call(p, 'POST', projectThreadsPath('alpha'), { agentId: 'codex', issueIds: [] }))).code).toBe('invalid_request')
+    expect((await errorOf(await call(p, 'POST', workspaceThreadsPath('alpha'), { agentId: 'codex', issueIds: [] }))).code).toBe('invalid_request')
   })
 
-  it('runs a prompt in a session on the project checkout and tracks working and unread', async () => {
+  it('runs a prompt in a session on the workspace checkout and tracks working and unread', async () => {
     const p = boot()
-    const alpha = await project(p)
+    const alpha = await workspace(p)
     healthyPlugin(p, alpha.id, 'codex')
 
     const created = await createThread(p, { agentId: 'codex' })
     expect(created.thread).toMatchObject({ agentId: 'codex', actorId: ADMIN.id, title: null, model: null, effort: null, unread: false, working: false, currentSessionId: created.session.id })
-    expect(created.session).toMatchObject({ family: 'codex', cwd: sourcePath(alpha.source), actorId: ADMIN.id, posture: null })
+    expect(created.session).toMatchObject({ family: 'codex', cwd: repositoryPaths(p.db).get(alpha.id), actorId: ADMIN.id, posture: null })
     expect(created.sessions.map(s => s.sessionId)).toEqual([created.session.id])
 
     const turnEnd = waitFor(p.sessions, created.session.id, 'turn_end')
     const prompted = await json<ChatThreadPromptResponse>(await call(p, 'POST', threadPromptPath('alpha', created.thread.id), { text: 'hang' }), 202)
     expect(prompted.thread).toMatchObject({ working: true, unread: false, title: 'hang' })
-    expect(p.acpHarness.list().map(session => session.cwd)).toEqual([sourcePath(alpha.source)])
+    expect(p.acpHarness.list().map(session => session.cwd)).toEqual([repositoryPaths(p.db).get(alpha.id)])
 
-    const listed = await json<ChatThreadListResponse>(await call(p, 'GET', projectThreadsPath('alpha')), 200)
+    const listed = await json<ChatThreadListResponse>(await call(p, 'GET', workspaceThreadsPath('alpha')), 200)
     expect(listed.threads.map(t => [t.id, t.working, t.unread])).toEqual([[created.thread.id, true, false]])
 
     const busy = await call(p, 'POST', threadPromptPath('alpha', created.thread.id), { text: 'again' })
@@ -189,7 +190,7 @@ describe('chat threads', () => {
 
   it('stops working and stays read when the sender cancels', async () => {
     const p = boot()
-    const alpha = await project(p)
+    const alpha = await workspace(p)
     healthyPlugin(p, alpha.id, 'codex')
     const { thread } = await createThread(p, { agentId: 'codex', title: 'Pinned title' })
     await json(await call(p, 'POST', threadPromptPath('alpha', thread.id), { text: 'hang' }), 202)
@@ -199,7 +200,7 @@ describe('chat threads', () => {
 
   it('launches Claude Code with the chosen model and effort, and starts a new session when they change', async () => {
     const p = boot()
-    const alpha = await project(p)
+    const alpha = await workspace(p)
     healthyPlugin(p, alpha.id, 'claude-code', { claudePath: fakeClaude(temp!.root) })
 
     const options = await json<ChatAgentOptionsResponse>(await call(p, 'GET', chatAgentOptionsPath('alpha', 'claude-code')), 200)
@@ -216,65 +217,65 @@ describe('chat threads', () => {
     const echoed = p.sessions.events(created.session.id).find(e => e.kind === 'text' && e.text.includes('"args"'))
     const args = (JSON.parse((echoed as { text: string }).text) as { args: string[] }).args
     expect(args).toEqual(expect.arrayContaining(['--model', 'opus', '--settings', '{"effortLevel":"high"}']))
-    expect(p.sessions.get(created.session.id)!.cwd).toBe(sourcePath(alpha.source))
+    expect(p.sessions.get(created.session.id)!.cwd).toBe(repositoryPaths(p.db).get(alpha.id))
 
-    const retitled = await json<ChatThreadResponse>(await call(p, 'PATCH', projectThreadPath('alpha', created.thread.id), { title: 'Renamed' }), 200)
+    const retitled = await json<ChatThreadResponse>(await call(p, 'PATCH', workspaceThreadPath('alpha', created.thread.id), { title: 'Renamed' }), 200)
     expect(retitled.session.id).toBe(created.session.id)
 
-    const switched = await json<ChatThreadResponse>(await call(p, 'PATCH', projectThreadPath('alpha', created.thread.id), { model: 'sonnet', effort: null }), 200)
+    const switched = await json<ChatThreadResponse>(await call(p, 'PATCH', workspaceThreadPath('alpha', created.thread.id), { model: 'sonnet', effort: null }), 200)
     expect(switched.thread).toMatchObject({ title: 'Renamed', model: 'sonnet', effort: null })
     expect(switched.session.id).not.toBe(created.session.id)
     expect(switched.session.posture).toEqual({ flags: ['--model', 'sonnet'] })
     expect(switched.sessions.map(s => [s.sessionId, s.model, s.effort])).toEqual([[created.session.id, 'opus', 'high'], [switched.session.id, 'sonnet', null]])
 
-    expect(await errorOf(await call(p, 'PATCH', projectThreadPath('alpha', created.thread.id), { model: 'gpt-5' }))).toEqual({ status: 400, code: 'invalid_request' })
+    expect(await errorOf(await call(p, 'PATCH', workspaceThreadPath('alpha', created.thread.id), { model: 'gpt-5' }))).toEqual({ status: 400, code: 'invalid_request' })
   })
 
   it('refuses a model or effort change mid-turn and any Codex choice before a Codex session has run', async () => {
     const p = boot()
-    const alpha = await project(p)
+    const alpha = await workspace(p)
     healthyPlugin(p, alpha.id, 'codex')
 
     const options = await json<ChatAgentOptionsResponse>(await call(p, 'GET', chatAgentOptionsPath('alpha', 'codex')), 200)
     expect(options.options).toEqual({ agentId: 'codex', family: 'codex', models: [], efforts: [] })
-    expect(await errorOf(await call(p, 'POST', projectThreadsPath('alpha'), { agentId: 'codex', model: 'gpt-5' }))).toEqual({ status: 400, code: 'invalid_request' })
+    expect(await errorOf(await call(p, 'POST', workspaceThreadsPath('alpha'), { agentId: 'codex', model: 'gpt-5' }))).toEqual({ status: 400, code: 'invalid_request' })
 
     const { thread } = await createThread(p, { agentId: 'codex' })
     await json(await call(p, 'POST', threadPromptPath('alpha', thread.id), { text: 'hang' }), 202)
-    expect(await errorOf(await call(p, 'PATCH', projectThreadPath('alpha', thread.id), { effort: 'high' }))).toEqual({ status: 409, code: 'thread_busy' })
+    expect(await errorOf(await call(p, 'PATCH', workspaceThreadPath('alpha', thread.id), { effort: 'high' }))).toEqual({ status: 409, code: 'thread_busy' })
     await json(await call(p, 'POST', threadCancelPath('alpha', thread.id)), 200)
   })
 
   it('validates input and keeps threads per actor', async () => {
     const p = boot()
-    const alpha = await project(p)
+    const alpha = await workspace(p)
     healthyPlugin(p, alpha.id, 'codex')
     await grantDeveloper(p, {})
 
-    expect(await errorOf(await call(p, 'POST', projectThreadsPath('alpha'), { agentId: 'nobody' }))).toEqual({ status: 404, code: 'not_found' })
-    expect(await errorOf(await call(p, 'POST', projectThreadsPath('alpha'), {}))).toEqual({ status: 400, code: 'invalid_request' })
-    expect(await errorOf(await call(p, 'POST', projectThreadsPath('missing'), { agentId: 'codex' }))).toEqual({ status: 404, code: 'not_found' })
+    expect(await errorOf(await call(p, 'POST', workspaceThreadsPath('alpha'), { agentId: 'nobody' }))).toEqual({ status: 404, code: 'not_found' })
+    expect(await errorOf(await call(p, 'POST', workspaceThreadsPath('alpha'), {}))).toEqual({ status: 400, code: 'invalid_request' })
+    expect(await errorOf(await call(p, 'POST', workspaceThreadsPath('missing'), { agentId: 'codex' }))).toEqual({ status: 404, code: 'not_found' })
 
     const { thread } = await createThread(p, { agentId: 'codex' })
     expect(await errorOf(await call(p, 'POST', threadPromptPath('alpha', thread.id), { text: '  ' }))).toEqual({ status: 400, code: 'invalid_request' })
-    expect(await errorOf(await call(p, 'GET', projectThreadPath('alpha', thread.id), undefined, DEVELOPER))).toEqual({ status: 404, code: 'not_found' })
+    expect(await errorOf(await call(p, 'GET', workspaceThreadPath('alpha', thread.id), undefined, DEVELOPER))).toEqual({ status: 404, code: 'not_found' })
 
     const own = await createThread(p, { agentId: 'codex' }, DEVELOPER)
-    expect((await json<ChatThreadListResponse>(await call(p, 'GET', projectThreadsPath('alpha'), undefined, DEVELOPER), 200)).threads.map(t => t.id)).toEqual([own.thread.id])
-    expect((await json<ChatThreadListResponse>(await call(p, 'GET', projectThreadsPath('alpha', 'codex')), 200)).threads.map(t => t.id)).toEqual([thread.id])
+    expect((await json<ChatThreadListResponse>(await call(p, 'GET', workspaceThreadsPath('alpha'), undefined, DEVELOPER), 200)).threads.map(t => t.id)).toEqual([own.thread.id])
+    expect((await json<ChatThreadListResponse>(await call(p, 'GET', workspaceThreadsPath('alpha', 'codex')), 200)).threads.map(t => t.id)).toEqual([thread.id])
   })
 
   it('refuses an actor below the chat rung on every route', async () => {
     const p = boot()
-    const alpha = await project(p)
+    const alpha = await workspace(p)
     healthyPlugin(p, alpha.id, 'claude-code')
     const { thread } = await createThread(p, { agentId: 'claude-code' })
     await grantDeveloper(p, { 'chat-claude-code': 'none', 'chat-codex': 'none' })
 
     const refused = [
-      await call(p, 'GET', projectThreadsPath('alpha'), undefined, DEVELOPER),
-      await call(p, 'GET', projectThreadsPath('alpha', 'claude-code'), undefined, DEVELOPER),
-      await call(p, 'POST', projectThreadsPath('alpha'), { agentId: 'claude-code' }, DEVELOPER),
+      await call(p, 'GET', workspaceThreadsPath('alpha'), undefined, DEVELOPER),
+      await call(p, 'GET', workspaceThreadsPath('alpha', 'claude-code'), undefined, DEVELOPER),
+      await call(p, 'POST', workspaceThreadsPath('alpha'), { agentId: 'claude-code' }, DEVELOPER),
       await call(p, 'GET', chatAgentOptionsPath('alpha', 'claude-code'), undefined, DEVELOPER),
     ]
     for (const res of refused) expect(await errorOf(res)).toEqual({ status: 403, code: 'not_granted' })
@@ -284,8 +285,8 @@ describe('chat threads', () => {
     const own = await createThread(p, { agentId: 'claude-code' }, DEVELOPER)
     await json(await call(p, 'PUT', '/grants', { role: 'developer', target: { kind: 'module', id: 'agent-hub' }, rungs: { 'chat-claude-code': 'none' } }), 200)
     for (const [method, path, body] of [
-      ['GET', projectThreadPath('alpha', own.thread.id)],
-      ['PATCH', projectThreadPath('alpha', own.thread.id), { title: 'x' }],
+      ['GET', workspaceThreadPath('alpha', own.thread.id)],
+      ['PATCH', workspaceThreadPath('alpha', own.thread.id), { title: 'x' }],
       ['POST', threadReadPath('alpha', own.thread.id)],
       ['POST', threadPromptPath('alpha', own.thread.id), { text: 'hi' }],
       ['POST', threadCancelPath('alpha', own.thread.id)],
@@ -297,7 +298,7 @@ describe('chat threads', () => {
 
   it('refuses chat once the plugin is no longer ready', async () => {
     const p = boot()
-    const alpha = await project(p)
+    const alpha = await workspace(p)
     healthyPlugin(p, alpha.id, 'codex')
     const { thread } = await createThread(p, { agentId: 'codex' })
     p.db.update(pluginInstances).set({ health: { healthy: false, reason: 'logged out' } }).run()
@@ -307,7 +308,7 @@ describe('chat threads', () => {
 
 describe('Codex models and reasoning effort', () => {
   const optionsOf = async (p: AcpPlatform) => (await json<ChatAgentOptionsResponse>(await call(p, 'GET', chatAgentOptionsPath('alpha', 'codex')), 200)).options
-  const patch = (p: AcpPlatform, id: string, body: unknown) => call(p, 'PATCH', projectThreadPath('alpha', id), body)
+  const patch = (p: AcpPlatform, id: string, body: unknown) => call(p, 'PATCH', workspaceThreadPath('alpha', id), body)
   async function turn(p: AcpPlatform, thread: ChatThreadResponse, text: string): Promise<string[]> {
     const ended = waitFor(p.sessions, thread.session.id, 'turn_end')
     await json(await call(p, 'POST', threadPromptPath('alpha', thread.thread.id), { text }), 202)
@@ -317,7 +318,7 @@ describe('Codex models and reasoning effort', () => {
 
   it('offers what Codex listed once a session ran and launches a new session with the chosen model and effort', async () => {
     const p = boot()
-    const alpha = await project(p)
+    const alpha = await workspace(p)
     healthyPlugin(p, alpha.id, 'codex')
     expect(await optionsOf(p)).toEqual({ agentId: 'codex', family: 'codex', models: [], efforts: [] })
 
@@ -345,7 +346,7 @@ describe('Codex models and reasoning effort', () => {
     expect(await errorOf(await patch(p, first.thread.id, { model: 'gpt-unknown' }))).toEqual({ status: 400, code: 'invalid_request' })
     expect(await errorOf(await patch(p, first.thread.id, { model: 'gpt-fast' }))).toEqual({ status: 400, code: 'invalid_request' })
     expect(await errorOf(await patch(p, first.thread.id, { effort: 'max' }))).toEqual({ status: 400, code: 'invalid_request' })
-    expect(await errorOf(await call(p, 'POST', projectThreadsPath('alpha'), { agentId: 'codex', model: 'gpt-fast', effort: 'xhigh' }))).toEqual({ status: 400, code: 'invalid_request' })
+    expect(await errorOf(await call(p, 'POST', workspaceThreadsPath('alpha'), { agentId: 'codex', model: 'gpt-fast', effort: 'xhigh' }))).toEqual({ status: 400, code: 'invalid_request' })
     const created = await createThread(p, { agentId: 'codex', model: 'gpt-fast', effort: 'low' })
     expect(created.session.posture).toEqual({ codex: { model: 'gpt-fast', reasoningEffort: 'low' } })
     expect(await turn(p, created, 'model')).toEqual(['model:gpt-fast/low'])
@@ -353,7 +354,7 @@ describe('Codex models and reasoning effort', () => {
 
   it('keeps a thread\'s accepted model after a restart empties the list, and offers nothing while Codex is not logged in', async () => {
     let p = boot()
-    const alpha = await project(p)
+    const alpha = await workspace(p)
     healthyPlugin(p, alpha.id, 'codex')
     const first = await createThread(p, { agentId: 'codex' })
     await turn(p, first, 'hello')
@@ -376,7 +377,7 @@ describe('Codex models and reasoning effort', () => {
 describe('threads across a restart', () => {
   it('clears working for a turn the restart cut off and keeps the thread on its session', async () => {
     let p = boot()
-    const alpha = await project(p)
+    const alpha = await workspace(p)
     healthyPlugin(p, alpha.id, 'codex')
     const { thread, session } = await createThread(p, { agentId: 'codex' })
     await json(await call(p, 'POST', threadPromptPath('alpha', thread.id), { text: 'hang' }), 202)

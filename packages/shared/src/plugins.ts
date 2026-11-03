@@ -1,7 +1,7 @@
 export type PluginTypeId = string
 
-/** 'project' instances belong to one project; 'global' instances belong to the platform. */
-export const PLUGIN_SCOPES = ['project', 'global'] as const
+/** 'workspace' instances belong to one workspace; 'global' instances belong to the platform. */
+export const PLUGIN_SCOPES = ['workspace', 'global'] as const
 export type PluginScope = (typeof PLUGIN_SCOPES)[number]
 
 /** Config and secret field names; camelCase so they read naturally as object keys and fit secrets store names. */
@@ -84,7 +84,7 @@ export interface PluginTypeInfo {
   /** Plain-language lines on what the platform can do once this is enabled. */
   reach: readonly string[]
   scopes: readonly PluginScope[]
-  /** At most one instance per owner (a project, or the platform for global). */
+  /** At most one instance per owner (a workspace, or the platform for global). */
   singleInstance: boolean
   configFields: readonly PluginConfigField[]
   secretFields: readonly PluginSecretField[]

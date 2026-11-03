@@ -1,8 +1,8 @@
 import { DECISION_OPTION_KINDS, type AnswerDecisionRequest, type ApiErrorBody, type DecisionListResponse, type DecisionResponse } from '@candy-mountain/shared'
 import { Hono, type Context } from 'hono'
 import type { AppEnv } from '../app'
-import { ProjectError } from '../projects/errors'
-import { getProjectBySlug } from '../projects/projects'
+import { WorkspaceError } from '../workspaces/errors'
+import { getWorkspaceBySlug } from '../workspaces/workspaces'
 import { requireSessionAccess, SessionError, type SessionManager } from '../sessions'
 import { DecisionError } from './errors'
 import { isRecord } from './model'
@@ -24,7 +24,7 @@ export function parseAnswer(body: unknown): AnswerDecisionRequest {
 export function decisionRoutes(sessions: SessionManager, decisions: DecisionService) {
   const app = new Hono<AppEnv>()
   app.onError((error, c) => {
-    if (error instanceof DecisionError || error instanceof SessionError || error instanceof ProjectError) {
+    if (error instanceof DecisionError || error instanceof SessionError || error instanceof WorkspaceError) {
       return c.json<ApiErrorBody>({ error: { code: error.code, message: error.message } }, error.status)
     }
     throw error
@@ -33,7 +33,7 @@ export function decisionRoutes(sessions: SessionManager, decisions: DecisionServ
   function sessionIdOf(c: Context<AppEnv>): string {
     const id = c.req.param('id')!
     const session = sessions.get(id)
-    if (!session || session.projectId !== getProjectBySlug(c.var.db, c.req.param('slug')!).id) throw new SessionError('not_found', `No session with id "${id}" in this project`)
+    if (!session || session.workspaceId !== getWorkspaceBySlug(c.var.db, c.req.param('slug')!).id) throw new SessionError('not_found', `No session with id "${id}" in this project`)
     return id
   }
 

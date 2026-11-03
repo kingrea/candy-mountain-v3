@@ -1,5 +1,5 @@
 <template>
-  <UCard v-if="project && verification">
+  <UCard v-if="repository && verification">
     <template #header>
       <h2 class="font-semibold text-highlighted">
         Repository
@@ -11,7 +11,7 @@
         Path
       </dt>
       <dd class="flex flex-col items-start gap-1">
-        <span class="break-all font-mono text-highlighted">{{ project.source.path }}</span>
+        <span class="break-all font-mono text-highlighted">{{ repository.source.path }}</span>
         <UBadge v-if="!verification.pathExists" color="error" variant="subtle" label="Missing on disk" />
       </dd>
 
@@ -49,7 +49,9 @@
 </template>
 
 <script setup lang="ts">
-const { project } = useSelectedProject()
+const { slug } = useSelectedProject()
 
-const verification = computed(() => project.value?.verification)
+const { repository } = useRepository(slug)
+
+const verification = computed(() => repository.value?.verification)
 </script>

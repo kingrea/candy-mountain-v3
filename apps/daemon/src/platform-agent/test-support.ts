@@ -101,8 +101,8 @@ export function scriptedReply(request: StubGatewayRequest): StubGatewayReply {
     if (typeof result.summary === 'string') return { text: result.summary }
     const views = Array.isArray(result.views) ? result.views.map(view => (isRecord(view) ? String(view.label) : '')).filter(Boolean) : []
     const agents = Array.isArray(result.agents) ? result.agents.map(agent => (isRecord(agent) ? String(agent.label) : '')).filter(Boolean) : []
-    const project = isRecord(result.project) ? String(result.project.name) : 'this project'
-    return { text: `In ${project} you can open ${views.length ? views.join(', ') : 'no views'} and chat with ${agents.length ? agents.join(', ') : 'no other agents'}.` }
+    const workspace = isRecord(result.workspace) ? String(result.workspace.name) : 'this project'
+    return { text: `In ${workspace} you can open ${views.length ? views.join(', ') : 'no views'} and chat with ${agents.length ? agents.join(', ') : 'no other agents'}.` }
   }
   const prompt = (last.content ?? '').trim()
   const open = /^open (\S+)/i.exec(prompt)

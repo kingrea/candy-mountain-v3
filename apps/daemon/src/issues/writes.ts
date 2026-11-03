@@ -12,7 +12,6 @@ import type {
   IssueDetail,
   UpdateIssueRequest,
 } from '@candy-mountain/shared'
-import { sourcePath } from '../projects'
 import { runBd, type BdRunner } from './bd-runner'
 import { editCommentInDolt, type CommentEditor } from './comment-edit'
 import { IssueError } from './errors'
@@ -62,7 +61,7 @@ export function createIssueWriter(options: IssueWriterOptions = {}): IssueWriter
 
   async function write<T>(project: IssueProject, work: (cwd: string) => Promise<T>): Promise<T> {
     try {
-      return await work(sourcePath(project.source))
+      return await work(project.path)
     }
     finally {
       reads.invalidate(project.id)

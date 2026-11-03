@@ -2,7 +2,7 @@ export { BD_TIMEOUT_MS, requireBeadsDirectory, runBd, type BdRunner, type BdRunO
 export { IssueError } from './errors'
 export { ISSUE_WATCHER, issuesDefinition, issuesRoutes, type IssuesOptions } from './definition'
 export { issuesCapability } from './manifest'
-export { issueRoutes } from './routes'
+export { issueProject, issueRoutes } from './routes'
 export { createDoltCommentEditor, editCommentInDolt, type CommentEdit, type CommentEditor } from './comment-edit'
 export { issueWriteRoutes } from './write-routes'
 export { createIssueWriter, issueWriter, type IssueWriter, type IssueWriterOptions } from './writes'

@@ -4,8 +4,8 @@ import { Hono, type Context } from 'hono'
 import type { AppEnv } from '../app'
 import { requireAdmin } from '../auth/admin'
 import { BotError, botProjectId } from '../bots'
-import { ProjectError } from '../projects/errors'
-import { getProjectBySlug } from '../projects/projects'
+import { WorkspaceError } from '../workspaces/errors'
+import { getWorkspaceBySlug } from '../workspaces/workspaces'
 import { SessionError } from '../sessions'
 import { WorktreeError, type WorktreeLease } from '../worktrees'
 import { BotStartError } from './errors'
@@ -51,7 +51,7 @@ export function botSessionRoutes(service: BotSessionService) {
   const admin = requireAdmin()
   app.onError((error, c) => {
     if (error instanceof BotStartError) return c.json<ApiErrorBody>({ error: { code: error.reason, message: error.message } }, error.status)
-    if (error instanceof BotError || error instanceof ProjectError || error instanceof SessionError || error instanceof WorktreeError) {
+    if (error instanceof BotError || error instanceof WorkspaceError || error instanceof SessionError || error instanceof WorktreeError) {
       return c.json<ApiErrorBody>({ error: { code: error.code, message: error.message } }, error.status)
     }
     throw error
@@ -59,7 +59,7 @@ export function botSessionRoutes(service: BotSessionService) {
 
   function botIdOf(c: Context<AppEnv>): string {
     const id = c.req.param('id')!
-    if (botProjectId(c.var.db, id) !== getProjectBySlug(c.var.db, c.req.param('slug')!).id) throw new BotError('not_found', `No bot with id "${id}" in this project`)
+    if (botProjectId(c.var.db, id) !== getWorkspaceBySlug(c.var.db, c.req.param('slug')!).id) throw new BotError('not_found', `No bot with id "${id}" in this project`)
     return id
   }
 

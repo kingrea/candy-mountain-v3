@@ -8,7 +8,7 @@ import {
   type LiveVersionSettingError,
   type LiveVersionSettings,
   type LiveVersionSourceInfo,
-  type Project,
+  type Workspace,
 } from '@candy-mountain/shared'
 import { duplicates } from '../capabilities/manifest'
 import type { PluginInstanceDeps, SecretsReader } from '../plugins/instances/instances'
@@ -18,7 +18,7 @@ export type LiveVersionDeps = PluginInstanceDeps & { secretsReader: SecretsReade
 
 export interface LiveVersionReadContext {
   settings: LiveVersionSettings
-  project: Project
+  project: Workspace
   signal: AbortSignal
   fetch: typeof fetch
   deps: LiveVersionDeps

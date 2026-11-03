@@ -1,6 +1,6 @@
 import {
-  projectBotsPath,
-  projectTeamPath,
+  workspaceBotsPath,
+  workspaceTeamPath,
   type BotListResponse,
   type TeamMemberListResponse,
 } from '@candy-mountain/shared'
@@ -11,11 +11,11 @@ export function useTeam() {
 
   const members = useAsyncData(
     () => teamDataKey(slug.value),
-    () => (slug.value ? $api<TeamMemberListResponse>(projectTeamPath(slug.value)) : Promise.resolve({ members: [] })),
+    () => (slug.value ? $api<TeamMemberListResponse>(workspaceTeamPath(slug.value)) : Promise.resolve({ members: [] })),
   )
   const bots = useAsyncData(
     () => teamBotsDataKey(slug.value),
-    () => (slug.value ? $api<BotListResponse>(projectBotsPath(slug.value)) : Promise.resolve({ bots: [] })),
+    () => (slug.value ? $api<BotListResponse>(workspaceBotsPath(slug.value)) : Promise.resolve({ bots: [] })),
   )
 
   return {

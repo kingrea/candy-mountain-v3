@@ -45,7 +45,7 @@ export interface BotSessionWarning {
   message: string
 }
 
-/** Body of `POST /projects/:slug/bots/:id/sessions`; `threadId` resumes the console thread that holds a session. */
+/** Body of `POST /workspaces/:slug/bots/:id/sessions`; `threadId` resumes the console thread that holds a session. */
 export interface BotSessionStartRequest {
   threadId?: string
 }
@@ -75,5 +75,5 @@ export const BOT_AGENT_ID_PREFIX = 'bot:'
 export const botAgentId = (botId: string) => `${BOT_AGENT_ID_PREFIX}${botId}`
 export const botIdOfAgent = (agentId: string): string | null => (agentId.startsWith(BOT_AGENT_ID_PREFIX) ? agentId.slice(BOT_AGENT_ID_PREFIX.length) || null : null)
 
-export const botSessionsPath = (slug: string, botId: string) => `/projects/${slug}/bots/${botId}/sessions`
+export const botSessionsPath = (slug: string, botId: string) => `/workspaces/${slug}/bots/${botId}/sessions`
 export const botSessionClosePath = (slug: string, botId: string, sessionId: string) => `${botSessionsPath(slug, botId)}/${sessionId}/close`

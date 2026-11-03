@@ -1,16 +1,16 @@
-import { PROJECTS_PATH } from './projects'
+import { WORKSPACES_PATH } from './workspaces'
 
-export function projectIssuesPath(projectSlug: string): string {
-  return `${PROJECTS_PATH}/${encodeURIComponent(projectSlug)}/issues`
+export function workspaceIssuesPath(projectSlug: string): string {
+  return `${WORKSPACES_PATH}/${encodeURIComponent(projectSlug)}/issues`
 }
 
-export function projectIssuePath(projectSlug: string, issueId: string): string {
-  return `${projectIssuesPath(projectSlug)}/${encodeURIComponent(issueId)}`
+export function workspaceIssuePath(projectSlug: string, issueId: string): string {
+  return `${workspaceIssuesPath(projectSlug)}/${encodeURIComponent(issueId)}`
 }
 
 /** Server-sent event stream that emits ISSUE_CHANGED_EVENT whenever the project's issues change on disk. */
-export function projectIssueEventsPath(projectSlug: string): string {
-  return `${projectIssuesPath(projectSlug)}/events`
+export function workspaceIssueEventsPath(projectSlug: string): string {
+  return `${workspaceIssuesPath(projectSlug)}/events`
 }
 
 export const ISSUE_CHANGED_EVENT = 'changed'
@@ -108,20 +108,20 @@ export interface IssueCommentListResponse {
   comments: IssueComment[]
 }
 
-export function projectIssueCommentsPath(projectSlug: string, issueId: string): string {
-  return `${projectIssuePath(projectSlug, issueId)}/comments`
+export function workspaceIssueCommentsPath(projectSlug: string, issueId: string): string {
+  return `${workspaceIssuePath(projectSlug, issueId)}/comments`
 }
 
-export function projectIssueCommentPath(projectSlug: string, issueId: string, commentId: string): string {
-  return `${projectIssueCommentsPath(projectSlug, issueId)}/${encodeURIComponent(commentId)}`
+export function workspaceIssueCommentPath(projectSlug: string, issueId: string, commentId: string): string {
+  return `${workspaceIssueCommentsPath(projectSlug, issueId)}/${encodeURIComponent(commentId)}`
 }
 
-export function projectIssueClosePath(projectSlug: string, issueId: string): string {
-  return `${projectIssuePath(projectSlug, issueId)}/close`
+export function workspaceIssueClosePath(projectSlug: string, issueId: string): string {
+  return `${workspaceIssuePath(projectSlug, issueId)}/close`
 }
 
-export function projectIssuesBulkPath(projectSlug: string): string {
-  return `${projectIssuesPath(projectSlug)}/bulk`
+export function workspaceIssuesBulkPath(projectSlug: string): string {
+  return `${workspaceIssuesPath(projectSlug)}/bulk`
 }
 
 export const ISSUE_COMMENT_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9-]{0,63}$/

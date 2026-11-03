@@ -18,13 +18,13 @@ export function moduleInfo(mod: ModuleDefinition, capabilities: CapabilityRegist
         description: cap.description,
         requiresPlugins: cap.requiresPlugins,
         requiresAnyPlugins: cap.requiresAnyPlugins ?? [],
-        requiresProjectFacts: cap.requiresProjectFacts ?? [],
+        requiresWorkspaceFacts: cap.requiresWorkspaceFacts ?? [],
       }
     }),
   }
 }
 
-// Open to every signed-in actor: definitions carry no project state or secrets.
+// Open to every signed-in actor: definitions carry no workspace state or secrets.
 export function moduleRoutes() {
   const app = new Hono<AppEnv>()
   app.get('/', c => c.json<ModuleListResponse>({ modules: c.var.modules.list().map(mod => moduleInfo(mod, c.var.capabilities)) }))

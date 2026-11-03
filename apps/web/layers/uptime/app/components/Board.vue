@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { projectMonitorPath, type Monitor, type MonitorResponse } from '@candy-mountain/shared'
+import { workspaceMonitorPath, type Monitor, type MonitorResponse } from '@candy-mountain/shared'
 import ProjectsConfirmModal from '~/components/projects/ProjectsConfirmModal.vue'
 
 defineProps<{
@@ -68,7 +68,7 @@ async function toggle(monitor: Monitor, enabled: boolean) {
   actionError.value = null
   toggling.value = new Set([...toggling.value, monitor.id])
   try {
-    await $api<MonitorResponse>(`${projectMonitorPath(slug.value, monitor.id)}/${enabled ? 'enable' : 'disable'}`, { method: 'POST' })
+    await $api<MonitorResponse>(`${workspaceMonitorPath(slug.value, monitor.id)}/${enabled ? 'enable' : 'disable'}`, { method: 'POST' })
     await refresh()
   }
   catch (error) {
@@ -88,7 +88,7 @@ async function remove(monitor: Monitor) {
   if (!confirmed || !slug.value) return
   actionError.value = null
   try {
-    await $api(projectMonitorPath(slug.value, monitor.id), { method: 'DELETE' })
+    await $api(workspaceMonitorPath(slug.value, monitor.id), { method: 'DELETE' })
     toast.add({ title: `Deleted ${monitor.name}`, color: 'success' })
     if (selection.monitorId.value === monitor.id) await selection.clear()
   }

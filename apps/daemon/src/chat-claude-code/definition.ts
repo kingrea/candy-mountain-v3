@@ -1,8 +1,10 @@
+import { REPOSITORY_CAPABILITY_ID } from '@candy-mountain/shared'
 import { createAcpHarness, type AcpHarness, type AcpHarnessOptions } from '../acp'
 import { bindService, defineCapabilityDefinition, serviceKey, type CapabilityDefinition, type CapabilityRuntime } from '../capabilities/definition'
 import { createDecisionService, decisionRoutes, type DecisionService, type DecisionServiceOptions } from '../decisions'
 import { claudeLoginAttempts } from '../plugins/claude-code/login-attempts'
 import { claudeCodePluginType } from '../plugins/types/claude-code'
+import { REPOSITORY_PATHS } from '../repository/definition'
 import { createSessionManager, sessionRoutes, type SessionManager, type SessionManagerOptions } from '../sessions'
 import { THREADS_CAPABILITY_ID } from '../threads/definition'
 import { THREAD_SESSIONS } from '../threads/sessions'
@@ -31,13 +33,14 @@ export function chatClaudeCodeDefinition(options: ChatClaudeCodeOptions = {}): C
   return defineCapabilityDefinition({
     id: chatClaudeCodeCapability.id,
     manifest: chatClaudeCodeCapability,
-    dependsOn: [THREADS_CAPABILITY_ID],
+    dependsOn: [THREADS_CAPABILITY_ID, REPOSITORY_CAPABILITY_ID],
     pluginTypes: [claudeCodePluginType],
     sessionFamilies: [CLAUDE_CODE_FAMILY],
     provides: [ACP_SESSIONS, ACP_HARNESS, ACP_DECISIONS],
     start({ db, paths, secrets, pluginTypes, families, agentMcp, service }) {
       const harness = createAcpHarness(options.acp)
-      const sessions = createSessionManager({ db, paths, pluginTypes, secrets: secrets.writeOnly, secretsReader: secrets, harness, store: service(THREAD_SESSIONS), families, mcpServers: session => agentMcp.serversFor(session) }, options.sessions)
+      const repository = service(REPOSITORY_PATHS)
+      const sessions = createSessionManager({ db, paths, pluginTypes, secrets: secrets.writeOnly, secretsReader: secrets, harness, store: service(THREAD_SESSIONS), families, mcpServers: session => agentMcp.serversFor(session), workingDirectory: repository.find }, options.sessions)
       sessions.registerLauncher(CLAUDE_CODE_FAMILY.id, claudeCodeLauncher)
       const decisions = createDecisionService({ db, sessions }, options.decisions)
       return {

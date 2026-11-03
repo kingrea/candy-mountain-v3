@@ -72,13 +72,13 @@ export function usePlugins() {
 
   const request = useAsyncData(
     () => pluginsDataKey(slug.value),
-    () => $api<PluginInstanceListResponse>(PLUGINS_PATH, { query: slug.value ? { project: slug.value } : undefined }),
+    () => $api<PluginInstanceListResponse>(PLUGINS_PATH, { query: slug.value ? { workspace: slug.value } : undefined }),
   )
 
   const instances = computed(() => request.data.value?.instances ?? [])
   // Nuxt seeds a new key with the previous key's data, so another project's instances are filtered out by slug.
   const projectInstances = computed(() =>
-    instances.value.filter(instance => instance.scope === 'project' && instance.projectSlug === slug.value),
+    instances.value.filter(instance => instance.scope === 'workspace' && instance.workspaceSlug === slug.value),
   )
   const globalInstances = computed(() => instances.value.filter(instance => instance.scope === 'global'))
 

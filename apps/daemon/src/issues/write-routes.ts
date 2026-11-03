@@ -6,10 +6,10 @@ import type {
 } from '@candy-mountain/shared'
 import { Hono, type Context } from 'hono'
 import type { AppEnv } from '../app'
-import { getProjectBySlug } from '../projects'
 import { requireCapability } from '../registry/gate'
+import type { RepositoryPaths } from '../repository/service'
 import { IssueError } from './errors'
-import { onIssueError } from './routes'
+import { issueProject, onIssueError } from './routes'
 import {
   commentId,
   issueId,
@@ -32,11 +32,11 @@ async function readJson(c: Context): Promise<unknown> {
   }
 }
 
-export function issueWriteRoutes(writer: IssueWriter = issueWriter) {
+export function issueWriteRoutes(repository: RepositoryPaths, writer: IssueWriter = issueWriter) {
   const app = new Hono<AppEnv>()
   app.onError(onIssueError)
 
-  const project = (c: Context<AppEnv>) => getProjectBySlug(c.var.db, c.req.param('slug') ?? '')
+  const project = (c: Context<AppEnv>) => issueProject(c.var.db, repository, c.req.param('slug') ?? '')
   const actor = (c: Context<AppEnv>) => c.var.actor.username
   const id = (c: Context<AppEnv>) => issueId(c.req.param('id'))
   const write = requireCapability({ capability: 'issues', tool: 'issues.write' })

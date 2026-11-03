@@ -1,7 +1,7 @@
 import {
   BOT_FAMILIES,
   PLUGINS_PATH,
-  projectBotsPath,
+  workspaceBotsPath,
   type BotFamily,
   botSlackConnectionPath,
   type BotListResponse,
@@ -16,7 +16,7 @@ export function useBots() {
 
   const request = useAsyncData(
     () => botsDataKey(slug.value),
-    () => (slug.value ? $api<BotListResponse>(projectBotsPath(slug.value)) : Promise.resolve({ bots: [] })),
+    () => (slug.value ? $api<BotListResponse>(workspaceBotsPath(slug.value)) : Promise.resolve({ bots: [] })),
   )
 
   return {
@@ -35,7 +35,7 @@ export function useBotsPlugins() {
   const request = useAsyncData(
     () => botsPluginsDataKey(slug.value),
     () => (slug.value
-      ? $api<PluginInstanceListResponse>(PLUGINS_PATH, { query: { project: slug.value } })
+      ? $api<PluginInstanceListResponse>(PLUGINS_PATH, { query: { workspace: slug.value } })
       : Promise.resolve({ instances: [] })),
   )
 

@@ -1,17 +1,19 @@
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { Actor, ApiErrorBody, Project, ProjectAssigneesResponse } from '@candy-mountain/shared'
+import type { Actor, ApiErrorBody, Workspace, ProjectAssigneesResponse } from '@candy-mountain/shared'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createTestApp } from '../testing/platform'
 import type { AuthStrategy } from '../auth'
 import { dataPaths } from '../data-dir'
 import type { PlatformDatabase } from '../db'
 import { issuesRoutes } from '../issues/definition'
-import { setEnabledModules } from '../project-modules'
-import { createProject, deleteProject } from '../projects/projects'
+import { setEnabledModules } from '../workspace-modules'
+import { deleteWorkspace } from '../workspaces/workspaces'
 import { openTestDatabase } from '../testing'
 import { addAssignee, listAssignees } from './service'
+import { repositoryPaths } from '../repository/service'
+import { createWorkspaceWithRepository } from '../repository/test-support'
 
 let database: PlatformDatabase
 let root: string
@@ -25,18 +27,18 @@ afterEach(() => {
   rmSync(root, { recursive: true, force: true })
 })
 
-async function project(name: string, enable = true): Promise<Project> {
-  const created = await createProject(database.db, { name, source: { kind: 'local-path', path: root } })
+async function project(name: string, enable = true): Promise<Workspace> {
+  const created = await createWorkspaceWithRepository(database.db, { name, path: root })
   if (enable) setEnabledModules(database.db, created.id, ['issues'])
   return created
 }
 
 function app(roles = ['admin']) {
   const auth: AuthStrategy = { name: 'development', resolve: (): Actor => ({ id: 'u1', username: 'jack', displayName: 'Jack', roles }) }
-  return createTestApp({ db: database.db, paths: dataPaths('/unused'), auth, runtime: issuesRoutes() })
+  return createTestApp({ db: database.db, paths: dataPaths('/unused'), auth, runtime: issuesRoutes(repositoryPaths(database.db)) })
 }
 const post = (slug: string, body: unknown, roles?: string[]) =>
-  app(roles).request(`/projects/${slug}/assignees`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: typeof body === 'string' ? body : JSON.stringify(body) })
+  app(roles).request(`/workspaces/${slug}/assignees`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: typeof body === 'string' ? body : JSON.stringify(body) })
 
 describe('assignee service', () => {
   it('adds, trims, sorts and de-duplicates case-insensitively', async () => {
@@ -53,7 +55,7 @@ describe('assignee service', () => {
     addAssignee(database.db, alpha.id, 'Ana')
     addAssignee(database.db, beta.id, 'Ben')
     expect(listAssignees(database.db, alpha.id)).toEqual([{ name: 'Ana' }])
-    deleteProject(database.db, 'alpha')
+    deleteWorkspace(database.db, 'alpha')
     expect(listAssignees(database.db, alpha.id)).toEqual([])
     expect(listAssignees(database.db, beta.id)).toEqual([{ name: 'Ben' }])
   })
@@ -66,8 +68,8 @@ describe('assignee routes', () => {
     const created = await post('alpha', { name: 'Ana' })
     expect(created.status).toBe(200)
     expect(await created.json()).toEqual({ assignee: { name: 'Ana' } })
-    expect(await (await app().request('/projects/alpha/assignees')).json() as ProjectAssigneesResponse).toEqual({ assignees: [{ name: 'Ana' }] })
-    expect(await (await app().request('/projects/beta/assignees')).json() as ProjectAssigneesResponse).toEqual({ assignees: [] })
+    expect(await (await app().request('/workspaces/alpha/assignees')).json() as ProjectAssigneesResponse).toEqual({ assignees: [{ name: 'Ana' }] })
+    expect(await (await app().request('/workspaces/beta/assignees')).json() as ProjectAssigneesResponse).toEqual({ assignees: [] })
   })
 
   it('rejects bad bodies and unknown projects', async () => {
@@ -82,10 +84,10 @@ describe('assignee routes', () => {
 
   it('is gated by the issues module and view', async () => {
     await project('off', false)
-    const off = await app().request('/projects/off/assignees')
+    const off = await app().request('/workspaces/off/assignees')
     expect(off.status).toBe(404)
     expect(((await off.json()) as ApiErrorBody).error.code).toBe('not_enabled')
     await project('alpha')
-    expect((await app([]).request('/projects/alpha/assignees')).status).toBe(403)
+    expect((await app([]).request('/workspaces/alpha/assignees')).status).toBe(403)
   })
 })

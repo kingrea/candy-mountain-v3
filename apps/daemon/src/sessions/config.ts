@@ -7,7 +7,7 @@ export const MAX_SESSION_IDLE_TIMEOUT_MS = 7 * 86_400_000
 export interface SessionSettings {
   /** How long a live process may sit without a turn before it is killed; the session itself stays. */
   idleTimeoutMs: number
-  /** Live processes allowed at once across every project; further prompts queue in order. */
+  /** Live processes allowed at once across every workspace; further prompts queue in order. */
   maxLive: number
 }
 

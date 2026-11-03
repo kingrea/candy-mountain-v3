@@ -1,13 +1,14 @@
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { MONITOR_SOURCES_PATH, PROJECTS_PATH, type Actor, type ApiErrorBody, type MonitorSourceListResponse } from '@candy-mountain/shared'
+import { MONITOR_SOURCES_PATH, WORKSPACES_PATH, type Actor, type ApiErrorBody, type MonitorSourceListResponse } from '@candy-mountain/shared'
 import { Hono } from 'hono'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { AgentMcpServerDefinition } from '../agent-mcp/host'
 import type { AppEnv } from '../app'
 import { ensureDataDir } from '../data-dir'
-import type { PlatformDatabase } from '../db'
+import { schema, type PlatformDatabase } from '../db'
+import { ALPHA_MIGRATION_SET } from '../db/fixtures'
 import { fixturePluginType } from '../plugins/fixtures'
 import { openTestDatabase } from '../testing'
 import { monitorRoutes, monitorSourceRoutes, startIncidentTracker, startUptimeScheduler, type IncidentTracker, type UptimeScheduler } from '../uptime'
@@ -19,6 +20,8 @@ import {
   defineCapabilityDefinition,
   dependencyServices,
   isCapabilityDefinition,
+  organisations,
+  workspaces,
   serviceKey,
   type BoundServices,
   type CapabilityDefinition,
@@ -87,11 +90,33 @@ describe('defineCapabilityDefinition', () => {
     rejects(() => fixtureDefinition('chat-codex', { sessionFamilies: [codex, codex] }), "Capability 'chat-codex': registers session family 'codex' more than once.")
   })
 
+  it('rejects a bad or repeated workspace fact declaration naming the capability', () => {
+    const hasBots = { id: 'hasBots', compute: () => true, message: () => 'No bots.' }
+    rejects(() => fixtureDefinition('bots', { workspaceFacts: [{ ...hasBots, id: 'has-bots' }] }), "Capability 'bots': declares invalid workspace fact(s) 'has-bots'; a fact is a camelCase id with compute and message functions.")
+    rejects(() => fixtureDefinition('bots', { workspaceFacts: [{ ...hasBots, compute: true as never }] }), "Capability 'bots': declares invalid workspace fact(s) 'hasBots'")
+    rejects(() => fixtureDefinition('bots', { workspaceFacts: [{ ...hasBots, message: undefined as never }] }), "Capability 'bots': declares invalid workspace fact(s) 'hasBots'")
+    rejects(() => fixtureDefinition('bots', { workspaceFacts: [hasBots, hasBots] }), "Capability 'bots': declares workspace fact 'hasBots' more than once.")
+    expect(() => fixtureDefinition('bots', { workspaceFacts: [hasBots] })).not.toThrow()
+  })
+
   it('rejects bad service keys', () => {
     rejects(() => serviceKey('Bad Key'), "Invalid service key 'Bad Key'")
     rejects(() => fixtureDefinition('slack', { provides: [{ name: 'Bad Key' }] }), "Capability 'slack': provides invalid service key(s) 'Bad Key'.")
     const key = serviceKey('slack.connections')
     rejects(() => fixtureDefinition('slack', { provides: [key, key] }), "Capability 'slack': provides service 'slack.connections' more than once.")
+  })
+
+  it('accepts a schema declaration and re-exports the platform tables a schema may reference', () => {
+    const definition = defineCapabilityDefinition({ id: 'fixture-alpha', schema: { schema: ALPHA_MIGRATION_SET.schema, migrationsFolder: ALPHA_MIGRATION_SET.migrationsFolder } })
+    expect(definition.schema?.migrationsFolder).toBe(ALPHA_MIGRATION_SET.migrationsFolder)
+    expect(workspaces).toBe(schema.workspaces)
+    expect(organisations).toBe(schema.organisations)
+  })
+
+  it('rejects a schema declaration without a schema object or a migrations folder', () => {
+    rejects(() => assertCapabilityDefinition({ id: 'uptime', schema: null as never }), "Capability 'uptime': schema must declare a schema object and a migrations folder.")
+    rejects(() => assertCapabilityDefinition({ id: 'uptime', schema: { schema: undefined as never, migrationsFolder: '/x' } }), "Capability 'uptime': schema.schema must be a Drizzle schema object.")
+    rejects(() => assertCapabilityDefinition({ id: 'uptime', schema: { schema: {}, migrationsFolder: '' } }), "Capability 'uptime': schema.migrationsFolder must be a non-empty path.")
   })
 
   it('rejects a start that is not a function', () => {
@@ -281,13 +306,13 @@ describe('a definition for an existing capability', () => {
       c.set('actor', { id: 'u1', username: 'jack', displayName: 'Jack', roles: ['admin'] } satisfies Actor)
       await next()
     })
-    for (const routes of runtime.workspaceRoutes ?? []) app.route(PROJECTS_PATH, routes)
+    for (const routes of runtime.workspaceRoutes ?? []) app.route(WORKSPACES_PATH, routes)
     for (const { path, routes } of runtime.platformRoutes ?? []) app.route(path, routes)
 
     const sources = await app.request(MONITOR_SOURCES_PATH)
     expect(sources.status).toBe(200)
     expect(((await sources.json()) as MonitorSourceListResponse).sources.length).toBeGreaterThan(0)
-    const monitors = await app.request(`${PROJECTS_PATH}/nope/monitors`)
+    const monitors = await app.request(`${WORKSPACES_PATH}/nope/monitors`)
     expect(monitors.status).toBe(404)
     expect(((await monitors.json()) as ApiErrorBody).error.code).toBe('not_found')
   })

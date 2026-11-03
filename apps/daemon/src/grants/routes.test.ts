@@ -51,7 +51,7 @@ describe('grant routes', () => {
   it('returns error bodies for bad requests', async () => {
     const cases: [unknown, number, string][] = [
       ['{', 400, 'invalid_request'],
-      [{ role: 'developer', target: { kind: 'project', id: 'x' } }, 400, 'invalid_request'],
+      [{ role: 'developer', target: { kind: 'workspace', id: 'x' } }, 400, 'invalid_request'],
       [{ role: 'developer', target: { kind: 'capability', id: 'team' }, rungs: { team: 3 } }, 400, 'invalid_request'],
       [{ role: 'ghost', target: { kind: 'capability', id: 'team' }, rungs: { team: 'read' } }, 422, 'role_not_found'],
       [{ role: 'developer', target: { kind: 'capability', id: 'bots' }, rungs: { bots: 'read' } }, 422, 'target_not_found'],

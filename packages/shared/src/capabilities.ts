@@ -1,7 +1,7 @@
 import type { PluginTypeId } from './plugins'
 import type { AgentSessionFamily } from './sessions'
 
-// Capability, module, plugin type, session family and activity event ids are open strings: the daemon checks
+// Capability, module, plugin type, session family, activity event and fact ids are open strings: the daemon checks
 // them against what it registers at boot, so adding a capability never edits this package.
 export type CapabilityId = string
 
@@ -11,23 +11,24 @@ export const NONE_RUNG = 'none'
 /** Ids of capabilities, modules, views, agents, jobs, tools, rungs, plugin types, session families and activity event types. */
 export const MANIFEST_ID_PATTERN = /^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$/
 
-/** Lowercase segments joined by '/', no leading or trailing slash; '' is the project home. */
+/** Lowercase segments joined by '/', no leading or trailing slash; '' is the workspace home. */
 export const VIEW_PATH_PATTERN = /^(?:[a-z0-9]+(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*)?$/
 
-/** Facts about a project a capability may require; the first three match `PathVerification`. */
-export const PROJECT_FACT_IDS = ['hasBeads', 'isGitRepo', 'hasRemote', 'hasBots'] as const
-export type ProjectFactId = (typeof PROJECT_FACT_IDS)[number]
+/** Fact ids are camelCase keys of a facts record, e.g. 'hasBeads' or 'llmGateway'. */
+export const FACT_ID_PATTERN = /^[a-z][a-zA-Z0-9]*$/
 
-/** Platform-wide facts a capability may require, the same for every project. */
-export const PLATFORM_FACT_IDS = ['llmGateway'] as const
-export type PlatformFactId = (typeof PLATFORM_FACT_IDS)[number]
+/** A fact about a workspace a capability may require, declared by the capability definition that computes it. */
+export type WorkspaceFactId = string
+
+/** A platform-wide fact a capability may require, the same for every workspace; the daemon keeps the list. */
+export type PlatformFactId = string
 
 export interface ViewManifest<V extends string = string> {
   id: V
   label: string
   /** Iconify name, e.g. 'i-lucide-list-todo'. */
   icon: string
-  /** Relative to the selected project's base route. */
+  /** Relative to the selected workspace's base route. */
   path: string
 }
 
@@ -85,15 +86,15 @@ export interface CapabilityManifest<V extends string = string, T extends string 
   description: string
   views: readonly ViewManifest<V>[]
   agents: readonly AgentManifest[]
-  /** The registry adds agents from project data (the project's bots), so a chat rung needs no declared agent. */
-  projectAgents?: boolean
+  /** The registry adds agents from workspace data (the workspace's bots), so a chat rung needs no declared agent. */
+  workspaceAgents?: boolean
   jobs: readonly JobManifest[]
-  /** Plugin type ids; the capability is degraded in a project until each has a healthy instance. */
+  /** Plugin type ids; the capability is degraded in a workspace until each has a healthy instance. */
   requiresPlugins: readonly string[]
   /** Each group is satisfied by a healthy instance of any one of its plugin types. */
   requiresAnyPlugins?: readonly (readonly PluginTypeId[])[]
-  /** Verification facts the project must have before the capability is ready. */
-  requiresProjectFacts?: readonly ProjectFactId[]
+  /** Verification facts the workspace must have before the capability is ready. */
+  requiresWorkspaceFacts?: readonly WorkspaceFactId[]
   /** Platform settings that must be in place before the capability is ready anywhere. */
   requiresPlatformFacts?: readonly PlatformFactId[]
   tools: readonly ToolManifest<T>[]

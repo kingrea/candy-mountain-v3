@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { ASSIGNEE_NAME_MAX_LENGTH, type ProjectAssignee } from '@candy-mountain/shared'
 import { and, asc, eq, sql } from 'drizzle-orm'
 import type { Db } from '../db'
-import { projectAssignees } from '../db/schema'
+import { projectAssignees } from '../issues/schema'
 import { AssigneeError } from './errors'
 
 export function listAssignees(db: Db, projectId: string): ProjectAssignee[] {

@@ -5,11 +5,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fakeBins } from '../acp/test-support'
 import { ACP_SESSIONS, chatClaudeCodeDefinition } from '../chat-claude-code/definition'
 import type { Platform } from '../platform'
-import { createProject } from '../projects/projects'
 import { createTempDataDir, type TempDataDir } from '../testing'
 import { CAPABILITY_DEFINITIONS, startTestPlatform, withoutCapabilities, type TestPlatformOptions } from '../testing/platform'
 import { THREADS_CAPABILITY_ID } from './definition'
 import { THREAD_SESSIONS } from './sessions'
+import { createWorkspaceWithRepository } from '../repository/test-support'
 
 describe('the threads definition', () => {
   let temp: TempDataDir
@@ -33,9 +33,9 @@ describe('the threads definition', () => {
 
   async function session(platform: Platform) {
     checkout = mkdtempSync(join(tmpdir(), 'candy-mountain-threads-'))
-    const project = await createProject(platform.db, { name: 'alpha', slug: 'alpha', source: { kind: 'local-path', path: checkout } })
+    const workspace = await createWorkspaceWithRepository(platform.db, { name: 'alpha', slug: 'alpha', path: checkout })
     const store = platform.runtime.service(THREAD_SESSIONS)!
-    return { store, row: store.create({ projectId: project.id, family: 'platform', actorId: 'actor', cwd: checkout }) }
+    return { store, row: store.create({ workspaceId: workspace.id, family: 'platform', actorId: 'actor', cwd: checkout }) }
   }
 
   it('is the platform\'s own, started first whatever the product lists, and is not a capability of the product', () => {
@@ -48,7 +48,7 @@ describe('the threads definition', () => {
   })
 
   it('keeps rows and in-process turns without any harness, and refuses to prompt a family nothing launches', async () => {
-    const platform = start(withoutCapabilities('chat-claude-code', 'bots', 'chat-codex'))
+    const platform = start(withoutCapabilities('chat-claude-code', 'bots', 'chat-codex', 'team'))
     const { store, row } = await session(platform)
 
     const seen: string[] = []
@@ -56,11 +56,11 @@ describe('the threads definition', () => {
     await store.run(row.id, 'hello', async ({ emit }) => emit({ kind: 'text', role: 'agent', text: 'hi' }))
     await vi.waitFor(() => expect(store.get(row.id)?.status).toBe('idle'))
     expect(seen).toEqual(['prompt', 'status:prompting', 'text', 'turn_end', 'status:idle'])
-    expect(store.configOptions(row.projectId, 'platform')).toEqual([])
+    expect(store.configOptions(row.workspaceId, 'platform')).toEqual([])
 
     await expect(store.prompt(row.id, 'hello')).rejects.toMatchObject({ code: 'family_unavailable', message: 'No agent harness launches Platform agent sessions.' })
     expect(await store.cancel(row.id)).toMatchObject({ id: row.id, status: 'idle' })
-    const driver = { assertPosture: () => {}, prompt: async () => row, cancel: async () => row, configOptions: () => [] }
+    const driver = { assertPosture: () => {}, prompt: async () => row, cancel: async () => row, configOptions: () => [], workingDirectory: () => null }
     store.attach(driver)
     expect(() => store.attach(driver)).toThrow('The session store already has a driver.')
   })

@@ -6,6 +6,7 @@ import { deploymentsDefinition, type DeploymentsOptions } from './deployments/de
 import { issuesDefinition, type IssuesOptions } from './issues/definition'
 import { overviewDefinition } from './overview/definition'
 import { platformAgentDefinition } from './platform-agent/definition'
+import { repositoryDefinition } from './repository/definition'
 import type { PlatformAgentOptions } from './platform-agent/runner'
 import { teamDefinition } from './team/definition'
 import { slackDefinition, type SlackOptions } from './slack/definition'
@@ -24,6 +25,6 @@ export interface CapabilityDefinitionOptions {
 
 /** What the daemon boots from; this module lives outside capabilities/ so a definition's routes can reach the capabilities index without a cycle. */
 export function capabilityDefinitions({ bots, chatClaudeCode, deployments, issues, platformAgent, slack, uptime }: CapabilityDefinitionOptions = {}): readonly CapabilityRegistryEntry[] {
-  return [overviewDefinition(), issuesDefinition(issues), slackDefinition(slack), botsDefinition(bots), teamDefinition(), chatClaudeCodeDefinition(chatClaudeCode), chatCodexDefinition(), uptimeDefinition(uptime), deploymentsDefinition(deployments), platformAgentDefinition(platformAgent)]
+  return [overviewDefinition(), repositoryDefinition(), issuesDefinition(issues), slackDefinition(slack), botsDefinition(bots), teamDefinition(), chatClaudeCodeDefinition(chatClaudeCode), chatCodexDefinition(), uptimeDefinition(uptime), deploymentsDefinition(deployments), platformAgentDefinition(platformAgent)]
 }
 

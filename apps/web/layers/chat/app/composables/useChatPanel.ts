@@ -1,4 +1,4 @@
-import { projectThreadPath, type ChatThreadResponse } from '@candy-mountain/shared'
+import { workspaceThreadPath, type ChatThreadResponse } from '@candy-mountain/shared'
 
 export interface ChatPanelState {
   /** The project the state belongs to; a project switch starts the rail afresh. */
@@ -71,7 +71,7 @@ export function useChatDeepLink() {
       const current = slug.value
       if (typeof value !== 'string' || !current || (state.value.threadId === value && state.value.slug === current)) return
       try {
-        const { thread } = await $api<ChatThreadResponse>(projectThreadPath(current, value))
+        const { thread } = await $api<ChatThreadResponse>(workspaceThreadPath(current, value))
         if (slug.value === current) showThread(thread.agentId, thread.id)
       }
       catch {

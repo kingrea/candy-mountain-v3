@@ -1,4 +1,5 @@
 export * from './compute'
+export * from './facts'
 export * from './gate'
 export * from './load'
 export * from './readiness'

@@ -1,5 +1,5 @@
 import type { AcpObject } from './sessions'
-import { projectSessionPath } from './sessions'
+import { workspaceSessionPath } from './sessions'
 
 export const DECISION_KINDS = ['permission', 'question'] as const
 export type DecisionKind = (typeof DECISION_KINDS)[number]
@@ -90,7 +90,7 @@ export interface DecisionListResponse {
   decisions: Decision[]
 }
 
-export const sessionDecisionsPath = (projectSlug: string, sessionId: string) => `${projectSessionPath(projectSlug, sessionId)}/decisions`
+export const sessionDecisionsPath = (projectSlug: string, sessionId: string) => `${workspaceSessionPath(projectSlug, sessionId)}/decisions`
 export const sessionDecisionPath = (projectSlug: string, sessionId: string, decisionId: string) => `${sessionDecisionsPath(projectSlug, sessionId)}/${encodeURIComponent(decisionId)}`
 
 export const DECISION_ERROR_CODES = ['invalid_request', 'not_found', 'already_answered', 'decision_expired', 'option_not_offered', 'invalid_answer'] as const

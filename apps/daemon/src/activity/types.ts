@@ -1,4 +1,5 @@
-import { MANIFEST_ID_PATTERN } from '@candy-mountain/shared'
+import { MANIFEST_ID_PATTERN, type ActivityEvent, type ActivityEventTypeInfo, type NotificationKindInfo } from '@candy-mountain/shared'
+import type { CapabilityDefinition } from '../capabilities/definition'
 import { duplicates } from '../capabilities/manifest'
 import type { Db } from '../db'
 
@@ -10,34 +11,84 @@ export class ActivityEventTypeError extends Error {
   }
 }
 
-/** The types the daemon emits today. */
-export const ACTIVITY_EVENT_TYPES: readonly string[] = [
-  'session.started',
-  'run.started',
-  'bot.handoff',
-  'incident.opened',
-  'incident.closed',
-  'deploy.attempted',
-]
+/** A kind of notification a rule can be saved for, raised by events of the type that declares it. */
+export interface NotificationKindDeclaration {
+  id: string
+  /** What the rules page shows, e.g. 'A bot finishes'. */
+  label: string
+  /** For a type that raises more than one kind; absent means every event of the type raises this one. */
+  matches?(payload: Record<string, unknown> | null): boolean
+}
+
+/** An event type a capability emits, declared on its definition. */
+export interface ActivityEventTypeDeclaration {
+  id: string
+  /** What the activity filters show, e.g. 'Incident opened'. */
+  label: string
+  /** An Iconify name; the web uses its fallback icon when absent. */
+  icon?: string
+  notifications?: readonly NotificationKindDeclaration[]
+}
 
 export interface ActivityEventTypeRegistry {
   /** In registration order. */
   list(): readonly string[]
   has(type: string): boolean
+  /** In registration order, as the web reads them. */
+  info(): readonly ActivityEventTypeInfo[]
+  /** In registration order. */
+  notificationKinds(): readonly NotificationKindInfo[]
+  hasNotificationKind(kind: string): boolean
+  /** The first declared kind the event raises, or null. */
+  notificationKindOf(event: Pick<ActivityEvent, 'type' | 'payload'>): string | null
 }
 
-export function createActivityEventTypeRegistry(types: readonly string[]): ActivityEventTypeRegistry {
-  const bad = types.filter(type => typeof type !== 'string' || !MANIFEST_ID_PATTERN.test(type))
-  if (bad.length) throw new ActivityEventTypeError(`Invalid activity event type(s) ${bad.map(t => `'${String(t)}'`).join(', ')}; types are lowercase letters and digits joined by '-', '_' or '.'.`)
+const isId = (value: unknown): value is string => typeof value === 'string' && MANIFEST_ID_PATTERN.test(value)
+const isLabel = (value: unknown): value is string => typeof value === 'string' && value.trim() !== ''
+const quoted = (values: readonly unknown[]) => values.map(v => `'${String(v)}'`).join(', ')
+
+export function createActivityEventTypeRegistry(declarations: readonly ActivityEventTypeDeclaration[]): ActivityEventTypeRegistry {
+  const types = declarations.map(d => d?.id)
+  const bad = types.filter(type => !isId(type))
+  if (bad.length) throw new ActivityEventTypeError(`Invalid activity event type(s) ${quoted(bad)}; types are lowercase letters and digits joined by '-', '_' or '.'.`)
   const dup = duplicates(types)
-  if (dup.length) throw new ActivityEventTypeError(`Duplicate activity event type(s): ${dup.map(t => `'${t}'`).join(', ')}.`)
+  if (dup.length) throw new ActivityEventTypeError(`Duplicate activity event type(s): ${quoted(dup)}.`)
+  const unlabelled = declarations.filter(d => !isLabel(d.label))
+  if (unlabelled.length) throw new ActivityEventTypeError(`Activity event type(s) ${quoted(unlabelled.map(d => d.id))} need a label.`)
+  const badIcons = declarations.filter(d => d.icon !== undefined && !isLabel(d.icon))
+  if (badIcons.length) throw new ActivityEventTypeError(`Activity event type(s) ${quoted(badIcons.map(d => d.id))} have an empty icon.`)
+
+  const kinds = declarations.flatMap(d => (d.notifications ?? []).map(kind => ({ type: d.id, kind })))
+  const badKinds = kinds.filter(({ kind }) => !isId(kind?.id))
+  if (badKinds.length) throw new ActivityEventTypeError(`Invalid notification kind(s) ${quoted(badKinds.map(({ kind }) => kind?.id))}; kinds are lowercase letters and digits joined by '-', '_' or '.'.`)
+  const dupKinds = duplicates(kinds.map(({ kind }) => kind.id))
+  if (dupKinds.length) throw new ActivityEventTypeError(`Duplicate notification kind(s): ${quoted(dupKinds)}.`)
+  const unlabelledKinds = kinds.filter(({ kind }) => !isLabel(kind.label))
+  if (unlabelledKinds.length) throw new ActivityEventTypeError(`Notification kind(s) ${quoted(unlabelledKinds.map(({ kind }) => kind.id))} need a label.`)
+  const badMatches = kinds.filter(({ kind }) => kind.matches !== undefined && typeof kind.matches !== 'function')
+  if (badMatches.length) throw new ActivityEventTypeError(`Notification kind(s) ${quoted(badMatches.map(({ kind }) => kind.id))}: matches must be a function.`)
 
   const list = Object.freeze([...types])
   const known = new Set(list)
-  return { list: () => list, has: type => known.has(type) }
+  const info = Object.freeze(declarations.map(d => Object.freeze({ id: d.id, label: d.label, icon: d.icon ?? null })))
+  const kindInfo = Object.freeze(kinds.map(({ kind }) => Object.freeze({ id: kind.id, label: kind.label })))
+  const knownKinds = new Set(kindInfo.map(k => k.id))
+  const kindsByType = new Map(declarations.map(d => [d.id, d.notifications ?? []]))
+  return {
+    list: () => list,
+    has: type => known.has(type),
+    info: () => info,
+    notificationKinds: () => kindInfo,
+    hasNotificationKind: kind => knownKinds.has(kind),
+    notificationKindOf: event => (kindsByType.get(event.type) ?? []).find(kind => !kind.matches || kind.matches(event.payload ?? null))?.id ?? null,
+  }
 }
 
-const defaultTypes = createActivityEventTypeRegistry(ACTIVITY_EVENT_TYPES)
+/** Every type the definitions declare, in definition order. */
+export const declaredActivityEventTypes = (definitions: readonly CapabilityDefinition[]): ActivityEventTypeDeclaration[] =>
+  definitions.flatMap(d => d.activityEventTypes ?? [])
+
+const noTypes = createActivityEventTypeRegistry([])
 const registered = new WeakMap<Db, ActivityEventTypeRegistry>()
 
 /** Keyed by database, like append listeners, so emitters deep in services need nothing but the db they already hold. */
@@ -45,5 +96,5 @@ export function registerActivityEventTypes(db: Db, types: ActivityEventTypeRegis
   registered.set(db, types)
 }
 
-/** The daemon's own types for a database the platform did not open (tests on a bare database). */
-export const activityEventTypesFor = (db: Db): ActivityEventTypeRegistry => registered.get(db) ?? defaultTypes
+/** A database the platform did not open has nothing registered, so every append on it is refused. */
+export const activityEventTypesFor = (db: Db): ActivityEventTypeRegistry => registered.get(db) ?? noTypes

@@ -18,7 +18,7 @@ export function useIssuesCreateWithAgent() {
       threadId = created.thread.id
       // Open before prompting so a refused prompt still leaves the thread in view.
       panel.showThread(option.agentId, threadId)
-      await threads.prompt(threadId, issuesSeedCreatePrompt(registry.value?.project.name ?? ''))
+      await threads.prompt(threadId, issuesSeedCreatePrompt(registry.value?.workspace.name ?? ''))
     }
     catch (cause) {
       toast.add({

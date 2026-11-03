@@ -2,19 +2,19 @@ import { mkdirSync } from 'node:fs'
 import { createServer, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { join } from 'node:path'
-import { PLATFORM_AGENT_ID, PLATFORM_SETTINGS_PATH, PROJECTS_PATH, projectRegistryPath, projectThreadsPath, threadPromptPath, type Actor, type AgentSessionEvent, type ApiErrorBody, type ChatThreadResponse, type RegistryResponse } from '@candy-mountain/shared'
+import { PLATFORM_AGENT_ID, PLATFORM_SETTINGS_PATH, WORKSPACES_PATH, workspaceRegistryPath, workspaceThreadsPath, threadPromptPath, type Actor, type AgentSessionEvent, type ApiErrorBody, type ChatThreadResponse, type RegistryResponse } from '@candy-mountain/shared'
 import { Mastra } from '@mastra/core'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { AuthStrategy } from '../auth'
 import { ACP_SESSIONS } from '../chat-claude-code/definition'
 import type { Platform } from '../platform'
-import { createProject } from '../projects/projects'
 import { MasterKey } from '../secrets'
 import { createTempDataDir, type TempDataDir } from '../testing'
 import { createTestApp, startTestPlatform, withoutCapabilities, type TestPlatformOptions } from '../testing/platform'
 import { THREAD_SESSIONS } from '../threads/sessions'
 import { PLATFORM_AGENT, PLATFORM_FAMILY } from './definition'
 import { scriptedReply, startStubGateway, type StubGateway } from './test-support'
+import { createWorkspaceWithRepository } from '../repository/test-support'
 
 const ADMIN: Actor = { id: 'admin-actor', username: 'admin', displayName: 'Admin', roles: ['admin'] }
 const as = (actor: Actor): AuthStrategy => ({ name: 'development', resolve: () => actor })
@@ -68,10 +68,10 @@ describe('the platform-agent definition', () => {
     return res.json() as Promise<T>
   }
 
-  async function project(platform: Platform): Promise<void> {
+  async function workspace(platform: Platform): Promise<void> {
     const path = join(temp.root, '..', 'repos', 'alpha')
     mkdirSync(path, { recursive: true })
-    await createProject(platform.db, { name: 'Alpha', slug: 'alpha', source: { kind: 'local-path', path } })
+    await createWorkspaceWithRepository(platform.db, { name: 'Alpha', slug: 'alpha', path })
   }
 
   const configureGateway = async (call: ReturnType<typeof start>['call'], url: string) => json(await call('PUT', PLATFORM_SETTINGS_PATH, { gatewayBaseUrl: url, gatewayKey: 'sk-stub-key', modelId: 'stub-model' }), 200)
@@ -79,7 +79,7 @@ describe('the platform-agent definition', () => {
   /** Prompts the thread and resolves with the session log once its turn has ended. */
   async function converse(platform: Platform, call: ReturnType<typeof start>['call'], text: string): Promise<AgentSessionEvent[]> {
     const sessions = platform.runtime.service(THREAD_SESSIONS)!
-    const thread = await json<ChatThreadResponse>(await call('POST', projectThreadsPath('alpha'), { agentId: PLATFORM_AGENT_ID }), 201)
+    const thread = await json<ChatThreadResponse>(await call('POST', workspaceThreadsPath('alpha'), { agentId: PLATFORM_AGENT_ID }), 201)
     const ended = new Promise<void>((resolve) => {
       const unsubscribe = sessions.subscribe(thread.session.id, (message) => {
         if (message.type === 'event' && message.event.kind === 'turn_end') {
@@ -114,25 +114,26 @@ describe('the platform-agent definition', () => {
     expect(platform.runtime.service(PLATFORM_AGENT)).toBeUndefined()
     expect(platform.runtime.service(THREAD_SESSIONS)).toBeDefined()
 
-    await project(platform)
+    await workspace(platform)
     gateway = await startStubGateway(scriptedReply)
     await configureGateway(call, gateway.url)
-    const registry = await json<RegistryResponse>(await call('GET', projectRegistryPath('alpha')), 200)
+    const registry = await json<RegistryResponse>(await call('GET', workspaceRegistryPath('alpha')), 200)
     expect(registry.agents).toEqual([])
     expect(registry.capabilities.map(c => c.id)).not.toContain('platform-agent')
-    const refused = await call('POST', projectThreadsPath('alpha'), { agentId: PLATFORM_AGENT_ID })
+    const refused = await call('POST', workspaceThreadsPath('alpha'), { agentId: PLATFORM_AGENT_ID })
     expect(refused.status).toBe(404)
     expect(((await refused.json()) as ApiErrorBody).error.code).toBe('not_found')
   })
 
   it('serves platform agent threads without chat-claude-code, bots or chat-codex', async () => {
-    const { platform, call } = start(withoutCapabilities('chat-claude-code', 'bots', 'chat-codex'))
+    // Team requires the hasBots fact bots declares, so it goes with bots.
+    const { platform, call } = start(withoutCapabilities('chat-claude-code', 'bots', 'chat-codex', 'team'))
 
     expect(platform.runtime.service(ACP_SESSIONS)).toBeUndefined()
     expect(platform.families.ids()).toEqual(['platform'])
-    expect((await call('GET', `${PROJECTS_PATH}/alpha/sessions`)).status).toBe(404)
+    expect((await call('GET', `${WORKSPACES_PATH}/alpha/sessions`)).status).toBe(404)
 
-    await project(platform)
+    await workspace(platform)
     gateway = await startStubGateway(scriptedReply)
     await configureGateway(call, gateway.url)
     const events = await converse(platform, call, 'hello')
@@ -143,13 +144,13 @@ describe('the platform-agent definition', () => {
   })
 
   it('cancels a turn still streaming before Mastra shuts down, and the store closes after both', async () => {
-    const { platform, call } = start(withoutCapabilities('chat-claude-code', 'bots', 'chat-codex'))
+    const { platform, call } = start(withoutCapabilities('chat-claude-code', 'bots', 'chat-codex', 'team'))
     const sessions = platform.runtime.service(THREAD_SESSIONS)!
-    await project(platform)
+    await workspace(platform)
     stalled = await startStalledGateway()
     await configureGateway(call, stalled.url)
 
-    const thread = await json<ChatThreadResponse>(await call('POST', projectThreadsPath('alpha'), { agentId: PLATFORM_AGENT_ID }), 201)
+    const thread = await json<ChatThreadResponse>(await call('POST', workspaceThreadsPath('alpha'), { agentId: PLATFORM_AGENT_ID }), 201)
     await json(await call('POST', threadPromptPath('alpha', thread.thread.id), { text: 'hold on' }), 202)
     await vi.waitFor(() => expect(stalled!.requests).toBe(1))
 

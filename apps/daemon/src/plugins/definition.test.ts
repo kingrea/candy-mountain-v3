@@ -18,7 +18,7 @@ describe('definePluginType', () => {
   })
 
   it('accepts a type supporting both scopes', () => {
-    const type = broken(t => { t.scopes = ['project', 'global'] })
+    const type = broken(t => { t.scopes = ['workspace', 'global'] })
     expect(() => createPluginTypeRegistry([type])).not.toThrow()
   })
 
@@ -42,7 +42,7 @@ describe('definePluginType', () => {
     ['blank name', t => { t.name = ' ' }, 'name and description must not be empty'],
     ['no reach lines', t => { t.reach = [] }, 'at least one reach line'],
     ['unknown scope', t => { t.scopes = ['organisation' as never] }, "unknown scope(s) 'organisation'"],
-    ['duplicate scope', t => { t.scopes = ['project', 'project'] }, "duplicate scope(s) 'project'"],
+    ['duplicate scope', t => { t.scopes = ['workspace', 'workspace'] }, "duplicate scope(s) 'workspace'"],
     ['missing singleInstance', t => { t.singleInstance = undefined as never }, 'singleInstance must be true or false'],
     ['bad field name', t => { t.secretFields[0]!.name = 'api_token' }, "invalid field name(s) 'api_token'"],
     ['config and secret share a name', t => { t.secretFields[0]!.name = 'account' }, "duplicate field name(s) 'account'"],
@@ -64,7 +64,7 @@ describe('definePluginType', () => {
       name: 'Heroku',
       description: 'Heroku apps.',
       reach: ['Read app releases.'],
-      scopes: ['project'],
+      scopes: ['workspace'],
       singleInstance: false,
       configFields: [
         { kind: 'string', name: 'app', label: 'App', required: true },

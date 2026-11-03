@@ -9,7 +9,7 @@
     <div class="flex flex-wrap gap-2 border-b border-default px-4 py-3 sm:px-6" data-testid="overview-activity-filters">
       <USelectMenu
         v-model="types"
-        :items="OVERVIEW_TYPE_ITEMS"
+        :items="activityTypes.items.value"
         value-key="value"
         multiple
         placeholder="All event types"
@@ -81,7 +81,7 @@
 </template>
 
 <script setup lang="ts">
-import { projectActivityPath, type ActivityEvent, type ActivityEventType, type ActivityListResponse } from '@candy-mountain/shared'
+import { workspaceActivityPath, type ActivityEvent, type ActivityEventType, type ActivityListResponse } from '@candy-mountain/shared'
 import { NuxtLink } from '#components'
 
 const { slug } = useSelectedProject()
@@ -93,9 +93,10 @@ const router = useRouter()
 
 const rangeItems = OVERVIEW_RANGES.map(({ value, label }) => ({ value, label }))
 
+const activityTypes = useActivityTypes()
 const types = computed<ActivityEventType[]>({
-  // Only listed types are offered, and the daemon refuses a filter on a type it does not register.
-  get: () => String(route.query.type ?? '').split(',').filter(t => Object.hasOwn(OVERVIEW_EVENT_KINDS, t)),
+  // Only registered types are offered, and the daemon refuses a filter on a type it does not register.
+  get: () => String(route.query.type ?? '').split(',').filter(t => t && (!activityTypes.loaded.value || activityTypes.types.value.some(info => info.id === t))),
   set: value => setQuery({ type: value.length ? value.join(',') : undefined }),
 })
 const range = computed<OverviewRange>({
@@ -127,7 +128,7 @@ watch([types, range], () => {
   now.value = Math.floor(Date.now() / 60_000) * 60_000
 })
 
-const { data, status, error, refresh } = useApi<ActivityListResponse>(() => projectActivityPath(slug.value!), { query: computed(filterQuery) })
+const { data, status, error, refresh } = useApi<ActivityListResponse>(() => workspaceActivityPath(slug.value!), { query: computed(filterQuery) })
 
 const older = ref<ActivityEvent[]>([])
 const olderCursor = ref<string | null>()
@@ -141,14 +142,13 @@ watch(data, () => {
 const events = computed(() => [...(data.value?.events ?? []), ...older.value])
 const cursor = computed(() => (olderCursor.value === undefined ? data.value?.nextCursor ?? null : olderCursor.value))
 
-// Core's fallback words and icon cover a type this layer does not list.
-const kind = (event: ActivityEvent) => OVERVIEW_EVENT_KINDS[event.type] ?? activityEventKind(event.type)
+const kind = (event: ActivityEvent) => activityTypes.kind(event.type)
 
 async function loadOlder() {
   if (!cursor.value || !slug.value) return
   loadingOlder.value = true
   try {
-    const page = await $api<ActivityListResponse>(projectActivityPath(slug.value), { query: { ...filterQuery(), before: cursor.value } })
+    const page = await $api<ActivityListResponse>(workspaceActivityPath(slug.value), { query: { ...filterQuery(), before: cursor.value } })
     older.value = [...older.value, ...page.events]
     olderCursor.value = page.nextCursor
   }

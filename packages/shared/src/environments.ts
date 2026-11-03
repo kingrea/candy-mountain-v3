@@ -1,9 +1,9 @@
 import { validateMonitorOptions, type MonitorOptionError, type MonitorOptionField, type MonitorOptions } from './uptime'
 
 export const LIVE_VERSION_SOURCES_PATH = '/live-version-sources'
-export const projectEnvironmentsPath = (slug: string) => `/projects/${slug}/environments`
-export const projectEnvironmentPath = (slug: string, id: string) => `${projectEnvironmentsPath(slug)}/${id}`
-export const projectLiveVersionsPath = (slug: string) => `/projects/${slug}/live-versions`
+export const workspaceEnvironmentsPath = (slug: string) => `/workspaces/${slug}/environments`
+export const workspaceEnvironmentPath = (slug: string, id: string) => `${workspaceEnvironmentsPath(slug)}/${id}`
+export const workspaceLiveVersionsPath = (slug: string) => `/workspaces/${slug}/live-versions`
 
 export const ENVIRONMENT_NAME_MAX_LENGTH = 100
 export const LIVE_VERSION_SOURCE_ID_PATTERN = /^[a-z][a-z0-9-]*$/

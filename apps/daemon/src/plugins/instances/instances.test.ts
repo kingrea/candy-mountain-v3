@@ -11,7 +11,7 @@ import { PluginInstanceError } from './errors'
 import {
   createPluginInstance,
   deletePluginInstance,
-  deleteProjectPluginInstances,
+  deleteWorkspacePluginInstances,
   findPluginInstance,
   getPluginInstance,
   listPluginInstances,
@@ -41,14 +41,14 @@ const code = (fn: () => unknown) => {
 describe('creating plugin instances', () => {
   it('stores secrets encrypted and only ever reports them as set', async () => {
     h = instanceHarness([fixturePluginType('repository')])
-    const project = await h.createProject('alpha')
-    const created = createPluginInstance(h.deps, { type: 'repository', scope: 'project', projectId: project.id, config, secrets: { token: 'tok-SUPER-secret' } })
+    const workspace = await h.createWorkspace('alpha')
+    const created = createPluginInstance(h.deps, { type: 'repository', scope: 'workspace', workspaceId: workspace.id, config, secrets: { token: 'tok-SUPER-secret' } })
 
-    expect(created).toMatchObject({ type: 'repository', scope: 'project', projectId: project.id, projectSlug: 'alpha', config: { host: 'alpha', account: 'jack' }, secrets: { token: 'set' }, health: null })
+    expect(created).toMatchObject({ type: 'repository', scope: 'workspace', workspaceId: workspace.id, workspaceSlug: 'alpha', config: { host: 'alpha', account: 'jack' }, secrets: { token: 'set' }, health: null })
     const file = join(h.secretsDir, pluginSecretOwner(created.id), 'token.json')
     expect(readFileSync(file, 'utf8')).not.toContain('tok-SUPER-secret')
     expect(h.store.get(pluginSecretOwner(created.id), 'token')).toBe('tok-SUPER-secret')
-    for (const view of [created, getPluginInstance(h.deps, created.id), ...listPluginInstances(h.deps, { projectId: project.id })]) {
+    for (const view of [created, getPluginInstance(h.deps, created.id), ...listPluginInstances(h.deps, { workspaceId: workspace.id })]) {
       expect(JSON.stringify(view)).not.toContain('tok-SUPER-secret')
       expect(view.secrets).toEqual({ token: 'set' })
     }
@@ -56,57 +56,57 @@ describe('creating plugin instances', () => {
 
   it('rejects a scope the type does not support', async () => {
     h = instanceHarness([fixturePluginType('repository'), slackPluginType])
-    const project = await h.createProject('alpha')
-    expect(code(() => createPluginInstance(h.deps, { type: 'repository', scope: 'global', projectId: null, config, secrets: { token: 't' } }))).toBe('unsupported_scope')
-    expect(code(() => createPluginInstance(h.deps, { type: 'slack', scope: 'project', projectId: project.id, secrets: { botToken: 'xoxb-1' } }))).toBe('unsupported_scope')
-    expect(createPluginInstance(h.deps, { type: 'slack', scope: 'global', projectId: null, secrets: { botToken: 'xoxb-1' } }).scope).toBe('global')
-    expect(listPluginInstances(h.deps, { projectId: project.id }).map(i => i.type)).toEqual(['slack'])
+    const workspace = await h.createWorkspace('alpha')
+    expect(code(() => createPluginInstance(h.deps, { type: 'repository', scope: 'global', workspaceId: null, config, secrets: { token: 't' } }))).toBe('unsupported_scope')
+    expect(code(() => createPluginInstance(h.deps, { type: 'slack', scope: 'workspace', workspaceId: workspace.id, secrets: { botToken: 'xoxb-1' } }))).toBe('unsupported_scope')
+    expect(createPluginInstance(h.deps, { type: 'slack', scope: 'global', workspaceId: null, secrets: { botToken: 'xoxb-1' } }).scope).toBe('global')
+    expect(listPluginInstances(h.deps, { workspaceId: workspace.id }).map(i => i.type)).toEqual(['slack'])
   })
 
   it('allows one instance per owner for single-instance types', async () => {
     h = instanceHarness([fixturePluginType('repository'), slackPluginType, multiPluginType()])
-    const [alpha, beta] = [await h.createProject('alpha'), await h.createProject('beta')]
-    const repo = (projectId: string) => createPluginInstance(h.deps, { type: 'repository', scope: 'project', projectId, config, secrets: { token: 't' } })
+    const [alpha, beta] = [await h.createWorkspace('alpha'), await h.createWorkspace('beta')]
+    const repo = (workspaceId: string) => createPluginInstance(h.deps, { type: 'repository', scope: 'workspace', workspaceId, config, secrets: { token: 't' } })
     repo(alpha.id)
     expect(code(() => repo(alpha.id))).toBe('instance_exists')
-    expect(repo(beta.id).projectId).toBe(beta.id)
+    expect(repo(beta.id).workspaceId).toBe(beta.id)
 
-    createPluginInstance(h.deps, { type: 'slack', scope: 'global', projectId: null, secrets: { botToken: 'x' } })
-    expect(code(() => createPluginInstance(h.deps, { type: 'slack', scope: 'global', projectId: null, secrets: { botToken: 'y' } }))).toBe('instance_exists')
+    createPluginInstance(h.deps, { type: 'slack', scope: 'global', workspaceId: null, secrets: { botToken: 'x' } })
+    expect(code(() => createPluginInstance(h.deps, { type: 'slack', scope: 'global', workspaceId: null, secrets: { botToken: 'y' } }))).toBe('instance_exists')
 
-    createPluginInstance(h.deps, { type: 'codex', scope: 'project', projectId: alpha.id })
-    createPluginInstance(h.deps, { type: 'codex', scope: 'project', projectId: alpha.id })
-    expect(listPluginInstances(h.deps, { projectId: alpha.id })).toHaveLength(4)
+    createPluginInstance(h.deps, { type: 'codex', scope: 'workspace', workspaceId: alpha.id })
+    createPluginInstance(h.deps, { type: 'codex', scope: 'workspace', workspaceId: alpha.id })
+    expect(listPluginInstances(h.deps, { workspaceId: alpha.id })).toHaveLength(4)
   })
 
   it('validates config, secrets, owner and type', async () => {
     h = instanceHarness([fixturePluginType('repository')])
-    const project = await h.createProject('alpha')
-    const base = { type: 'repository', scope: 'project' as const, projectId: project.id, secrets: { token: 't' } }
+    const workspace = await h.createWorkspace('alpha')
+    const base = { type: 'repository', scope: 'workspace' as const, workspaceId: workspace.id, secrets: { token: 't' } }
     expect(code(() => createPluginInstance(h.deps, { ...base, config: { account: 'Not Valid!' } }))).toBe('invalid_config')
     expect(code(() => createPluginInstance(h.deps, { ...base, config: {} }))).toBe('invalid_config')
     expect(code(() => createPluginInstance(h.deps, { ...base, config: { ...config, extra: 1 } }))).toBe('invalid_config')
     expect(code(() => createPluginInstance(h.deps, { ...base, config, secrets: {} }))).toBe('invalid_secrets')
     expect(code(() => createPluginInstance(h.deps, { ...base, config, secrets: { token: '' } }))).toBe('invalid_secrets')
     expect(code(() => createPluginInstance(h.deps, { ...base, config, secrets: { token: 't', other: 'x' } }))).toBe('invalid_secrets')
-    expect(code(() => createPluginInstance(h.deps, { ...base, config, projectId: 'missing' }))).toBe('project_not_found')
+    expect(code(() => createPluginInstance(h.deps, { ...base, config, workspaceId: 'missing' }))).toBe('workspace_not_found')
     expect(code(() => createPluginInstance(h.deps, { ...base, config, type: 'heroku' }))).toBe('type_not_found')
-    expect(listPluginInstances(h.deps, { projectId: project.id })).toEqual([])
+    expect(listPluginInstances(h.deps, { workspaceId: workspace.id })).toEqual([])
     expect(existsSync(h.secretsDir) ? readdirSync(h.secretsDir) : []).toEqual([])
   })
 
   it('refuses secret values while the store is locked', async () => {
     h = instanceHarness([fixturePluginType('repository'), multiPluginType()], { locked: true })
-    const project = await h.createProject('alpha')
-    expect(code(() => createPluginInstance(h.deps, { type: 'repository', scope: 'project', projectId: project.id, config, secrets: { token: 't' } }))).toBe('secrets_locked')
-    expect(createPluginInstance(h.deps, { type: 'codex', scope: 'global', projectId: null }).secrets).toEqual({ apiKey: 'unset' })
+    const workspace = await h.createWorkspace('alpha')
+    expect(code(() => createPluginInstance(h.deps, { type: 'repository', scope: 'workspace', workspaceId: workspace.id, config, secrets: { token: 't' } }))).toBe('secrets_locked')
+    expect(createPluginInstance(h.deps, { type: 'codex', scope: 'global', workspaceId: null }).secrets).toEqual({ apiKey: 'unset' })
   })
 })
 
 describe('updating plugin instances', () => {
   it('leaves omitted and empty secrets untouched, replaces given ones and clears null ones', async () => {
     h = instanceHarness([multiPluginType()])
-    const id = createPluginInstance(h.deps, { type: 'codex', scope: 'global', projectId: null, config: { label: 'one' }, secrets: { apiKey: 'first' } }).id
+    const id = createPluginInstance(h.deps, { type: 'codex', scope: 'global', workspaceId: null, config: { label: 'one' }, secrets: { apiKey: 'first' } }).id
     const owner = pluginSecretOwner(id)
 
     expect(updatePluginInstance(h.deps, id, { config: { label: 'two' } })).toMatchObject({ config: { label: 'two' }, secrets: { apiKey: 'set' } })
@@ -121,8 +121,8 @@ describe('updating plugin instances', () => {
 
   it('refuses to clear a required secret and rejects invalid config', async () => {
     h = instanceHarness([fixturePluginType('repository')])
-    const project = await h.createProject('alpha')
-    const id = createPluginInstance(h.deps, { type: 'repository', scope: 'project', projectId: project.id, config, secrets: { token: 't' } }).id
+    const workspace = await h.createWorkspace('alpha')
+    const id = createPluginInstance(h.deps, { type: 'repository', scope: 'workspace', workspaceId: workspace.id, config, secrets: { token: 't' } }).id
     expect(code(() => updatePluginInstance(h.deps, id, { secrets: { token: null } }))).toBe('invalid_secrets')
     expect(code(() => updatePluginInstance(h.deps, id, { config: { host: 'gamma' } }))).toBe('invalid_config')
     expect(code(() => updatePluginInstance(h.deps, 'missing', {}))).toBe('not_found')
@@ -131,7 +131,7 @@ describe('updating plugin instances', () => {
 
   it('clears the stored health on a real change only', async () => {
     h = instanceHarness([multiPluginType()])
-    const id = createPluginInstance(h.deps, { type: 'codex', scope: 'global', projectId: null, config: { label: 'one' } }).id
+    const id = createPluginInstance(h.deps, { type: 'codex', scope: 'global', workspaceId: null, config: { label: 'one' } }).id
     await testPluginInstance(h.deps, id)
     expect(updatePluginInstance(h.deps, id, { config: { label: 'one' } }).health).toMatchObject({ healthy: true })
     expect(updatePluginInstance(h.deps, id, { secrets: { apiKey: 'k' } }).health).toBeNull()
@@ -142,7 +142,7 @@ describe('testing a connection', () => {
   it('records healthy with its time, or the failure reason', async () => {
     let result: PluginHealth = { healthy: true, detail: 'All good.' }
     h = instanceHarness([multiPluginType(() => result)])
-    const id = createPluginInstance(h.deps, { type: 'codex', scope: 'global', projectId: null }).id
+    const id = createPluginInstance(h.deps, { type: 'codex', scope: 'global', workspaceId: null }).id
 
     const healthy = await testPluginInstance(h.deps, id)
     expect(healthy.health).toEqual({ healthy: true, detail: 'All good.', checkedAt: expect.any(String) })
@@ -154,21 +154,21 @@ describe('testing a connection', () => {
 
   it('passes the instance secrets to the check and redacts them from the reason', async () => {
     h = instanceHarness([fixturePluginType('repository')])
-    const project = await h.createProject('alpha')
-    const id = createPluginInstance(h.deps, { type: 'repository', scope: 'project', projectId: project.id, config, secrets: { token: 'tok' } }).id
+    const workspace = await h.createWorkspace('alpha')
+    const id = createPluginInstance(h.deps, { type: 'repository', scope: 'workspace', workspaceId: workspace.id, config, secrets: { token: 'tok' } }).id
     expect((await testPluginInstance(h.deps, id)).health).toMatchObject({ healthy: true })
 
     h.close()
     h = instanceHarness([multiPluginType(({ secrets }) => {
       throw new Error(`vendor said ${secrets.get('apiKey')} is bad`)
     })])
-    const other = createPluginInstance(h.deps, { type: 'codex', scope: 'global', projectId: null, secrets: { apiKey: 'key-123' } }).id
+    const other = createPluginInstance(h.deps, { type: 'codex', scope: 'global', workspaceId: null, secrets: { apiKey: 'key-123' } }).id
     expect((await testPluginInstance(h.deps, other)).health).toMatchObject({ healthy: false, reason: 'vendor said [redacted] is bad' })
   })
 
   it('records an unhealthy result when the stored config no longer validates', async () => {
     h = instanceHarness([multiPluginType()])
-    const id = createPluginInstance(h.deps, { type: 'codex', scope: 'global', projectId: null }).id
+    const id = createPluginInstance(h.deps, { type: 'codex', scope: 'global', workspaceId: null }).id
     h.database.db.update(pluginInstances).set({ config: { gone: 'x' } }).where(eq(pluginInstances.id, id)).run()
     expect((await testPluginInstance(h.deps, id)).health).toMatchObject({ healthy: false, reason: expect.stringContaining('no longer valid') })
   })
@@ -180,7 +180,7 @@ describe('testing a connection', () => {
       updatePluginInstance(h.deps, id, { config: { label: 'changed' } })
       return { healthy: true }
     })])
-    id = createPluginInstance(h.deps, { type: 'codex', scope: 'global', projectId: null }).id
+    id = createPluginInstance(h.deps, { type: 'codex', scope: 'global', workspaceId: null }).id
     await expect(testPluginInstance(h.deps, id)).rejects.toMatchObject({ code: 'instance_changed' })
     expect(getPluginInstance(h.deps, id).health).toBeNull()
   })
@@ -189,7 +189,7 @@ describe('testing a connection', () => {
 describe('deleting plugin instances', () => {
   it('removes the row and its secrets', async () => {
     h = instanceHarness([multiPluginType()])
-    const id = createPluginInstance(h.deps, { type: 'codex', scope: 'global', projectId: null, secrets: { apiKey: 'k' } }).id
+    const id = createPluginInstance(h.deps, { type: 'codex', scope: 'global', workspaceId: null, secrets: { apiKey: 'k' } }).id
     expect(existsSync(join(h.secretsDir, pluginSecretOwner(id)))).toBe(true)
     await deletePluginInstance(h.deps, id)
     expect(h.store.isSet(pluginSecretOwner(id), 'apiKey')).toBe(false)
@@ -198,12 +198,12 @@ describe('deleting plugin instances', () => {
     await expect(deletePluginInstance(h.deps, id)).rejects.toMatchObject({ code: 'not_found' })
   })
 
-  it('removes a project\'s instances and secrets but keeps global ones', async () => {
+  it('removes a workspace\'s instances and secrets but keeps global ones', async () => {
     h = instanceHarness([multiPluginType()])
-    const project = await h.createProject('alpha')
-    const own = createPluginInstance(h.deps, { type: 'codex', scope: 'project', projectId: project.id, secrets: { apiKey: 'a' } }).id
-    const global = createPluginInstance(h.deps, { type: 'codex', scope: 'global', projectId: null, secrets: { apiKey: 'g' } }).id
-    expect(await deleteProjectPluginInstances(h.deps, project.id)).toBe(1)
+    const workspace = await h.createWorkspace('alpha')
+    const own = createPluginInstance(h.deps, { type: 'codex', scope: 'workspace', workspaceId: workspace.id, secrets: { apiKey: 'a' } }).id
+    const global = createPluginInstance(h.deps, { type: 'codex', scope: 'global', workspaceId: null, secrets: { apiKey: 'g' } }).id
+    expect(await deleteWorkspacePluginInstances(h.deps, workspace.id)).toBe(1)
     expect(h.store.isSet(pluginSecretOwner(own), 'apiKey')).toBe(false)
     expect(h.store.get(pluginSecretOwner(global), 'apiKey')).toBe('g')
   })
@@ -216,11 +216,11 @@ describe('deleting plugin instances', () => {
         seen.push({ id: instance.id, apiKey: secrets.get('apiKey'), rowExists: findPluginInstance(h.deps, instance.id) !== null, paths })
       },
     }])
-    const project = await h.createProject('alpha')
-    const one = createPluginInstance(h.deps, { type: 'codex', scope: 'global', projectId: null, secrets: { apiKey: 'k' } }).id
-    const two = createPluginInstance(h.deps, { type: 'codex', scope: 'project', projectId: project.id, secrets: { apiKey: 'p' } }).id
+    const workspace = await h.createWorkspace('alpha')
+    const one = createPluginInstance(h.deps, { type: 'codex', scope: 'global', workspaceId: null, secrets: { apiKey: 'k' } }).id
+    const two = createPluginInstance(h.deps, { type: 'codex', scope: 'workspace', workspaceId: workspace.id, secrets: { apiKey: 'p' } }).id
     await deletePluginInstance(h.deps, one)
-    await deleteProjectPluginInstances(h.deps, project.id)
+    await deleteWorkspacePluginInstances(h.deps, workspace.id)
     expect(seen).toEqual([
       { id: one, apiKey: 'k', rowExists: true, paths: h.deps.paths },
       { id: two, apiKey: 'p', rowExists: true, paths: h.deps.paths },
@@ -229,10 +229,10 @@ describe('deleting plugin instances', () => {
 
   it('keeps the instance when the onDelete hook throws', async () => {
     h = instanceHarness([{ ...multiPluginType(), onDelete: () => Promise.reject(new Error('disk says no')) }])
-    const project = await h.createProject('alpha')
-    const id = createPluginInstance(h.deps, { type: 'codex', scope: 'project', projectId: project.id, secrets: { apiKey: 'k' } }).id
+    const workspace = await h.createWorkspace('alpha')
+    const id = createPluginInstance(h.deps, { type: 'codex', scope: 'workspace', workspaceId: workspace.id, secrets: { apiKey: 'k' } }).id
     await expect(deletePluginInstance(h.deps, id)).rejects.toThrow('disk says no')
-    await expect(deleteProjectPluginInstances(h.deps, project.id)).rejects.toThrow('disk says no')
+    await expect(deleteWorkspacePluginInstances(h.deps, workspace.id)).rejects.toThrow('disk says no')
     expect(getPluginInstance(h.deps, id).secrets).toEqual({ apiKey: 'set' })
   })
 })
@@ -240,7 +240,7 @@ describe('deleting plugin instances', () => {
 describe('refreshing and resetting stored health', () => {
   it('stores the check like a test, returns null when the instance is gone, and resets', async () => {
     h = instanceHarness([multiPluginType(() => ({ healthy: true, detail: 'ok' }))])
-    const id = createPluginInstance(h.deps, { type: 'codex', scope: 'global', projectId: null }).id
+    const id = createPluginInstance(h.deps, { type: 'codex', scope: 'global', workspaceId: null }).id
     expect(await refreshPluginInstanceHealth(h.deps, id)).toEqual({ healthy: true, detail: 'ok', checkedAt: expect.any(String) })
     expect(getPluginInstance(h.deps, id).health).toMatchObject({ healthy: true })
     resetPluginInstanceHealth(h.deps, id)
@@ -250,12 +250,12 @@ describe('refreshing and resetting stored health', () => {
   })
 })
 
-describe('resolving a project\'s instance of a type', () => {
-  it('prefers the project\'s own instance and falls back to the global one', async () => {
+describe('resolving a workspace\'s instance of a type', () => {
+  it('prefers the workspace\'s own instance and falls back to the global one', async () => {
     h = instanceHarness([multiPluginType(), fixturePluginType('repository')])
-    const [alpha, beta] = [await h.createProject('alpha'), await h.createProject('beta')]
-    const global = createPluginInstance(h.deps, { type: 'codex', scope: 'global', projectId: null }).id
-    const own = createPluginInstance(h.deps, { type: 'codex', scope: 'project', projectId: alpha.id }).id
+    const [alpha, beta] = [await h.createWorkspace('alpha'), await h.createWorkspace('beta')]
+    const global = createPluginInstance(h.deps, { type: 'codex', scope: 'global', workspaceId: null }).id
+    const own = createPluginInstance(h.deps, { type: 'codex', scope: 'workspace', workspaceId: alpha.id }).id
     expect(resolvePluginInstance(h.deps, alpha.id, 'codex')?.id).toBe(own)
     expect(resolvePluginInstance(h.deps, beta.id, 'codex')?.id).toBe(global)
     expect(resolvePluginInstance(h.deps, beta.id, 'repository')).toBeNull()

@@ -52,12 +52,12 @@ export function modulePluginNeeds(mod: ModuleInfo, types: readonly PluginTypeInf
 
 // Mirrors the daemon's readiness: the project's own instance wins, else the platform's, judged on stored health only.
 export function pluginHealth(typeId: string, types: readonly PluginTypeInfo[], instances: readonly PluginInstance[]): PluginHealthSummary {
-  const instance = instances.find(candidate => candidate.type === typeId && candidate.scope === 'project')
+  const instance = instances.find(candidate => candidate.type === typeId && candidate.scope === 'workspace')
     ?? instances.find(candidate => candidate.type === typeId && candidate.scope === 'global')
   if (!instance) return { state: 'missing', scope: null, detail: `Not configured for this ${SCOPE.singular} or the platform.` }
 
   const { scope } = instance
-  const owner = scope === 'project' ? `This ${SCOPE.singular}'s instance` : 'The platform instance'
+  const owner = scope === 'workspace' ? `This ${SCOPE.singular}'s instance` : 'The platform instance'
   const missing = (types.find(type => type.id === typeId)?.secretFields ?? [])
     .filter(field => field.required && instance.secrets[field.name] !== 'set')
     .map(field => field.label)

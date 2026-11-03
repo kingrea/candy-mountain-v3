@@ -1,12 +1,15 @@
-import type { Issue, IssueComment, IssueDependency, IssueDetail, Project } from '@candy-mountain/shared'
-import { sourcePath } from '../projects'
+import type { Issue, IssueComment, IssueDependency, IssueDetail } from '@candy-mountain/shared'
 import { runBd, type BdRunner } from './bd-runner'
 import { IssueError } from './errors'
 import { asArray, toComment, toDependencies, toDependency, toFields, toLink } from './mapping'
 
 export const ISSUE_LIST_TTL_MS = 3000
 
-export type IssueProject = Pick<Project, 'id' | 'source'>
+/** A workspace and the checkout bd runs in, resolved by the routes through the repository service. */
+export interface IssueProject {
+  id: string
+  path: string
+}
 
 export interface IssuesService {
   list(project: IssueProject): Promise<Issue[]>
@@ -56,7 +59,7 @@ export function createIssuesService(options: IssuesServiceOptions = {}): IssuesS
   }
 
   function snapshot(project: IssueProject): Promise<Snapshot> {
-    const cwd = sourcePath(project.source)
+    const cwd = project.path
     const cached = cache.get(project.id)
     if (cached && cached.cwd === cwd && (cached.settledAt === null || now() - cached.settledAt < ttlMs)) {
       return cached.snapshot
@@ -88,7 +91,7 @@ export function createIssuesService(options: IssuesServiceOptions = {}): IssuesS
     },
 
     async show(project, id) {
-      const cwd = sourcePath(project.source)
+      const cwd = project.path
       const [shown, dependents, current] = await Promise.all([
         run(cwd, ['show', id]),
         run(cwd, ['dep', 'list', id, '--direction', 'up']),
@@ -105,7 +108,7 @@ export function createIssuesService(options: IssuesServiceOptions = {}): IssuesS
     },
 
     async dependencies(project, ids) {
-      const cwd = sourcePath(project.source)
+      const cwd = project.path
       const unique = [...new Set(ids)]
       if (unique.length === 1) return dependenciesOf(cwd, unique[0]!)
 
@@ -117,7 +120,7 @@ export function createIssuesService(options: IssuesServiceOptions = {}): IssuesS
     },
 
     async comments(project, id) {
-      const rows = asArray(await run(sourcePath(project.source), ['comments', id]), 'bd comments')
+      const rows = asArray(await run(project.path, ['comments', id]), 'bd comments')
       return rows.map(toComment)
     },
 

@@ -32,7 +32,7 @@ describe('defineCapability', () => {
     expect(topRung(cap).name).toBe('read')
   })
 
-  it('accepts the project home as an empty view path', () => {
+  it('accepts the workspace home as an empty view path', () => {
     const cap = valid()
     cap.views[0]!.path = ''
     expect(() => assertCapability(cap)).not.toThrow()
@@ -174,10 +174,16 @@ describe('assertCapability', () => {
     rejects(dup, "duplicate view path(s) 'uptime'.")
   })
 
-  it('accepts known project facts and rejects unknown or repeated ones', () => {
-    expect(() => assertCapability({ ...valid(), requiresProjectFacts: ['hasBeads', 'isGitRepo'] })).not.toThrow()
-    rejects({ ...valid(), requiresProjectFacts: ['hasDocker'] }, "requires unknown project fact(s) 'hasDocker'; facts are 'hasBeads', 'isGitRepo', 'hasRemote', 'hasBots'.")
-    rejects({ ...valid(), requiresProjectFacts: ['hasBeads', 'hasBeads'] }, "repeats required project fact(s) 'hasBeads'.")
+  it('accepts any well-formed workspace fact id and rejects malformed or repeated ones', () => {
+    // Whether a definition declares the fact is a boot check over the list, not a manifest check.
+    expect(() => assertCapability({ ...valid(), requiresWorkspaceFacts: ['hasBeads', 'isGitRepo', 'hasDocker'] })).not.toThrow()
+    rejects({ ...valid(), requiresWorkspaceFacts: ['has docker'] }, "requires invalid workspace fact id(s) 'has docker'; fact ids are camelCase words such as 'hasBeads'.")
+    rejects({ ...valid(), requiresWorkspaceFacts: ['hasBeads', 'hasBeads'] }, "repeats required workspace fact(s) 'hasBeads'.")
+  })
+
+  it('accepts the platform facts the daemon computes and rejects others', () => {
+    expect(() => assertCapability({ ...valid(), requiresPlatformFacts: ['llmGateway'] })).not.toThrow()
+    rejects({ ...valid(), requiresPlatformFacts: ['hasDocker'] }, "requires unknown platform fact(s) 'hasDocker'; facts are 'llmGateway'.")
   })
 
   it('accepts any-of plugin groups and rejects malformed, repeated, single or already required types', () => {

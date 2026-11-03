@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import type { Project } from '@candy-mountain/shared'
+import type { Workspace } from '@candy-mountain/shared'
 import type { DropdownMenuItem } from '@nuxt/ui'
 
 export interface ProjectGroup {
   id: string
   label: string
-  projects: Project[]
+  projects: Workspace[]
 }
 
 defineProps<{
@@ -13,18 +13,22 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
-  edit: [project: Project]
-  verify: [project: Project]
-  archive: [project: Project]
-  unarchive: [project: Project]
-  delete: [project: Project]
+  edit: [project: Workspace]
+  action: [action: ProjectRowAction, project: Workspace]
+  archive: [project: Workspace]
+  unarchive: [project: Workspace]
+  delete: [project: Workspace]
 }>()
 
-function actions(project: Project): DropdownMenuItem[][] {
+const details = projectRowItems('detail')
+const badges = projectRowItems('badges')
+const rowActions = projectRowActions()
+
+function actions(project: Workspace): DropdownMenuItem[][] {
   return [
     [
       { label: 'Edit', icon: 'i-lucide-pencil', onSelect: () => emit('edit', project) },
-      { label: 'Re-check path', icon: 'i-lucide-refresh-cw', onSelect: () => emit('verify', project) },
+      ...rowActions.map(action => ({ label: action.label, icon: action.icon, onSelect: () => emit('action', action, project) })),
     ],
     [
       project.archived
@@ -71,14 +75,12 @@ function actions(project: Project): DropdownMenuItem[][] {
                   size="sm"
                 />
               </div>
-              <p class="truncate font-mono text-xs text-muted" :title="project.source.path">
-                {{ project.source.path }}
-              </p>
+              <component :is="item.component" v-for="item in details" :key="item.id" :project="project" />
             </div>
           </div>
 
           <div class="flex items-center justify-between gap-2 pl-6 sm:pl-0">
-            <ProjectsVerificationFacts :verification="project.verification" />
+            <component :is="item.component" v-for="item in badges" :key="item.id" :project="project" />
             <UDropdownMenu :items="actions(project)" :content="{ align: 'end' }">
               <UButton
                 icon="i-lucide-ellipsis-vertical"

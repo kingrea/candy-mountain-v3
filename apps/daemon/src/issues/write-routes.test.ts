@@ -3,12 +3,12 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
-  projectIssueClosePath,
-  projectIssueCommentPath,
-  projectIssueCommentsPath,
-  projectIssuePath,
-  projectIssuesBulkPath,
-  projectIssuesPath,
+  workspaceIssueClosePath,
+  workspaceIssueCommentPath,
+  workspaceIssueCommentsPath,
+  workspaceIssuePath,
+  workspaceIssuesBulkPath,
+  workspaceIssuesPath,
   type ApiErrorBody,
   type BulkUpdateIssuesResponse,
   type CreateIssueResponse,
@@ -20,11 +20,12 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createTestApp } from '../testing/platform'
 import { dataPaths } from '../data-dir'
 import type { PlatformDatabase } from '../db'
-import { setEnabledModules } from '../project-modules/enablement'
-import { createProject } from '../projects'
+import { setEnabledModules } from '../workspace-modules/enablement'
 import { openTestDatabase } from '../testing'
 import { issuesRoutes } from './definition'
 import { createTempBeadsWorkspace, hasBd, type TempBeadsWorkspace } from './test-workspace'
+import { repositoryPaths } from '../repository/service'
+import { createWorkspaceWithRepository } from '../repository/test-support'
 
 type Row = Record<string, unknown>
 
@@ -40,8 +41,8 @@ describe.skipIf(!hasBd)('issue write routes against a real workspace', () => {
     ids.first = workspace.create('First')
     ids.second = workspace.create('Second')
     database = openTestDatabase()
-    app = createTestApp({ db: database.db, paths: dataPaths('/unused'), runtime: issuesRoutes() })
-    const project = await createProject(database.db, { name: 'Tracked', slug: 'tracked', source: { kind: 'local-path', path: workspace.path } })
+    app = createTestApp({ db: database.db, paths: dataPaths('/unused'), runtime: issuesRoutes(repositoryPaths(database.db)) })
+    const project = await createWorkspaceWithRepository(database.db, { name: 'Tracked', slug: 'tracked', path: workspace.path })
     setEnabledModules(database.db, project.id, ['issues'])
   }, 60_000)
 
@@ -59,7 +60,7 @@ describe.skipIf(!hasBd)('issue write routes against a real workspace', () => {
   const comments = (id: string) => workspace.bd('comments', id) as Row[]
 
   it('creates an issue with every field, a parent and two dependencies', async () => {
-    const res = await send('POST', projectIssuesPath('tracked'), {
+    const res = await send('POST', workspaceIssuesPath('tracked'), {
       title: '-starts with a dash',
       type: 'bug',
       priority: 1,
@@ -94,7 +95,7 @@ describe.skipIf(!hasBd)('issue write routes against a real workspace', () => {
   }, 30_000)
 
   it('creates the issue but reports a dependency bd refuses', async () => {
-    const res = await send('POST', projectIssuesPath('tracked'), { title: 'Loose', dependsOn: ['wr-nope'] })
+    const res = await send('POST', workspaceIssuesPath('tracked'), { title: 'Loose', dependsOn: ['wr-nope'] })
     expect(res.status).toBe(201)
     const { issue, warnings } = await res.json() as CreateIssueResponse
     expect(show(issue.id).title).toBe('Loose')
@@ -104,7 +105,7 @@ describe.skipIf(!hasBd)('issue write routes against a real workspace', () => {
 
   it('updates fields, replaces labels and detaches with an empty parent', async () => {
     const id = workspace.create('Before', '--parent', ids.epic, '--labels', 'old', '--description', 'old text', '--assignee', 'someone')
-    const res = await send('PATCH', projectIssuePath('tracked', id), {
+    const res = await send('PATCH', workspaceIssuePath('tracked', id), {
       title: 'After',
       description: 'new **text**',
       acceptanceCriteria: 'accepted',
@@ -130,7 +131,7 @@ describe.skipIf(!hasBd)('issue write routes against a real workspace', () => {
       parent: ids.epic,
     })
 
-    const cleared = await send('PATCH', projectIssuePath('tracked', id), { parentId: null, labels: [], assignee: null, description: '' })
+    const cleared = await send('PATCH', workspaceIssuePath('tracked', id), { parentId: null, labels: [], assignee: null, description: '' })
     expect(cleared.status).toBe(200)
     const row = show(id)
     expect(row.parent).toBeUndefined()
@@ -141,40 +142,40 @@ describe.skipIf(!hasBd)('issue write routes against a real workspace', () => {
   }, 30_000)
 
   it('shows an update in the list straight away despite the cache', async () => {
-    const created = await send('POST', projectIssuesPath('tracked'), { title: 'Cached title' })
+    const created = await send('POST', workspaceIssuesPath('tracked'), { title: 'Cached title' })
     const { id } = (await created.json() as CreateIssueResponse).issue
-    const listed = async () => ((await (await send('GET', projectIssuesPath('tracked'))).json()) as IssueListResponse).issues
+    const listed = async () => ((await (await send('GET', workspaceIssuesPath('tracked'))).json()) as IssueListResponse).issues
     expect((await listed()).find(issue => issue.id === id)?.title).toBe('Cached title')
-    await send('PATCH', projectIssuePath('tracked', id), { title: 'Fresh title' })
+    await send('PATCH', workspaceIssuePath('tracked', id), { title: 'Fresh title' })
     expect((await listed()).find(issue => issue.id === id)?.title).toBe('Fresh title')
   }, 30_000)
 
   it('closes with a reason', async () => {
     const id = workspace.create('To close')
-    const res = await send('POST', projectIssueClosePath('tracked', id), { reason: 'done and dusted' })
+    const res = await send('POST', workspaceIssueClosePath('tracked', id), { reason: 'done and dusted' })
     expect(res.status).toBe(200)
     expect((await res.json() as IssueResponse).issue).toMatchObject({ status: 'closed', closeReason: 'done and dusted' })
     expect(show(id)).toMatchObject({ status: 'closed', close_reason: 'done and dusted' })
 
     const bare = workspace.create('Closed without a body')
-    expect((await send('POST', projectIssueClosePath('tracked', bare))).status).toBe(200)
+    expect((await send('POST', workspaceIssueClosePath('tracked', bare))).status).toBe(200)
     expect(show(bare).status).toBe('closed')
   }, 30_000)
 
   it('refuses to close an epic with open children unless forced', async () => {
     const epic = workspace.create('Busy epic', '--type', 'epic')
     workspace.create('Open child', '--parent', epic)
-    const refused = await send('POST', projectIssueClosePath('tracked', epic), {})
+    const refused = await send('POST', workspaceIssueClosePath('tracked', epic), {})
     expect(refused.status).toBe(502)
     expect((await refused.json() as ApiErrorBody).error.message).toContain('open child')
-    expect((await send('POST', projectIssueClosePath('tracked', epic), { force: true })).status).toBe(200)
+    expect((await send('POST', workspaceIssueClosePath('tracked', epic), { force: true })).status).toBe(200)
     expect(show(epic).status).toBe('closed')
   }, 30_000)
 
   it('applies one change to five issues in one request', async () => {
     const five = ['B1', 'B2', 'B3', 'B4', 'B5'].map(title => workspace.create(title))
     const target = workspace.create('Bulk epic', '--type', 'epic')
-    const res = await send('POST', projectIssuesBulkPath('tracked'), {
+    const res = await send('POST', workspaceIssuesBulkPath('tracked'), {
       ids: [...five, 'wr-nope'],
       changes: { priority: 4, parentId: target, assignee: 'bulk-person', addLabels: ['bulk'], status: 'in_progress' },
     })
@@ -187,7 +188,7 @@ describe.skipIf(!hasBd)('issue write routes against a real workspace', () => {
       expect(show(id).parent).toBe(target)
     }
 
-    const detached = await send('POST', projectIssuesBulkPath('tracked'), { ids: five, changes: { parentId: null, removeLabels: ['bulk'] } })
+    const detached = await send('POST', workspaceIssuesBulkPath('tracked'), { ids: five, changes: { parentId: null, removeLabels: ['bulk'] } })
     expect(detached.status).toBe(200)
     for (const id of five) {
       const row = show(id)
@@ -195,12 +196,12 @@ describe.skipIf(!hasBd)('issue write routes against a real workspace', () => {
       expect(row.labels).toBeUndefined()
     }
 
-    const none = await send('POST', projectIssuesBulkPath('tracked'), { ids: ['wr-nope', 'wr-gone'], changes: { priority: 1 } })
+    const none = await send('POST', workspaceIssuesBulkPath('tracked'), { ids: ['wr-nope', 'wr-gone'], changes: { priority: 1 } })
     expect(await none.json() as BulkUpdateIssuesResponse).toEqual({ updatedIds: [], missingIds: ['wr-nope', 'wr-gone'] })
   }, 60_000)
 
   it('adds a comment whose text starts with a dash', async () => {
-    const res = await send('POST', projectIssueCommentsPath('tracked', ids.first), { text: '--looks like a flag' })
+    const res = await send('POST', workspaceIssueCommentsPath('tracked', ids.first), { text: '--looks like a flag' })
     expect(res.status).toBe(201)
     const { comment } = await res.json() as IssueCommentResponse
     expect(comment).toMatchObject({ issueId: ids.first, text: '--looks like a flag', author: 'admin' })
@@ -213,7 +214,7 @@ describe.skipIf(!hasBd)('issue write routes against a real workspace', () => {
     const target = comments(ids.second).find(row => row.text === 'first draft')!
     const text = 'Edited: it\'s "quoted" \\ back\\slash, ünïcödé 🍭\nnew line\'); DELETE FROM comments; --'
 
-    const res = await send('PATCH', projectIssueCommentPath('tracked', ids.second, String(target.id)), { text })
+    const res = await send('PATCH', workspaceIssueCommentPath('tracked', ids.second, String(target.id)), { text })
     expect(res.status).toBe(200)
     expect((await res.json() as IssueCommentResponse).comment).toMatchObject({ id: target.id, issueId: ids.second, text, author: target.author })
 
@@ -231,29 +232,29 @@ describe.skipIf(!hasBd)('issue write routes against a real workspace', () => {
 
   it('answers 404 for a comment that is not on the issue', async () => {
     const other = comments(ids.first)[0]!
-    const res = await send('PATCH', projectIssueCommentPath('tracked', ids.second, String(other.id)), { text: 'nope' })
+    const res = await send('PATCH', workspaceIssueCommentPath('tracked', ids.second, String(other.id)), { text: 'nope' })
     expect(res.status).toBe(404)
     expect(comments(ids.first)[0]!.text).toBe(other.text)
-    expect((await send('PATCH', projectIssueCommentPath('tracked', ids.second, '00000000-0000-0000-0000-000000000000'), { text: 'x' })).status).toBe(404)
+    expect((await send('PATCH', workspaceIssueCommentPath('tracked', ids.second, '00000000-0000-0000-0000-000000000000'), { text: 'x' })).status).toBe(404)
   }, 30_000)
 
   it('answers 404 for unknown issues and projects', async () => {
-    expect((await send('PATCH', projectIssuePath('tracked', 'wr-nope'), { title: 'x' })).status).toBe(404)
-    expect((await send('POST', projectIssueClosePath('tracked', 'wr-nope'), {})).status).toBe(404)
-    expect((await send('POST', projectIssueCommentsPath('tracked', 'wr-nope'), { text: 'x' })).status).toBe(404)
-    expect((await send('POST', projectIssuesPath('ghost'), { title: 'x' })).status).toBe(404)
+    expect((await send('PATCH', workspaceIssuePath('tracked', 'wr-nope'), { title: 'x' })).status).toBe(404)
+    expect((await send('POST', workspaceIssueClosePath('tracked', 'wr-nope'), {})).status).toBe(404)
+    expect((await send('POST', workspaceIssueCommentsPath('tracked', 'wr-nope'), { text: 'x' })).status).toBe(404)
+    expect((await send('POST', workspaceIssuesPath('ghost'), { title: 'x' })).status).toBe(404)
   }, 30_000)
 
   it('refuses writes while the module is off or the project has no .beads directory', async () => {
     const plain = mkdtempSync(join(tmpdir(), 'cm-plain-'))
     try {
-      const project = await createProject(database.db, { name: 'Plain', slug: 'plain', source: { kind: 'local-path', path: plain } })
-      const off = await send('POST', projectIssuesPath('plain'), { title: 'x' })
+      const project = await createWorkspaceWithRepository(database.db, { name: 'Plain', slug: 'plain', path: plain })
+      const off = await send('POST', workspaceIssuesPath('plain'), { title: 'x' })
       expect(off.status).toBe(404)
       expect((await off.json() as ApiErrorBody).error.code).toBe('not_enabled')
 
       setEnabledModules(database.db, project.id, ['issues'])
-      const comment = await send('POST', projectIssueCommentsPath('plain', 'wr-x'), { text: 'x' })
+      const comment = await send('POST', workspaceIssueCommentsPath('plain', 'wr-x'), { text: 'x' })
       expect(comment.status).toBe(409)
       expect((await comment.json() as ApiErrorBody).error).toMatchObject({ code: 'not_ready', message: expect.stringContaining('.beads') })
     }
@@ -263,22 +264,22 @@ describe.skipIf(!hasBd)('issue write routes against a real workspace', () => {
   })
 
   it.each([
-    ['POST', () => projectIssuesPath('tracked'), {}],
-    ['POST', () => projectIssuesPath('tracked'), { title: '   ' }],
-    ['POST', () => projectIssuesPath('tracked'), { title: 'x', priority: 9 }],
-    ['POST', () => projectIssuesPath('tracked'), { title: 'x', dependsOn: ['--help'] }],
-    ['POST', () => projectIssuesPath('tracked'), { title: 'x', labels: ['a,b'] }],
-    ['POST', () => projectIssuesPath('tracked'), { title: 'x', surprise: true }],
-    ['POST', () => projectIssuesPath('tracked'), '{not json'],
-    ['PATCH', () => projectIssuePath('tracked', ids.first), {}],
-    ['PATCH', () => projectIssuePath('tracked', ids.first), { type: '--force' }],
-    ['PATCH', () => projectIssuePath('tracked', '--help'), { title: 'x' }],
-    ['POST', () => projectIssueClosePath('tracked', ids.first), { force: 'yes' }],
-    ['POST', () => projectIssuesBulkPath('tracked'), { ids: [], changes: { priority: 1 } }],
-    ['POST', () => projectIssuesBulkPath('tracked'), { ids: [ids.first], changes: {} }],
-    ['POST', () => projectIssuesBulkPath('tracked'), { ids: [ids.first], changes: { title: 'x' } }],
-    ['POST', () => projectIssueCommentsPath('tracked', ids.first), { text: '' }],
-    ['PATCH', () => projectIssueCommentPath('tracked', ids.first, 'x\'y'), { text: 'x' }],
+    ['POST', () => workspaceIssuesPath('tracked'), {}],
+    ['POST', () => workspaceIssuesPath('tracked'), { title: '   ' }],
+    ['POST', () => workspaceIssuesPath('tracked'), { title: 'x', priority: 9 }],
+    ['POST', () => workspaceIssuesPath('tracked'), { title: 'x', dependsOn: ['--help'] }],
+    ['POST', () => workspaceIssuesPath('tracked'), { title: 'x', labels: ['a,b'] }],
+    ['POST', () => workspaceIssuesPath('tracked'), { title: 'x', surprise: true }],
+    ['POST', () => workspaceIssuesPath('tracked'), '{not json'],
+    ['PATCH', () => workspaceIssuePath('tracked', ids.first), {}],
+    ['PATCH', () => workspaceIssuePath('tracked', ids.first), { type: '--force' }],
+    ['PATCH', () => workspaceIssuePath('tracked', '--help'), { title: 'x' }],
+    ['POST', () => workspaceIssueClosePath('tracked', ids.first), { force: 'yes' }],
+    ['POST', () => workspaceIssuesBulkPath('tracked'), { ids: [], changes: { priority: 1 } }],
+    ['POST', () => workspaceIssuesBulkPath('tracked'), { ids: [ids.first], changes: {} }],
+    ['POST', () => workspaceIssuesBulkPath('tracked'), { ids: [ids.first], changes: { title: 'x' } }],
+    ['POST', () => workspaceIssueCommentsPath('tracked', ids.first), { text: '' }],
+    ['PATCH', () => workspaceIssueCommentPath('tracked', ids.first, 'x\'y'), { text: 'x' }],
   ] as const)('answers 400 for %s %#', async (method, path, body) => {
     const res = await send(method, path(), body)
     expect(res.status).toBe(400)

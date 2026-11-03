@@ -1,6 +1,6 @@
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { projectSessionsPath, sessionDecisionPath, sessionDecisionsPath, sessionEventsPath, sessionPromptPath, sessionCancelPath, type AgentSession, type AgentSessionEvent, type AgentSessionEventKind, type ApiErrorBody, type Decision, type DecisionListResponse, type DecisionResponse, type PluginTypeId, type SessionListResponse, type SessionResponse } from '@candy-mountain/shared'
+import { workspaceSessionsPath, sessionDecisionPath, sessionDecisionsPath, sessionEventsPath, sessionPromptPath, sessionCancelPath, type AgentSession, type AgentSessionEvent, type AgentSessionEventKind, type ApiErrorBody, type Decision, type DecisionListResponse, type DecisionResponse, type PluginTypeId, type SessionListResponse, type SessionResponse } from '@candy-mountain/shared'
 import { eq } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { fakeBins } from '../acp/test-support'
@@ -8,12 +8,12 @@ import { createTestApp } from '../testing/platform'
 import { pluginInstances } from '../db/schema'
 import { startAcpPlatform, type AcpPlatform, type AcpPlatformOptions } from '../chat-claude-code/test-support'
 import { createPluginInstance } from '../plugins/instances/instances'
-import { setEnabledModules } from '../project-modules/enablement'
-import { createProject } from '../projects/projects'
+import { setEnabledModules } from '../workspace-modules/enablement'
 import type { SessionManager } from '../sessions'
 import { createTempDataDir, type TempDataDir } from '../testing'
 import { resolveDecisionSettings } from './config'
 import { DecisionError } from './errors'
+import { createWorkspaceWithRepository } from '../repository/test-support'
 
 let temp: TempDataDir | undefined
 let platform: AcpPlatform | undefined
@@ -32,17 +32,17 @@ async function boot(options: AcpPlatformOptions = {}): Promise<{ p: AcpPlatform,
   platform = p
   const path = join(temp.root, '..', 'repos', 'alpha')
   mkdirSync(path, { recursive: true })
-  const project = await createProject(p.db, { name: 'alpha', slug: 'alpha', source: { kind: 'local-path', path } })
+  const project = await createWorkspaceWithRepository(p.db, { name: 'alpha', slug: 'alpha', path })
   setEnabledModules(p.db, project.id, ['agent-hub'])
   healthyPlugin(p, project.id, 'codex')
-  const res = await call(p, 'POST', projectSessionsPath('alpha'), { family: 'codex' })
+  const res = await call(p, 'POST', workspaceSessionsPath('alpha'), { family: 'codex' })
   expect(res.status).toBe(201)
   return { p, session: ((await res.json()) as SessionResponse).session }
 }
 
 /** Stands in for a passing connection test: the chat gate only reads the stored result. */
 function healthyPlugin(p: AcpPlatform, projectId: string, type: PluginTypeId): void {
-  const instance = createPluginInstance({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly }, { type, scope: 'project', projectId, config: {}, secrets: {} })
+  const instance = createPluginInstance({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly }, { type, scope: 'workspace', workspaceId: projectId, config: {}, secrets: {} })
   p.db.update(pluginInstances).set({ health: { healthy: true }, healthCheckedAt: new Date().toISOString() }).where(eq(pluginInstances.id, instance.id)).run()
 }
 
@@ -238,13 +238,13 @@ describe('pending decisions', () => {
 describe('never-bypass at session creation', () => {
   it('refuses a Claude Code session whose posture carries a bypass mode', async () => {
     const { p, session } = await boot()
-    healthyPlugin(p, session.projectId, 'claude-code')
+    healthyPlugin(p, session.workspaceId, 'claude-code')
     for (const flags of [['--dangerously-skip-permissions'], ['--permission-mode', 'bypassPermissions'], ['--allowedTools', 'Bash']]) {
-      const res = await call(p, 'POST', projectSessionsPath('alpha'), { family: 'claude-code', posture: { flags } })
+      const res = await call(p, 'POST', workspaceSessionsPath('alpha'), { family: 'claude-code', posture: { flags } })
       expect(await errorOf(res)).toEqual({ status: 400, code: 'invalid_request' })
     }
-    expect(((await (await call(p, 'GET', projectSessionsPath('alpha'))).json()) as SessionListResponse).sessions).toHaveLength(1)
-    expect((await call(p, 'POST', projectSessionsPath('alpha'), { family: 'claude-code', posture: { flags: ['--permission-mode', 'plan'] } })).status).toBe(201)
+    expect(((await (await call(p, 'GET', workspaceSessionsPath('alpha'))).json()) as SessionListResponse).sessions).toHaveLength(1)
+    expect((await call(p, 'POST', workspaceSessionsPath('alpha'), { family: 'claude-code', posture: { flags: ['--permission-mode', 'plan'] } })).status).toBe(201)
   })
 })
 

@@ -1,14 +1,14 @@
 import type { PluginHealth, PluginTypeId } from '@candy-mountain/shared'
 import { definePluginType, type AnyPluginType } from './definition'
 
-/** A valid project-scoped type with one config field of each kind and one secret; healthy when the token is set. */
+/** A valid workspace-scoped type with one config field of each kind and one secret; healthy when the token is set. */
 export function fixturePluginType(id: PluginTypeId, health?: () => PluginHealth | Promise<PluginHealth>): AnyPluginType {
   return definePluginType({
     id,
     name: `Fixture ${id}`,
     description: `Test fixture for ${id}.`,
     reach: [`Read things from ${id}.`],
-    scopes: ['project'],
+    scopes: ['workspace'],
     singleInstance: true,
     configFields: [
       { kind: 'select', name: 'host', label: 'Host', options: [{ value: 'alpha', label: 'Alpha' }, { value: 'beta', label: 'Beta' }], default: 'alpha' },

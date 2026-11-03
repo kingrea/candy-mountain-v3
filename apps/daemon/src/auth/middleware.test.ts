@@ -5,7 +5,7 @@ import {
   HEALTH_PATH,
   INFO_PATH,
   ME_PATH,
-  PROJECTS_PATH,
+  WORKSPACES_PATH,
   type ApiErrorBody,
   type MeResponse,
 } from '@candy-mountain/shared'
@@ -48,7 +48,7 @@ describe('development strategy', () => {
   })
 
   it('lets protected routes through', async () => {
-    expect((await app().request(PROJECTS_PATH)).status).toBe(200)
+    expect((await app().request(WORKSPACES_PATH)).status).toBe(200)
   })
 
   it('is the default when no strategy is given', async () => {
@@ -90,7 +90,7 @@ describe('trusted-header strategy', () => {
   it('yields 401 for a missing, empty or unknown identity on every protected route', async () => {
     const attempts: Record<string, string>[] = [{}, { 'x-forwarded-user': '  ' }, { 'x-forwarded-user': 'stranger' }, { 'x-other': ADMIN_USERNAME }]
     for (const headers of attempts) {
-      for (const path of [ME_PATH, INFO_PATH, PROJECTS_PATH, '/no-such-route']) {
+      for (const path of [ME_PATH, INFO_PATH, WORKSPACES_PATH, '/no-such-route']) {
         const res = await app().request(path, { headers })
         expect(res.status, `${path} ${JSON.stringify(headers)}`).toBe(401)
         expect(await res.json()).toEqual(UNAUTHENTICATED)

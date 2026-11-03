@@ -2,8 +2,8 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
-  projectIssuePath,
-  projectIssuesPath,
+  workspaceIssuePath,
+  workspaceIssuesPath,
   type ApiErrorBody,
   type IssueCommentListResponse,
   type IssueDependencyListResponse,
@@ -14,10 +14,11 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createTestApp } from '../testing/platform'
 import { dataPaths } from '../data-dir'
 import type { PlatformDatabase } from '../db'
-import { createProject } from '../projects'
 import { openTestDatabase } from '../testing'
 import { issuesRoutes } from './definition'
 import { createTempBeadsWorkspace, hasBd, type TempBeadsWorkspace } from './test-workspace'
+import { repositoryPaths } from '../repository/service'
+import { createWorkspaceWithRepository } from '../repository/test-support'
 
 describe.skipIf(!hasBd)('issue routes against a real workspace', () => {
   let workspace: TempBeadsWorkspace
@@ -37,9 +38,9 @@ describe.skipIf(!hasBd)('issue routes against a real workspace', () => {
 
     bare = mkdtempSync(join(tmpdir(), 'candy-mountain-no-beads-'))
     database = openTestDatabase()
-    app = createTestApp({ db: database.db, paths: dataPaths('/unused'), runtime: issuesRoutes() })
-    await createProject(database.db, { name: 'Tracked', slug: 'tracked', source: { kind: 'local-path', path: workspace.path } })
-    await createProject(database.db, { name: 'Bare', slug: 'bare', source: { kind: 'local-path', path: bare } })
+    app = createTestApp({ db: database.db, paths: dataPaths('/unused'), runtime: issuesRoutes(repositoryPaths(database.db)) })
+    await createWorkspaceWithRepository(database.db, { name: 'Tracked', slug: 'tracked', path: workspace.path })
+    await createWorkspaceWithRepository(database.db, { name: 'Bare', slug: 'bare', path: bare })
   }, 60_000)
 
   afterAll(() => {
@@ -51,7 +52,7 @@ describe.skipIf(!hasBd)('issue routes against a real workspace', () => {
   const get = (path: string) => app.request(path)
 
   it('lists every issue, closed included, with ready flags from bd ready', async () => {
-    const res = await get(projectIssuesPath('tracked'))
+    const res = await get(workspaceIssuesPath('tracked'))
     expect(res.status).toBe(200)
     const { issues } = await res.json() as IssueListResponse
     expect(issues.map(issue => issue.id).sort()).toEqual(Object.values(ids).sort())
@@ -71,7 +72,7 @@ describe.skipIf(!hasBd)('issue routes against a real workspace', () => {
   }, 30_000)
 
   it('shows one issue with its neighbours', async () => {
-    const res = await get(projectIssuePath('tracked', ids.second))
+    const res = await get(workspaceIssuePath('tracked', ids.second))
     expect(res.status).toBe(200)
     const { issue } = await res.json() as IssueResponse
     expect(issue).toMatchObject({ id: ids.second, title: 'Second', description: 'Needs **first**', parentId: ids.epic, ready: false })
@@ -79,20 +80,20 @@ describe.skipIf(!hasBd)('issue routes against a real workspace', () => {
       [[ids.epic, 'parent-child'], [ids.first, 'blocks']].sort(),
     )
 
-    const epic = (await (await get(projectIssuePath('tracked', ids.epic))).json() as IssueResponse).issue
+    const epic = (await (await get(workspaceIssuePath('tracked', ids.epic))).json() as IssueResponse).issue
     expect(epic.dependents.filter(link => link.dependencyType === 'parent-child').map(link => link.id).sort())
       .toEqual([ids.first, ids.second].sort())
   }, 30_000)
 
   it('answers 404 for an unknown issue id', async () => {
-    const res = await get(projectIssuePath('tracked', 'rt-nope'))
+    const res = await get(workspaceIssuePath('tracked', 'rt-nope'))
     expect(res.status).toBe(404)
     expect((await res.json() as ApiErrorBody).error.code).toBe('not_found')
-    expect((await get(`${projectIssuePath('tracked', 'rt-nope')}/comments`)).status).toBe(404)
+    expect((await get(`${workspaceIssuePath('tracked', 'rt-nope')}/comments`)).status).toBe(404)
   }, 30_000)
 
   it('returns dependencies for a set of ids', async () => {
-    const res = await get(`${projectIssuesPath('tracked')}/dependencies?ids=${ids.first},${ids.second}`)
+    const res = await get(`${workspaceIssuesPath('tracked')}/dependencies?ids=${ids.first},${ids.second}`)
     expect(res.status).toBe(200)
     const { dependencies } = await res.json() as IssueDependencyListResponse
     expect(dependencies).toEqual(expect.arrayContaining([
@@ -101,17 +102,17 @@ describe.skipIf(!hasBd)('issue routes against a real workspace', () => {
       { issueId: ids.second, dependsOnId: ids.epic, type: 'parent-child' },
     ]))
     expect(dependencies).toHaveLength(3)
-    expect((await get(`${projectIssuesPath('tracked')}/dependencies`)).status).toBe(400)
+    expect((await get(`${workspaceIssuesPath('tracked')}/dependencies`)).status).toBe(400)
   }, 30_000)
 
   it('lists comments', async () => {
-    const res = await get(`${projectIssuePath('tracked', ids.first)}/comments`)
+    const res = await get(`${workspaceIssuePath('tracked', ids.first)}/comments`)
     const { comments } = await res.json() as IssueCommentListResponse
     expect(comments).toMatchObject([{ issueId: ids.first, text: 'hello from a test' }])
   }, 30_000)
 
   it('explains a project without .beads', async () => {
-    const res = await get(projectIssuesPath('bare'))
+    const res = await get(workspaceIssuesPath('bare'))
     expect(res.status).toBe(422)
     const body = await res.json() as ApiErrorBody
     expect(body.error.code).toBe('no_issue_tracker')
@@ -119,7 +120,7 @@ describe.skipIf(!hasBd)('issue routes against a real workspace', () => {
   })
 
   it('rejects unknown projects and ids that look like flags', async () => {
-    expect((await get(projectIssuesPath('ghost'))).status).toBe(404)
-    expect((await get(projectIssuePath('tracked', '--help'))).status).toBe(400)
+    expect((await get(workspaceIssuesPath('ghost'))).status).toBe(404)
+    expect((await get(workspaceIssuePath('tracked', '--help'))).status).toBe(400)
   })
 })

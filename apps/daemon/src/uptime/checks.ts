@@ -1,6 +1,6 @@
 import { and, desc, eq, lt, lte, or } from 'drizzle-orm'
 import type { Db } from '../db'
-import { uptimeChecks } from '../db/schema'
+import { uptimeChecks } from './schema'
 import type { MonitorCheckResult } from './check'
 
 export const MONITOR_CHECKS_LIST_DEFAULT = 50

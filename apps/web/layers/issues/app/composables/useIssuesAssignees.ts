@@ -1,5 +1,5 @@
 import {
-  projectAssigneesPath,
+  workspaceAssigneesPath,
   type AddAssigneeRequest,
   type AddAssigneeResponse,
   type ProjectAssigneesResponse,
@@ -13,7 +13,7 @@ export function useIssuesAssignees(slug: MaybeRefOrGetter<string>) {
   async function refresh() {
     pending.value = true
     try {
-      const { assignees } = await $api<ProjectAssigneesResponse>(projectAssigneesPath(toValue(slug)))
+      const { assignees } = await $api<ProjectAssigneesResponse>(workspaceAssigneesPath(toValue(slug)))
       names.value = assignees.map(assignee => assignee.name)
     }
     finally {
@@ -24,7 +24,7 @@ export function useIssuesAssignees(slug: MaybeRefOrGetter<string>) {
   /** Resolves to the stored name, which keeps the existing spelling when the new one differs only by case. */
   async function add(name: string): Promise<string> {
     const body: AddAssigneeRequest = { name }
-    const { assignee } = await $api<AddAssigneeResponse>(projectAssigneesPath(toValue(slug)), { method: 'POST', body })
+    const { assignee } = await $api<AddAssigneeResponse>(workspaceAssigneesPath(toValue(slug)), { method: 'POST', body })
     if (!names.value.includes(assignee.name)) names.value = [...names.value, assignee.name].sort((a, b) => a.localeCompare(b))
     return assignee.name
   }

@@ -8,9 +8,9 @@ import {
   type BotSecretName,
   type BotSecretValues,
 } from '@candy-mountain/shared'
-import { and, eq, ne, sql } from 'drizzle-orm'
+import { and, eq, inArray, ne, sql } from 'drizzle-orm'
 import type { Db } from '../db'
-import { bots } from '../db/schema'
+import { bots, slackDeliveries } from './schema'
 import { resolvePluginInstance, type PluginInstanceDeps, type SecretsReader } from '../plugins/instances/instances'
 import { createRepositoryOperations, repositoryConfig, repositoryPluginType } from '../plugins/repository'
 import { createPluginSecrets } from '../plugins/secrets'
@@ -139,7 +139,11 @@ export interface ProjectBotRef {
   usable: boolean
 }
 
-export function listProjectBotRefs(deps: BotDeps, projectId: string): ProjectBotRef[] {
+/** Row existence only: `listBots` resolves base branches over the network, too slow for every registry read. */
+export const hasWorkspaceBots = (db: Db, workspaceId: string): boolean =>
+  db.select({ id: bots.id }).from(bots).where(eq(bots.projectId, workspaceId)).limit(1).get() !== undefined
+
+export function listWorkspaceBotRefs(deps: BotDeps, projectId: string): ProjectBotRef[] {
   const families = new Map<BotFamily, ReturnType<typeof resolvePluginInstance>>()
   const familyPlugin = (family: BotFamily) => {
     if (!families.has(family)) families.set(family, resolvePluginInstance(deps, projectId, family))
@@ -263,9 +267,10 @@ export function deleteBot(deps: Pick<BotDeps, 'db' | 'secrets'>, id: string): vo
   deps.secrets.deleteOwner(botSecretOwner(id))
 }
 
-/** Call before deleting a project: the rows would cascade, but their secrets live outside the database. */
+/** Call before deleting a project: the rows would cascade, but their secrets live outside the database and their Slack deliveries have no foreign key. */
 export function deleteProjectBots(deps: Pick<BotDeps, 'db' | 'secrets'>, projectId: string): number {
   const ids = deps.db.select({ id: bots.id }).from(bots).where(eq(bots.projectId, projectId)).all().map(r => r.id)
+  if (ids.length) deps.db.delete(slackDeliveries).where(inArray(slackDeliveries.botId, ids)).run()
   deps.db.delete(bots).where(eq(bots.projectId, projectId)).run()
   for (const id of ids) deps.secrets.deleteOwner(botSecretOwner(id))
   return ids.length

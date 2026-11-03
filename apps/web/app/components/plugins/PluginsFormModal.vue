@@ -38,9 +38,9 @@ const thisScope = `this ${SCOPE.singular}`
 const scopeItems = computed(() => props.scopes.map(scope => ({
   value: scope,
   label: PLUGIN_SCOPE_LABELS[scope],
-  description: scope === 'project' ? `Used by ${project.value?.name ?? thisScope} only.` : `Shared by every ${SCOPE.singular} that has no plugin of its own.`,
+  description: scope === 'workspace' ? `Used by ${project.value?.name ?? thisScope} only.` : `Shared by every ${SCOPE.singular} that has no plugin of its own.`,
 })))
-const scopeText = computed(() => (state.scope === 'project' ? `Used by ${project.value?.name ?? thisScope} only.` : `Platform-wide: shared by every ${SCOPE.singular} that has no plugin of its own.`))
+const scopeText = computed(() => (state.scope === 'workspace' ? `Used by ${project.value?.name ?? thisScope} only.` : `Platform-wide: shared by every ${SCOPE.singular} that has no plugin of its own.`))
 
 function reset() {
   const type = props.type
@@ -91,7 +91,7 @@ async function onSubmit() {
       : await createPlugin({
           type: type.id,
           scope: state.scope ?? type.scopes[0]!,
-          project: state.scope === 'project' ? slug.value : null,
+          workspace: state.scope === 'workspace' ? slug.value : null,
           config: pluginConfigPayload(type.configFields, state.config),
           secrets,
         })

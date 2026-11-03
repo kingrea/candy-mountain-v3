@@ -1,20 +1,25 @@
-import { BOT_FAMILIES, type Project } from '@candy-mountain/shared'
+import { BOT_FAMILIES, REPOSITORY_CAPABILITY_ID, type Workspace } from '@candy-mountain/shared'
+import type { ActivityEventTypeDeclaration } from '../activity/types'
 import { botSessionRoutes, createBotSessionService, type BotSessionService } from '../bot-sessions'
 import { bindService, CapabilityDefinitionError, defineCapabilityDefinition, serviceKey, type CapabilityDefinition, type CapabilityRuntime } from '../capabilities/definition'
 import { ACP_DECISIONS, ACP_SESSIONS } from '../chat-claude-code/definition'
 import { chatCodexCapability } from '../chat-codex/manifest'
 import type { Db } from '../db'
+import type { WorkspaceFactDeclaration } from '../registry/facts'
 import type { SecretsStore } from '../secrets'
 import { startSlackDecisions, type SlackDecisions, type SlackDecisionsOptions } from '../slack/decisions'
 import { SLACK_CAPABILITY_ID, SLACK_CONNECTIONS } from '../slack/definition'
 import { startSlackHandoffs, type SlackHandoffs, type SlackHandoffsOptions } from '../slack/handoffs'
 import { startSlackRouter, type SlackRouter, type SlackRouterOptions, type SlackTurnEnd } from '../slack/router'
+import { REPOSITORY_PATHS } from '../repository/definition'
 import { slackRoutes } from '../slack/routes'
 import { THREAD_BOTS } from '../threads/bots'
 import { createWorktreePool, startWorktreeReclaimer, type WorktreePool, type WorktreePoolOptions, type WorktreeReclaimer, type WorktreeReclaimerOptions } from '../worktrees'
-import { deleteProjectBots } from './bots'
+import { deleteProjectBots, hasWorkspaceBots } from './bots'
 import { botsCapability } from './manifest'
 import { botRoutes } from './routes'
+import { srcPath } from '../package-root'
+import * as botsSchema from './schema'
 
 /** The full bot session service; the thread service reads the narrower `THREAD_BOTS`. */
 export const BOT_SESSIONS = serviceKey<BotSessionService>('bots.sessions')
@@ -24,6 +29,16 @@ export const BOT_WORKTREE_RECLAIMER = serviceKey<WorktreeReclaimer>('bots.worktr
 export const BOT_SLACK_ROUTER = serviceKey<SlackRouter>('bots.slack-router')
 export const BOT_SLACK_DECISIONS = serviceKey<SlackDecisions>('bots.slack-decisions')
 export const BOT_SLACK_HANDOFFS = serviceKey<SlackHandoffs>('bots.slack-handoffs')
+
+/** Appended by the Slack handoffs when a bot hands its work back. */
+export const BOT_ACTIVITY_EVENT_TYPES: readonly ActivityEventTypeDeclaration[] = [
+  { id: 'bot.handoff', label: 'Bot handoff', icon: 'i-lucide-bot', notifications: [{ id: 'bot.finished', label: 'A bot finishes' }] },
+]
+
+/** Team requires it; the registry asks here rather than counting bots itself. */
+export const BOT_WORKSPACE_FACTS: readonly WorkspaceFactDeclaration[] = [
+  { id: 'hasBots', compute: (db, workspace) => hasWorkspaceBots(db, workspace.id), message: label => `The ${label.singular} has no bots yet; add one on the Bots page.` },
+]
 
 export interface BotsOptions {
   worktrees?: WorktreePoolOptions & WorktreeReclaimerOptions
@@ -39,7 +54,7 @@ export interface BotsRoutesDeps {
 }
 
 /** The routes and the deletion hook without the services; without a session service only the bot routes are answered. */
-export function botsRoutes({ db, secrets }: BotsRoutesDeps, sessions?: BotSessionService): Pick<CapabilityRuntime, 'workspaceRoutes'> & { onWorkspaceDeleted(workspace: Project): Promise<void> } {
+export function botsRoutes({ db, secrets }: BotsRoutesDeps, sessions?: BotSessionService): Pick<CapabilityRuntime, 'workspaceRoutes'> & { onWorkspaceDeleted(workspace: Workspace): Promise<void> } {
   return {
     workspaceRoutes: sessions ? [botRoutes(secrets), botSessionRoutes(sessions)] : [botRoutes(secrets)],
     async onWorkspaceDeleted(workspace) {
@@ -52,19 +67,23 @@ export function botsDefinition(options: BotsOptions = {}): CapabilityDefinition 
   return defineCapabilityDefinition({
     id: botsCapability.id,
     manifest: botsCapability,
+    schema: { schema: botsSchema, migrationsFolder: srcPath('bots', 'migrations') },
     // No codex service is read, but codex bots need the family and plugin type chat-codex brings.
-    dependsOn: ['chat-claude-code', chatCodexCapability.id, SLACK_CAPABILITY_ID],
+    dependsOn: [REPOSITORY_CAPABILITY_ID, 'chat-claude-code', chatCodexCapability.id, SLACK_CAPABILITY_ID],
     provides: [BOT_SESSIONS, THREAD_BOTS, BOT_WORKTREES, BOT_WORKTREE_RECLAIMER, BOT_SLACK_ROUTER, BOT_SLACK_DECISIONS, BOT_SLACK_HANDOFFS],
+    activityEventTypes: BOT_ACTIVITY_EVENT_TYPES,
+    workspaceFacts: BOT_WORKSPACE_FACTS,
     start({ db, paths, secrets, pluginTypes, families, scopeUrlPrefix, service }) {
       // BOT_FAMILIES is still a closed list, so a product that drops one of them must fail here rather than at the first bot.
       for (const family of BOT_FAMILIES) {
         if (!families.has(family)) throw new CapabilityDefinitionError(`Capability '${botsCapability.id}': bot family '${family}' is not a registered session family.`)
       }
-      const worktrees = createWorktreePool({ db, paths }, options.worktrees)
+      const repository = service(REPOSITORY_PATHS)
+      const worktrees = createWorktreePool({ db, paths, repository }, options.worktrees)
       const sessions = service(ACP_SESSIONS)
       const slack = service(SLACK_CONNECTIONS)
-      const botSessions = createBotSessionService({ db, paths, pluginTypes, secrets: secrets.writeOnly, secretsReader: secrets, sessions, worktrees })
-      const reclaimer = startWorktreeReclaimer({ db, paths, pool: worktrees }, options.worktrees)
+      const botSessions = createBotSessionService({ db, paths, pluginTypes, secrets: secrets.writeOnly, secretsReader: secrets, sessions, worktrees, repository })
+      const reclaimer = startWorktreeReclaimer({ db, paths, pool: worktrees, repository }, options.worktrees)
       const slackDecisions = startSlackDecisions({ db, slack, decisions: service(ACP_DECISIONS), sessions }, options.slackDecisions)
       const slackHandoffs = startSlackHandoffs({ db, slack, botSessions, sessions, scopeUrlPrefix }, options.slackHandoffs)
       const onTurnEnd = async (end: SlackTurnEnd) => {

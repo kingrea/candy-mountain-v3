@@ -27,9 +27,9 @@
             {{ event.title }}
           </component>
           <p class="flex flex-wrap items-center gap-x-1.5 text-xs text-muted">
-            <NuxtLink :to="projectPath(event.project.slug)" class="inline-flex items-center gap-1.5 hover:underline" data-testid="activity-project">
-              <ProjectColorDot :color="event.project.color" />
-              {{ event.project.name }}
+            <NuxtLink :to="projectPath(event.workspace.slug)" class="inline-flex items-center gap-1.5 hover:underline" data-testid="activity-project">
+              <ProjectColorDot :color="event.workspace.color" />
+              {{ event.workspace.name }}
             </NuxtLink>
             · {{ kind(event).label }} · <NuxtTime :datetime="event.occurredAt" relative />
           </p>
@@ -44,7 +44,7 @@
 </template>
 
 <script setup lang="ts">
-import { ACTIVITY_PATH, type ActivityEventType, type CrossProjectActivityEvent, type CrossProjectActivityResponse } from '@candy-mountain/shared'
+import { ACTIVITY_PATH, type ActivityEventType, type CrossWorkspaceActivityEvent, type CrossWorkspaceActivityResponse } from '@candy-mountain/shared'
 import { NuxtLink } from '#components'
 
 const props = defineProps<{ type?: ActivityEventType, since?: string }>()
@@ -53,9 +53,9 @@ const { $api } = useNuxtApp()
 const toast = useToast()
 
 const query = computed(() => ({ type: props.type, since: props.since }))
-const { data, status, error, refresh } = useApi<CrossProjectActivityResponse>(ACTIVITY_PATH, { query })
+const { data, status, error, refresh } = useApi<CrossWorkspaceActivityResponse>(ACTIVITY_PATH, { query })
 
-const older = ref<CrossProjectActivityEvent[]>([])
+const older = ref<CrossWorkspaceActivityEvent[]>([])
 const olderCursor = ref<string | null>()
 const loadingOlder = ref(false)
 
@@ -67,13 +67,14 @@ watch(data, () => {
 const events = computed(() => [...(data.value?.events ?? []), ...older.value])
 const cursor = computed(() => (olderCursor.value === undefined ? data.value?.nextCursor ?? null : olderCursor.value))
 
-const kind = (event: CrossProjectActivityEvent) => activityEventKind(event.type)
+const activityTypes = useActivityTypes()
+const kind = (event: CrossWorkspaceActivityEvent) => activityTypes.kind(event.type)
 
 async function loadOlder() {
   if (!cursor.value) return
   loadingOlder.value = true
   try {
-    const page = await $api<CrossProjectActivityResponse>(ACTIVITY_PATH, { query: { ...query.value, before: cursor.value } })
+    const page = await $api<CrossWorkspaceActivityResponse>(ACTIVITY_PATH, { query: { ...query.value, before: cursor.value } })
     older.value = [...older.value, ...page.events]
     olderCursor.value = page.nextCursor
   }

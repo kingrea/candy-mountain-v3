@@ -1,11 +1,11 @@
 import { CANDY_MOUNTAIN_PRODUCT, type AnyCapabilityManifest } from '@candy-mountain/shared'
 import { describe, expect, it } from 'vitest'
 import { fixtureCapability } from '../capabilities/fixtures'
-import { capabilityReadiness, requiredPluginTypes, type PluginReadiness, type ProjectFacts } from './readiness'
+import { capabilityReadiness, requiredPluginTypes, type PluginReadiness, type WorkspaceFactMessages, type WorkspaceFacts } from './readiness'
 
 const bots: AnyCapabilityManifest = { ...fixtureCapability('bots', ['repository']), requiresAnyPlugins: [['claude-code', 'codex']] }
 const label = CANDY_MOUNTAIN_PRODUCT.scope.label
-const facts: ProjectFacts = { hasBeads: true, isGitRepo: true, hasRemote: true, hasBots: false }
+const facts: WorkspaceFacts = { hasBeads: true, isGitRepo: true, hasRemote: true, hasBots: false }
 const ready = (name: string): PluginReadiness => ({ name, state: 'ready' })
 const plugins = (overrides: Record<string, PluginReadiness>) => ({
   repository: ready('Repository'),
@@ -44,10 +44,15 @@ describe('capabilityReadiness with an any-of plugin group', () => {
 })
 
 describe('capabilityReadiness with the hasBots fact', () => {
-  const team: AnyCapabilityManifest = { ...fixtureCapability('team'), requiresProjectFacts: ['hasBots'] }
+  const team: AnyCapabilityManifest = { ...fixtureCapability('team'), requiresWorkspaceFacts: ['hasBots'] }
+  const messages: WorkspaceFactMessages = { hasBots: scope => `The ${scope.singular} has no bots yet; add one on the Bots page.` }
 
-  it('is not ready until the project has a bot', () => {
-    expect(capabilityReadiness(team, label, {}, facts)).toEqual([{ kind: 'project-fact', fact: 'hasBots', message: 'The project has no bots yet; add one on the Bots page.' }])
-    expect(capabilityReadiness(team, label, {}, { ...facts, hasBots: true })).toEqual([])
+  it('is not ready until the workspace has a bot, worded by the declaration', () => {
+    expect(capabilityReadiness(team, label, {}, facts, {}, messages)).toEqual([{ kind: 'workspace-fact', fact: 'hasBots', message: 'The project has no bots yet; add one on the Bots page.' }])
+    expect(capabilityReadiness(team, label, {}, { ...facts, hasBots: true }, {}, messages)).toEqual([])
+  })
+
+  it('treats a fact absent from the computed set as false, worded generically without a declaration', () => {
+    expect(capabilityReadiness(team, label, {}, {})).toEqual([{ kind: 'workspace-fact', fact: 'hasBots', message: "The project lacks 'hasBots'." }])
   })
 })

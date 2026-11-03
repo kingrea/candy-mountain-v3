@@ -3,7 +3,8 @@ import { statSync, watch, type FSWatcher } from 'node:fs'
 import { readdir, readFile, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { Db } from '../db'
-import { listProjects, sourcePath } from '../projects'
+import { listWorkspaces } from '../workspaces'
+import type { RepositoryPaths } from '../repository/service'
 import { invalidateIssueList } from './service'
 
 export const ISSUE_WATCH_DEBOUNCE_MS = 250
@@ -20,6 +21,7 @@ export type IssueChangeListener = () => void
 
 export interface IssueWatcherOptions {
   db: Db
+  repository: RepositoryPaths
   invalidate?: (projectId: string) => void
   debounceMs?: number
   maxWaitMs?: number
@@ -223,7 +225,10 @@ export function startIssueWatcher(options: IssueWatcherOptions): IssueWatcher {
 
   function reconcile(): void {
     if (controller.signal.aborted) return
-    const active = new Map(listProjects(options.db).map(project => [project.id, sourcePath(project.source)]))
+    const active = new Map(listWorkspaces(options.db).flatMap((project) => {
+      const path = options.repository.find(project.id)
+      return path === null ? [] : [[project.id, path] as const]
+    }))
     for (const [projectId, existing] of watches) {
       if (active.get(projectId) === existing.cwd) continue
       existing.close()

@@ -2,7 +2,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { readFileSync, rmSync, writeFileSync } from 'node:fs'
 import type { Monitor } from '@candy-mountain/shared'
 import type { Db } from '../db'
-import { onProjectArchiveChange } from '../projects/projects'
+import { onWorkspaceArchiveChange } from '../workspaces/workspaces'
 import { MONITOR_SOURCE_REGISTRY } from './builtin-sources'
 import { latestMonitorCheckAt, recordMonitorCheck, type UptimeCheck } from './checks'
 import { resolveUptimeSettings } from './config'
@@ -209,7 +209,7 @@ export function startUptimeScheduler(
     if (change.kind === 'deleted') unschedule(change.monitorId)
     else schedule(change.monitor)
   })
-  const unsubscribeArchive = onProjectArchiveChange((changedDb) => {
+  const unsubscribeArchive = onWorkspaceArchiveChange((changedDb) => {
     if (changedDb === db) reload()
   })
 

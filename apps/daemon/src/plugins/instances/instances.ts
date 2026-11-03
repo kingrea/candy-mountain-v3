@@ -13,8 +13,8 @@ import {
 import { and, eq, isNull, or } from 'drizzle-orm'
 import type { DataPaths } from '../../data-dir'
 import type { Db } from '../../db'
-import { pluginInstances, projects } from '../../db/schema'
-import { findProjectById } from '../../projects/projects'
+import { pluginInstances, workspaces } from '../../db/schema'
+import { findWorkspaceById } from '../../workspaces/workspaces'
 import type { SecretsStore, SecretsWriter } from '../../secrets'
 import type { AnyPluginType } from '../definition'
 import { checkPluginHealth } from '../health'
@@ -34,7 +34,7 @@ export type SecretsReader = Pick<SecretsStore, 'get'>
 export interface CreatePluginInstanceInput {
   type: string
   scope: PluginScope
-  projectId: string | null
+  workspaceId: string | null
   config?: unknown
   secrets?: PluginSecretValues
 }
@@ -47,17 +47,17 @@ export interface UpdatePluginInstanceInput {
 type InstanceRow = typeof pluginInstances.$inferSelect
 
 const selectInstances = (db: Db) =>
-  db.select({ row: pluginInstances, projectSlug: projects.slug }).from(pluginInstances).leftJoin(projects, eq(projects.id, pluginInstances.projectId))
+  db.select({ row: pluginInstances, workspaceSlug: workspaces.slug }).from(pluginInstances).leftJoin(workspaces, eq(workspaces.id, pluginInstances.workspaceId))
 
-function toInstance(deps: PluginInstanceDeps, row: InstanceRow, projectSlug: string | null): PluginInstance {
+function toInstance(deps: PluginInstanceDeps, row: InstanceRow, workspaceSlug: string | null): PluginInstance {
   const type = deps.pluginTypes.byId(row.typeId)
   const owner = pluginSecretOwner(row.id)
   return {
     id: row.id,
     type: row.typeId as PluginTypeId,
     scope: row.scope,
-    projectId: row.projectId,
-    projectSlug,
+    workspaceId: row.workspaceId,
+    workspaceSlug,
     config: row.config,
     secrets: Object.fromEntries((type?.secretFields ?? []).map(f => [f.name, deps.secrets.isSet(owner, f.name) ? 'set' : 'unset'])),
     health: row.health && row.healthCheckedAt ? { ...row.health, checkedAt: row.healthCheckedAt } : null,
@@ -66,28 +66,28 @@ function toInstance(deps: PluginInstanceDeps, row: InstanceRow, projectSlug: str
   }
 }
 
-function sortInstances(deps: PluginInstanceDeps, rows: { row: InstanceRow, projectSlug: string | null }[]): PluginInstance[] {
+function sortInstances(deps: PluginInstanceDeps, rows: { row: InstanceRow, workspaceSlug: string | null }[]): PluginInstance[] {
   const typeOrder = deps.pluginTypes.ids() as readonly string[]
-  const rank = (row: InstanceRow) => [row.scope === 'project' ? 0 : 1, typeOrder.includes(row.typeId) ? typeOrder.indexOf(row.typeId) : typeOrder.length] as const
+  const rank = (row: InstanceRow) => [row.scope === 'workspace' ? 0 : 1, typeOrder.includes(row.typeId) ? typeOrder.indexOf(row.typeId) : typeOrder.length] as const
   return rows
     .sort((a, b) => {
       const [sa, ta] = rank(a.row)
       const [sb, tb] = rank(b.row)
       return sa - sb || ta - tb || a.row.createdAt.localeCompare(b.row.createdAt)
     })
-    .map(({ row, projectSlug }) => toInstance(deps, row, projectSlug))
+    .map(({ row, workspaceSlug }) => toInstance(deps, row, workspaceSlug))
 }
 
-/** With a project: its own instances first, then the global ones. Without: global instances only. */
-export function listPluginInstances(deps: PluginInstanceDeps, { projectId }: { projectId?: string } = {}): PluginInstance[] {
+/** With a workspace: its own instances first, then the global ones. Without: global instances only. */
+export function listPluginInstances(deps: PluginInstanceDeps, { workspaceId }: { workspaceId?: string } = {}): PluginInstance[] {
   const global = eq(pluginInstances.scope, 'global')
-  const where = projectId === undefined ? global : or(global, eq(pluginInstances.projectId, projectId))
+  const where = workspaceId === undefined ? global : or(global, eq(pluginInstances.workspaceId, workspaceId))
   return sortInstances(deps, selectInstances(deps.db).where(where).all())
 }
 
 export function findPluginInstance(deps: PluginInstanceDeps, id: string): PluginInstance | null {
   const found = selectInstances(deps.db).where(eq(pluginInstances.id, id)).get()
-  return found ? toInstance(deps, found.row, found.projectSlug) : null
+  return found ? toInstance(deps, found.row, found.workspaceSlug) : null
 }
 
 export function getPluginInstance(deps: PluginInstanceDeps, id: string): PluginInstance {
@@ -97,11 +97,11 @@ export function getPluginInstance(deps: PluginInstanceDeps, id: string): PluginI
 }
 
 /**
- * The instance a project uses for a plugin type: its own, else the platform's global one.
+ * The instance a workspace uses for a plugin type: its own, else the platform's global one.
  * Oldest first when a multi-instance type has several.
  */
-export function resolvePluginInstance(deps: PluginInstanceDeps, projectId: string, typeId: PluginTypeId): PluginInstance | null {
-  return listPluginInstances(deps, { projectId }).find(i => i.type === typeId) ?? null
+export function resolvePluginInstance(deps: PluginInstanceDeps, workspaceId: string, typeId: PluginTypeId): PluginInstance | null {
+  return listPluginInstances(deps, { workspaceId }).find(i => i.type === typeId) ?? null
 }
 
 export function pluginTypeOf(deps: Pick<PluginInstanceDeps, 'pluginTypes'>, typeId: string): AnyPluginType {
@@ -161,8 +161,8 @@ function applySecrets(deps: PluginInstanceDeps, id: string, changes: SecretChang
   for (const name of changes.clear) deps.secrets.delete(owner, name)
 }
 
-function ownerTaken(db: Db, typeId: string, projectId: string | null): boolean {
-  const owner = projectId === null ? isNull(pluginInstances.projectId) : eq(pluginInstances.projectId, projectId)
+function ownerTaken(db: Db, typeId: string, workspaceId: string | null): boolean {
+  const owner = workspaceId === null ? isNull(pluginInstances.workspaceId) : eq(pluginInstances.workspaceId, workspaceId)
   return db.select({ id: pluginInstances.id }).from(pluginInstances).where(and(eq(pluginInstances.typeId, typeId), owner)).get() !== undefined
 }
 
@@ -171,11 +171,11 @@ export function createPluginInstance(deps: PluginInstanceDeps, input: CreatePlug
   if (!type.scopes.includes(input.scope)) {
     throw new PluginInstanceError('unsupported_scope', `${type.name} supports ${type.scopes.join(' and ')} scope only, not ${input.scope}`)
   }
-  if ((input.scope === 'project') !== (input.projectId !== null)) {
-    throw new PluginInstanceError('invalid_request', input.scope === 'project' ? 'A project instance needs a project' : 'A global instance cannot belong to a project')
+  if ((input.scope === 'workspace') !== (input.workspaceId !== null)) {
+    throw new PluginInstanceError('invalid_request', input.scope === 'workspace' ? 'A project instance needs a project' : 'A global instance cannot belong to a project')
   }
-  if (input.projectId !== null && !findProjectById(deps.db, input.projectId)) {
-    throw new PluginInstanceError('project_not_found', `No project with id "${input.projectId}"`)
+  if (input.workspaceId !== null && !findWorkspaceById(deps.db, input.workspaceId)) {
+    throw new PluginInstanceError('workspace_not_found', `No project with id "${input.workspaceId}"`)
   }
   const config = validateConfig(type, input.config ?? {})
   const changes = secretChanges(type, input.secrets, true)
@@ -184,10 +184,10 @@ export function createPluginInstance(deps: PluginInstanceDeps, input: CreatePlug
   const id = randomUUID()
   const now = new Date().toISOString()
   deps.db.transaction((tx) => {
-    if (type.singleInstance && ownerTaken(tx, type.id, input.projectId)) {
-      throw new PluginInstanceError('instance_exists', `${input.projectId === null ? 'The platform' : 'This project'} already has a ${type.name} instance`)
+    if (type.singleInstance && ownerTaken(tx, type.id, input.workspaceId)) {
+      throw new PluginInstanceError('instance_exists', `${input.workspaceId === null ? 'The platform' : 'This project'} already has a ${type.name} instance`)
     }
-    tx.insert(pluginInstances).values({ id, typeId: type.id, scope: input.scope, projectId: input.projectId, config, createdAt: now, updatedAt: now }).run()
+    tx.insert(pluginInstances).values({ id, typeId: type.id, scope: input.scope, workspaceId: input.workspaceId, config, createdAt: now, updatedAt: now }).run()
   })
   try {
     applySecrets(deps, id, changes)
@@ -234,11 +234,11 @@ export async function deletePluginInstance(deps: PluginInstanceDeleteDeps, id: s
   deps.secrets.deleteOwner(pluginSecretOwner(id))
 }
 
-/** Call before deleting a project: the rows would cascade, but their secrets and agent homes live outside the database. */
-export async function deleteProjectPluginInstances(deps: PluginInstanceDeleteDeps, projectId: string): Promise<number> {
-  const instances = selectInstances(deps.db).where(eq(pluginInstances.projectId, projectId)).all().map(({ row, projectSlug }) => toInstance(deps, row, projectSlug))
+/** Call before deleting a workspace: the rows would cascade, but their secrets and agent homes live outside the database. */
+export async function deleteWorkspacePluginInstances(deps: PluginInstanceDeleteDeps, workspaceId: string): Promise<number> {
+  const instances = selectInstances(deps.db).where(eq(pluginInstances.workspaceId, workspaceId)).all().map(({ row, workspaceSlug }) => toInstance(deps, row, workspaceSlug))
   for (const instance of instances) await runDeleteHook(deps, instance)
-  deps.db.delete(pluginInstances).where(eq(pluginInstances.projectId, projectId)).run()
+  deps.db.delete(pluginInstances).where(eq(pluginInstances.workspaceId, workspaceId)).run()
   for (const { id } of instances) deps.secrets.deleteOwner(pluginSecretOwner(id))
   return instances.length
 }
@@ -254,8 +254,8 @@ export async function testPluginInstance(deps: PluginInstanceDeps & { secretsRea
   let health: PluginHealth
   try {
     const config = instanceConfig(type, instance)
-    const { id: instanceId, scope, projectId } = instance
-    health = await checkPluginHealth(type, { config, secrets: createPluginSecrets(deps.secretsReader, id, type), timeoutMs, instance: { id: instanceId, scope, projectId }, paths: deps.paths })
+    const { id: instanceId, scope, workspaceId } = instance
+    health = await checkPluginHealth(type, { config, secrets: createPluginSecrets(deps.secretsReader, id, type), timeoutMs, instance: { id: instanceId, scope, workspaceId }, paths: deps.paths })
   }
   catch (error) {
     if (!(error instanceof PluginInstanceError)) throw error

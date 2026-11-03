@@ -1,12 +1,12 @@
 import { randomUUID } from 'node:crypto'
-import { BOTS_CAPABILITY_ID, botAgentId, botIdOfAgent, CHAT_THREAD_TITLE_MAX_LENGTH, chatThreadLink, type Actor, type AgentSession, type AgentSessionFamily, type AgentSessionStatus, type CapabilityId, type ChatThread, type ChatThreadBot, type ChatThreadCloseResponse, type ChatThreadPromptResponse, type ChatThreadResponse, type Project } from '@candy-mountain/shared'
+import { BOTS_CAPABILITY_ID, botAgentId, botIdOfAgent, CHAT_THREAD_TITLE_MAX_LENGTH, chatThreadLink, type Actor, type AgentSession, type AgentSessionFamily, type AgentSessionStatus, type CapabilityId, type ChatThread, type ChatThreadBot, type ChatThreadCloseResponse, type ChatThreadPromptResponse, type ChatThreadResponse, type Workspace } from '@candy-mountain/shared'
 import { and, eq, sql } from 'drizzle-orm'
 import { appendActivityEvent } from '../activity'
 import { BotStartError } from '../bot-sessions/errors'
 import type { CapabilityRegistry } from '../capabilities'
 import type { Db } from '../db'
-import { bots } from '../db/schema'
-import { findProjectById, sourcePath } from '../projects/projects'
+import { bots } from '../bots/schema'
+import { findWorkspaceById } from '../workspaces/workspaces'
 import type { ThreadBots } from './bots'
 import { ThreadError } from './errors'
 import { assertModelEffort, chatPosture, familyOptions, type FamilyOptions } from './options'
@@ -18,7 +18,7 @@ export interface ChatAgent {
   label: string
   capabilityId: CapabilityId
   family: AgentSessionFamily
-  /** Set for a project bot: its threads run bot sessions in a worktree instead of the project checkout. */
+  /** Set for a workspace bot: its threads run bot sessions in a worktree instead of the workspace checkout. */
   botId?: string
 }
 
@@ -38,22 +38,23 @@ export function findChatAgent(capabilities: CapabilityRegistry, agentId: string)
 const botChatAgent = (bot: { id: string, name: string, family: AgentSessionFamily }): ChatAgent =>
   ({ id: botAgentId(bot.id), label: bot.name, capabilityId: BOTS_CAPABILITY_ID, family: bot.family, botId: bot.id })
 
-/** Every bot of the project, whatever its status, so threads of a bot that later lost a key still list. */
-export function projectBotAgents(db: Db, projectId: string): ChatAgent[] {
-  return db.select({ id: bots.id, name: bots.name, family: bots.family }).from(bots).where(eq(bots.projectId, projectId)).orderBy(sql`lower(${bots.name})`).all().map(botChatAgent)
+/** Every bot of the workspace, whatever its status, so threads of a bot that later lost a key still list; none when the product has no bots, whose table it then lacks. */
+export function workspaceBotAgents(db: Db, capabilities: CapabilityRegistry, workspaceId: string): ChatAgent[] {
+  if (!capabilities.has(BOTS_CAPABILITY_ID)) return []
+  return db.select({ id: bots.id, name: bots.name, family: bots.family }).from(bots).where(eq(bots.projectId, workspaceId)).orderBy(sql`lower(${bots.name})`).all().map(botChatAgent)
 }
 
-/** A manifest agent, or a `bot:<id>` agent of this project. */
-export function findThreadAgent(db: Db, capabilities: CapabilityRegistry, projectId: string, agentId: string): ChatAgent {
+/** A manifest agent, or a `bot:<id>` agent of this workspace. */
+export function findThreadAgent(db: Db, capabilities: CapabilityRegistry, workspaceId: string, agentId: string): ChatAgent {
   const botId = botIdOfAgent(agentId)
   if (botId === null) return findChatAgent(capabilities, agentId)
-  const bot = db.select({ id: bots.id, name: bots.name, family: bots.family }).from(bots).where(and(eq(bots.id, botId), eq(bots.projectId, projectId))).get()
+  const bot = capabilities.has(BOTS_CAPABILITY_ID) && db.select({ id: bots.id, name: bots.name, family: bots.family }).from(bots).where(and(eq(bots.id, botId), eq(bots.projectId, workspaceId))).get()
   if (!bot) throw new ThreadError('not_found', `No chat agent with id '${agentId}'`)
   return botChatAgent(bot)
 }
 
 export interface CreateThreadInput {
-  project: Project
+  workspace: Workspace
   actorId: string
   agent: ChatAgent
   title?: string | null
@@ -70,14 +71,14 @@ export interface UpdateThreadInput {
 }
 
 export interface ThreadService {
-  list(projectId: string, actorId: string, agentIds: readonly string[]): ChatThread[]
+  list(workspaceId: string, actorId: string, agentIds: readonly string[]): ChatThread[]
   get(id: string): ChatThread | null
   create(input: CreateThreadInput): Promise<ChatThreadResponse>
   detail(thread: ChatThread): ChatThreadResponse
-  update(project: Project, thread: ChatThread, agent: ChatAgent, input: UpdateThreadInput): ChatThreadResponse
+  update(workspace: Workspace, thread: ChatThread, agent: ChatAgent, input: UpdateThreadInput): ChatThreadResponse
   markRead(thread: ChatThread): ChatThread
-  /** Models and efforts the agent offers in this project; Codex's appear once one of its sessions has run. */
-  options(project: Project, agent: ChatAgent): FamilyOptions
+  /** Models and efforts the agent offers in this workspace; Codex's appear once one of its sessions has run. */
+  options(workspace: Workspace, agent: ChatAgent): FamilyOptions
   prompt(thread: ChatThread, text: string, actor: Actor): Promise<ChatThreadPromptResponse>
   cancel(thread: ChatThread): Promise<ChatThreadPromptResponse>
   /** Bot threads only: ends the turn and releases the worktree unless it holds unpushed work. */
@@ -86,7 +87,7 @@ export interface ThreadService {
 
 /** One turn of a thread whose family runs inside the daemon instead of through the ACP harness. */
 export interface NativeFamilyTurn extends NativeTurn {
-  project: Project
+  workspace: Workspace
   actor: Actor
   thread: ChatThread
   session: AgentSession
@@ -192,8 +193,8 @@ export function createThreadService(db: Db, sessions: ThreadSessions, options: T
     }
   }
 
-  function startSession(project: Project, actorId: string, agent: ChatAgent, model: string | null, effort: string | null): AgentSession {
-    return sessions.create({ projectId: project.id, family: agent.family, actorId, cwd: sourcePath(project.source), posture: chatPosture(agent.family, model, effort) })
+  function startSession(workspace: Workspace, actorId: string, agent: ChatAgent, model: string | null, effort: string | null): AgentSession {
+    return sessions.create({ workspaceId: workspace.id, family: agent.family, actorId, posture: chatPosture(agent.family, model, effort) })
   }
 
   function detail(thread: ChatThread): ChatThreadResponse {
@@ -209,14 +210,14 @@ export function createThreadService(db: Db, sessions: ThreadSessions, options: T
   }
 
   return {
-    list: (projectId, actorId, agentIds) => listThreads(db, projectId, actorId, agentIds).map(adopt),
+    list: (workspaceId, actorId, agentIds) => listThreads(db, workspaceId, actorId, agentIds).map(adopt),
     get(id) {
       const thread = findThread(db, id)
       return thread && adopt(thread)
     },
     detail,
 
-    async create({ project, actorId, agent, title = null, model = null, effort = null, issueIds, signal }) {
+    async create({ workspace, actorId, agent, title = null, model = null, effort = null, issueIds, signal }) {
       if (agent.botId !== undefined) {
         if (model !== null || effort !== null) throw new ThreadError('invalid_request', 'A bot runs with its own posture; model and effort cannot be chosen')
         const id = randomUUID()
@@ -225,12 +226,12 @@ export function createThreadService(db: Db, sessions: ThreadSessions, options: T
         updateThread(db, id, { title })
         return detail(adopt(findThread(db, id)!))
       }
-      assertModelEffort(agent.family, model, effort, sessions.configOptions(project.id, agent.family))
-      const session = startSession(project, actorId, agent, model, effort)
+      assertModelEffort(agent.family, model, effort, sessions.configOptions(workspace.id, agent.family))
+      const session = startSession(workspace, actorId, agent, model, effort)
       const at = now()
       const thread = insertThread(db, {
         id: randomUUID(),
-        projectId: project.id,
+        workspaceId: workspace.id,
         actorId,
         agentId: agent.id,
         currentSessionId: session.id,
@@ -247,17 +248,17 @@ export function createThreadService(db: Db, sessions: ThreadSessions, options: T
       watch(thread.id, session.id)
       if (issueIds?.length) {
         appendActivityEvent(db, {
-          projectId: project.id,
+          workspaceId: workspace.id,
           type: 'run.started',
           title: `${agent.label} run: ${issueIds.join(', ')}`,
-          link: chatThreadLink(options.scopeUrlPrefix, project.slug, thread.id),
+          link: chatThreadLink(options.scopeUrlPrefix, workspace.slug, thread.id),
           payload: { threadId: thread.id, agentId: agent.id, sessionId: session.id, issueIds: [...issueIds] },
         })
       }
       return detail(thread)
     },
 
-    update(project, thread, agent, input) {
+    update(workspace, thread, agent, input) {
       const at = now()
       const model = input.model === undefined ? thread.model : input.model
       const effort = input.effort === undefined ? thread.effort : input.effort
@@ -268,14 +269,14 @@ export function createThreadService(db: Db, sessions: ThreadSessions, options: T
       }
       if (agent.botId !== undefined) throw new ThreadError('invalid_request', 'A bot runs with its own posture; model and effort cannot be chosen')
       if (thread.working || BUSY.has(sessionOf(thread).status)) throw new ThreadError('thread_busy', 'Wait for the turn to end or cancel it before changing the model or effort')
-      assertModelEffort(agent.family, model, effort, sessions.configOptions(project.id, agent.family), thread)
-      const session = startSession(project, thread.actorId, agent, model, effort)
+      assertModelEffort(agent.family, model, effort, sessions.configOptions(workspace.id, agent.family), thread)
+      const session = startSession(workspace, thread.actorId, agent, model, effort)
       switchThreadSession(db, thread.id, { sessionId: session.id, model, effort, createdAt: at }, { ...titlePatch, model, effort, lastActivityAt: at, updatedAt: at })
       watch(thread.id, session.id)
       return detail(reload(thread))
     },
 
-    options: (project, agent) => familyOptions(agent.family, sessions.configOptions(project.id, agent.family)),
+    options: (workspace, agent) => familyOptions(agent.family, sessions.configOptions(workspace.id, agent.family)),
 
     markRead(thread) {
       const at = now()
@@ -288,9 +289,9 @@ export function createThreadService(db: Db, sessions: ThreadSessions, options: T
         const session = sessionOf(thread)
         const native = options.native?.[session.family]
         if (native) {
-          const project = findProjectById(db, thread.projectId)
-          if (!project) throw new ThreadError('not_found', `The project of thread '${thread.id}' is gone`)
-          await sessions.run(session.id, text, turn => native({ ...turn, project, actor, thread, session, text }))
+          const workspace = findWorkspaceById(db, thread.workspaceId)
+          if (!workspace) throw new ThreadError('not_found', `The project of thread '${thread.id}' is gone`)
+          await sessions.run(session.id, text, turn => native({ ...turn, workspace, actor, thread, session, text }))
         }
         else if (session.posture?.bot) {
           await promptBot(thread, session, text)

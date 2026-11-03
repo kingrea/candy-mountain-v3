@@ -1,4 +1,4 @@
-import type { Organisation, Project } from '@candy-mountain/shared'
+import type { Organisation, Workspace } from '@candy-mountain/shared'
 import { describe, expect, it } from 'vitest'
 import {
   groupProjectsByOrganisation,
@@ -15,7 +15,7 @@ function organisation(slug: string, name: string): Organisation {
   return { id: `org-${slug}`, slug, name, createdAt: TIMESTAMP, updatedAt: TIMESTAMP }
 }
 
-function project(slug: string, name: string, organisationId: string | null, archived = false): Project {
+function project(slug: string, name: string, organisationId: string | null, archived = false): Workspace {
   return {
     id: `project-${slug}`,
     slug,
@@ -24,16 +24,6 @@ function project(slug: string, name: string, organisationId: string | null, arch
     organisationId,
     archived,
     archivedAt: archived ? TIMESTAMP : null,
-    source: { kind: 'local-path', path: `/code/${slug}` },
-    verification: {
-      checkedAt: TIMESTAMP,
-      pathExists: true,
-      hasBeads: true,
-      isGitRepo: true,
-      hasRemote: false,
-      remoteName: null,
-      remoteUrl: null,
-    },
     createdAt: TIMESTAMP,
     updatedAt: TIMESTAMP,
   }

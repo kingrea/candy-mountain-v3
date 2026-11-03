@@ -77,7 +77,7 @@ describe('heroku plugin type', () => {
     expect(PLUGIN_TYPES).not.toContain(herokuPluginType)
     expect(createPluginTypeRegistry([...PLUGIN_TYPES, herokuPluginType]).get('heroku')).toBe(herokuPluginType)
     const info = pluginTypeInfo(herokuPluginType)
-    expect(info.scopes).toEqual(['project'])
+    expect(info.scopes).toEqual(['workspace'])
     expect(info.singleInstance).toBe(true)
     expect(info.configFields).toEqual([expect.objectContaining({ name: 'appName', required: true })])
     expect(info.secretFields).toEqual([expect.objectContaining({ name: 'apiKey', required: true })])

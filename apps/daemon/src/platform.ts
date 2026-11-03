@@ -1,14 +1,15 @@
-import { ACTIVITY_EVENT_TYPES, createActivityEventTypeRegistry, registerActivityEventTypes, type ActivityEventTypeRegistry } from './activity'
+import { createActivityEventTypeRegistry, declaredActivityEventTypes, registerActivityEventTypes, type ActivityEventTypeRegistry } from './activity'
 import { startAgentMcpHost, type AgentMcpHost } from './agent-mcp'
 import { seedAuth } from './auth/seed'
-import { createCapabilityRegistry, startCapabilities, type CapabilityRegistry, type StartedCapabilities } from './capabilities'
+import { createCapabilityRegistry, migrationSets, startCapabilities, type CapabilityRegistry, type StartedCapabilities } from './capabilities'
 import { ensureDataDir, type DataPaths } from './data-dir'
-import { openDatabase, type Db, type OpenDatabaseOptions } from './db'
+import { assertMigrationSets, openDatabase, PLATFORM_MIGRATION_SET, type AppliedMigrationSet, type Db, type LegacyCarryOver } from './db'
 import { seedAdminGrants } from './grants/seed'
 import { createModuleRegistry, type ModuleRegistry } from './modules/registry'
 import { startNotificationDispatcher, type NotificationDispatcher, type NotificationDispatcherOptions } from './notifications'
 import { platformDefinitions } from './platform-capabilities'
 import { createPluginTypeRegistry, type PluginTypeRegistry } from './plugins/registry'
+import { assertRequiredWorkspaceFacts, createWorkspaceFactRegistry, declaredWorkspaceFacts, type WorkspaceFactRegistry } from './registry/facts'
 import { assertProduct, type Product } from './product'
 import { createSecretsStore, type MasterKey, type SecretsStore } from './secrets'
 import { assertAgentFamilies, createSessionFamilyRegistry, SESSION_FAMILIES, type SessionFamily, type SessionFamilyRegistry } from './threads/families'
@@ -17,7 +18,9 @@ export interface Platform {
   product: Product
   paths: DataPaths
   db: Db
+  migrationSets: readonly AppliedMigrationSet[]
   appliedMigrations: number
+  legacyCarryOver: LegacyCarryOver | null
   secrets: SecretsStore
   capabilities: CapabilityRegistry
   /** The started definition list; the app mounts its routes and runs its chat families. */
@@ -26,22 +29,25 @@ export interface Platform {
   pluginTypes: PluginTypeRegistry
   families: SessionFamilyRegistry
   activityEventTypes: ActivityEventTypeRegistry
+  /** The facts the definitions declare; the registry loader and gates read them through `c.var`. */
+  workspaceFacts: WorkspaceFactRegistry
   agentMcp: AgentMcpHost
   notifications: NotificationDispatcher
   /** Resolves once the started definitions have closed and the database is shut. */
   close(): Promise<void>
 }
 
-export interface PlatformOptions extends OpenDatabaseOptions {
+export interface PlatformOptions {
   secretsKey?: MasterKey
+  /** Replaces the platform set's folder; tests apply a migration the repo does not have through it. */
+  migrationsFolder?: string
   /** What to boot: the platform has no capabilities, modules or plugin types of its own beyond its platform definitions. */
   product: Product
   families?: readonly SessionFamily[]
-  activityEventTypes?: readonly string[]
   notifications?: NotificationDispatcherOptions
 }
 
-export function startPlatform(dataDir: string, { secretsKey, product, families = SESSION_FAMILIES, activityEventTypes = ACTIVITY_EVENT_TYPES, notifications: notificationOptions, ...options }: PlatformOptions): Platform {
+export function startPlatform(dataDir: string, { secretsKey, product, families = SESSION_FAMILIES, notifications: notificationOptions, migrationsFolder }: PlatformOptions): Platform {
   // Validated before anything touches disk, so a bad manifest, plugin type or family leaves no trace; the product's own come first so their errors do too.
   assertProduct(product)
   const { capabilities, modules, pluginTypes } = product
@@ -54,15 +60,19 @@ export function startPlatform(dataDir: string, { secretsKey, product, families =
   // Definition families first keeps the order of the old fixed family list, which session listings and their first refusal follow.
   const familyRegistry = createSessionFamilyRegistry([...definitions.flatMap(d => d.sessionFamilies ?? []), ...families])
   assertAgentFamilies(registry.list(), familyRegistry)
-  const activityTypes = createActivityEventTypeRegistry(activityEventTypes)
+  const activityTypes = createActivityEventTypeRegistry(declaredActivityEventTypes(definitions))
+  const workspaceFacts = createWorkspaceFactRegistry(declaredWorkspaceFacts(definitions))
+  assertRequiredWorkspaceFacts(registry.list(), workspaceFacts)
+  const sets = migrationSets(definitions, migrationsFolder ? { ...PLATFORM_MIGRATION_SET, migrationsFolder } : PLATFORM_MIGRATION_SET)
+  assertMigrationSets(sets)
   const paths = ensureDataDir(dataDir)
-  const database = openDatabase(paths.database, options)
+  const database = openDatabase(paths.database, { sets })
   registerActivityEventTypes(database.db, activityTypes)
   seedAuth(database.db)
   seedAdminGrants({ db: database.db, capabilities: registry, modules: moduleRegistry })
   const secrets = createSecretsStore(paths.secrets, secretsKey)
   // Definitions start before the host that serves their MCP servers, so they get a facade that resolves once it exists.
-  const runtime = startCapabilities({ db: database.db, paths, secrets, capabilities: registry, modules: moduleRegistry, pluginTypes: pluginTypeRegistry, families: familyRegistry, agentMcp: { serversFor: session => agentMcp.serversFor(session) }, scopeUrlPrefix: product.config.scope.urlPrefix, scopeLabel: product.config.scope.label })
+  const runtime = startCapabilities({ db: database.db, paths, secrets, capabilities: registry, modules: moduleRegistry, pluginTypes: pluginTypeRegistry, families: familyRegistry, workspaceFacts, agentMcp: { serversFor: session => agentMcp.serversFor(session) }, scopeUrlPrefix: product.config.scope.urlPrefix, scopeLabel: product.config.scope.label })
   const agentMcp = startAgentMcpHost({ db: database.db, servers: runtime.mcpServers })
   const notifications = startNotificationDispatcher({ db: database.db, channels: runtime.notificationChannels, scopeUrlPrefix: product.config.scope.urlPrefix }, notificationOptions)
   const close = async () => {
@@ -76,5 +86,5 @@ export function startPlatform(dataDir: string, { secretsKey, product, families =
       database.close()
     }
   }
-  return { product, paths, db: database.db, appliedMigrations: database.appliedMigrations, secrets, capabilities: registry, runtime, modules: moduleRegistry, pluginTypes: pluginTypeRegistry, families: familyRegistry, activityEventTypes: activityTypes, agentMcp, notifications, close }
+  return { product, paths, db: database.db, migrationSets: database.migrationSets, appliedMigrations: database.appliedMigrations, legacyCarryOver: database.legacyCarryOver, secrets, capabilities: registry, runtime, modules: moduleRegistry, pluginTypes: pluginTypeRegistry, families: familyRegistry, activityEventTypes: activityTypes, workspaceFacts, agentMcp, notifications, close }
 }

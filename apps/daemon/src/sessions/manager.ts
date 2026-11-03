@@ -20,6 +20,8 @@ export interface SessionManagerDeps extends PluginInstanceDeps {
   families?: SessionFamilyRegistry
   /** Daemon-hosted MCP servers for one launch of the session. */
   mcpServers?: (session: AgentSession) => Promise<LaunchMcpServer[]>
+  /** The workspace's checkout, where a session created without a cwd runs; null when the workspace has none. */
+  workingDirectory: (workspaceId: string) => string | null
 }
 
 export type SessionLaunchDeps = Pick<SessionManagerDeps, 'db' | 'pluginTypes' | 'secrets' | 'secretsReader' | 'paths'>
@@ -29,7 +31,7 @@ export type SessionLaunchBase = Pick<StartSessionOptions, 'family' | 'cwd' | 'up
 export interface SessionLauncher {
   /** Throws an AcpLaunchError for a posture the family must never run with, so create refuses it before the row exists. */
   assertPosture?(posture: AgentSessionPosture): void
-  /** Throws a SessionError when the project cannot run the family. */
+  /** Throws a SessionError when the workspace cannot run the family. */
   launch(row: AgentSession, base: SessionLaunchBase, deps: SessionLaunchDeps): StartSessionOptions
 }
 
@@ -51,7 +53,7 @@ export interface SessionManager {
   /** Throws for a family the registry lacks or one that already has a launcher. */
   registerLauncher(family: AgentFamily, launcher: SessionLauncher): void
   create(input: CreateSessionInput): AgentSession
-  list(projectId: string): AgentSession[]
+  list(workspaceId: string): AgentSession[]
   get(id: string): AgentSession | null
   events(id: string, options?: { after?: number }): AgentSessionEvent[]
   /** Starts or resumes the live process when needed and sends the turn; resolves once the turn is running or queued. */
@@ -69,8 +71,8 @@ export interface SessionManager {
   respondToPermission(id: string, requestId: string, response: RequestPermissionResponse): boolean
   respondToQuestion(id: string, requestId: string, response: CreateElicitationResponse): boolean
   liveCount(): number
-  /** What the family's agent offered to configure in this project since boot: one set per model it ran with, latest last. */
-  configOptions(projectId: string, family: AgentSessionFamily): SessionConfigOption[][]
+  /** What the family's agent offered to configure in this workspace since boot: one set per model it ran with, latest last. */
+  configOptions(workspaceId: string, family: AgentSessionFamily): SessionConfigOption[][]
   /** Ends the live processes and the queue; the store's own close, which the platform runs after, settles the rest. */
   close(): Promise<void>
 }
@@ -127,13 +129,14 @@ export function createSessionManager(deps: SessionManagerDeps, options: SessionM
     if (row.family === 'platform') throw new SessionError('family_unavailable', 'Platform agent sessions run in-process; prompt them through their chat thread.')
     const launcher = launchers.get(row.family)
     if (!launcher || !isAgentFamily(row.family)) throw new SessionError('family_unavailable', `No agent harness launches ${families.nameOf(row.family)} sessions.`)
+    if (row.cwd === '') throw new SessionError('family_unavailable', `${families.nameOf(row.family)} sessions need a repository checkout to run in.`)
     return launcher.launch(row, { family: row.family, cwd: row.cwd, upstreamSessionId: row.upstreamSessionId ?? undefined }, deps)
   }
 
   // The efforts an agent offers depend on its current model, so one set is kept per model.
   function rememberConfig(row: AgentSession, options: readonly SessionConfigOption[]): void {
     if (!options.length) return
-    const key = `${row.projectId}\0${row.family}`
+    const key = `${row.workspaceId}\0${row.family}`
     const byModel = configCatalog.get(key) ?? new Map<string, SessionConfigOption[]>()
     configCatalog.set(key, byModel)
     const model = options.find(option => option.category === 'model')?.currentValue
@@ -269,7 +272,7 @@ export function createSessionManager(deps: SessionManagerDeps, options: SessionM
     return getRow(id)
   }
 
-  const configOptions = (projectId: string, family: AgentSessionFamily) => structuredClone([...(configCatalog.get(`${projectId}\0${family}`)?.values() ?? [])])
+  const configOptions = (workspaceId: string, family: AgentSessionFamily) => structuredClone([...(configCatalog.get(`${workspaceId}\0${family}`)?.values() ?? [])])
 
   store.attach({
     assertPosture(family, posture) {
@@ -282,6 +285,11 @@ export function createSessionManager(deps: SessionManagerDeps, options: SessionM
       }
     },
     prompt,
+    workingDirectory(workspaceId, family) {
+      const cwd = deps.workingDirectory(workspaceId)
+      if (cwd === null && launchers.has(family)) throw new SessionError('family_unavailable', `${families.nameOf(family)} sessions need a repository checkout to run in.`)
+      return cwd
+    },
     async cancel(id, row) {
       const queued = queue.findIndex(entry => entry.sessionId === id)
       if (queued >= 0) {

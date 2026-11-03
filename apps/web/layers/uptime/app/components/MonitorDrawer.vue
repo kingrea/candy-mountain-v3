@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {
-  projectMonitorChecksPath,
-  projectMonitorIncidentsPath,
+  workspaceMonitorChecksPath,
+  workspaceMonitorIncidentsPath,
   type IncidentListResponse,
   type Monitor,
   type MonitorCheckListResponse,
@@ -47,8 +47,8 @@ async function load(id: string) {
   const mine = ++generation
   try {
     const [checkList, incidentList] = await Promise.all([
-      $api<MonitorCheckListResponse>(`${projectMonitorChecksPath(current, id)}?limit=${UPTIME_DRAWER_CHECKS}`),
-      $api<IncidentListResponse>(`${projectMonitorIncidentsPath(current, id)}?limit=${UPTIME_CLOSED_INCIDENTS}`),
+      $api<MonitorCheckListResponse>(`${workspaceMonitorChecksPath(current, id)}?limit=${UPTIME_DRAWER_CHECKS}`),
+      $api<IncidentListResponse>(`${workspaceMonitorIncidentsPath(current, id)}?limit=${UPTIME_CLOSED_INCIDENTS}`),
     ])
     if (mine !== generation) return
     checks.value = checkList.checks

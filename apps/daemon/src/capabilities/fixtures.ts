@@ -5,6 +5,7 @@ import type { Db } from '../db'
 import { createModuleRegistry, MODULES } from '../modules'
 import { createPluginTypeRegistry, PLUGIN_TYPES } from '../plugins'
 import { productCapabilityRegistry } from '../product'
+import { createWorkspaceFactRegistry, declaredWorkspaceFacts } from '../registry/facts'
 import { lockedSecretsStore } from '../secrets'
 import { createSessionFamilyRegistry, SESSION_FAMILIES } from '../threads/families'
 import { CapabilityDefinitionError, defineCapabilityDefinition, type CapabilityContext, type CapabilityDefinition, type ServiceKey } from './definition'
@@ -25,7 +26,7 @@ export function fixtureCapability(id: CapabilityId, requiresPlugins: readonly st
     requiresPlugins,
     tools: [
       { id: `${id}.read`, kind: 'tool' },
-      { id: `${id}.search`, kind: 'operation', scope: { dimension: 'project', levels: ['own', 'all'] } },
+      { id: `${id}.search`, kind: 'operation', scope: { dimension: 'workspace', levels: ['own', 'all'] } },
     ],
     ladder: [
       { name: 'none', label: 'None', description: 'Nothing.', views: [], chat: false, tools: {} },
@@ -58,6 +59,7 @@ export function fixtureCapabilityContext(db: Db, overrides: Partial<CapabilityCo
     modules: createModuleRegistry(overrides.capabilities ? [] : MODULES, capabilities),
     pluginTypes: createPluginTypeRegistry(PLUGIN_TYPES),
     families: createSessionFamilyRegistry(SESSION_FAMILIES),
+    workspaceFacts: createWorkspaceFactRegistry(declaredWorkspaceFacts(capabilities.definitions())),
     agentMcp: { serversFor: async () => [] },
     scopeUrlPrefix: CANDY_MOUNTAIN.config.scope.urlPrefix,
     scopeLabel: CANDY_MOUNTAIN.config.scope.label,

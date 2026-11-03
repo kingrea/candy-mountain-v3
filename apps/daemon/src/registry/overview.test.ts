@@ -1,22 +1,22 @@
-import { projectRegistryPath, type RegistryResponse } from '@candy-mountain/shared'
+import { workspaceRegistryPath, type RegistryResponse } from '@candy-mountain/shared'
 import { afterEach, describe, expect, it } from 'vitest'
 import { addRole } from '../grants/test-access'
 import { instanceHarness, type InstanceHarness } from '../plugins/instances/test-support'
-import { setEnabledModules } from '../project-modules/enablement'
+import { setEnabledModules } from '../workspace-modules/enablement'
 
 let h: InstanceHarness
 afterEach(() => h.close())
 
 async function registry(roles?: string[]): Promise<RegistryResponse> {
-  const res = await h.app(roles).request(projectRegistryPath('alpha'))
+  const res = await h.app(roles).request(workspaceRegistryPath('alpha'))
   expect(res.status).toBe(200)
   return res.json() as Promise<RegistryResponse>
 }
 
 describe('Overview', () => {
-  it('is the project home with no module enabled', async () => {
+  it('is the workspace home with no module enabled', async () => {
     h = instanceHarness([])
-    await h.createProject('alpha')
+    await h.createWorkspace('alpha')
 
     const result = await registry()
     expect(result.groups.map(g => g.id)).toEqual(['overview', 'system'])
@@ -27,15 +27,15 @@ describe('Overview', () => {
 
   it('leads the sidebar ahead of the enabled modules', async () => {
     h = instanceHarness([])
-    const project = await h.createProject('alpha')
-    setEnabledModules(h.database.db, project.id, ['issues'])
+    const workspace = await h.createWorkspace('alpha')
+    setEnabledModules(h.database.db, workspace.id, ['issues'])
 
     expect((await registry()).groups.map(g => g.id)).toEqual(['overview', 'issues', 'system'])
   })
 
   it('gives a role with no grants at all the read rung', async () => {
     h = instanceHarness([])
-    await h.createProject('alpha')
+    await h.createWorkspace('alpha')
     addRole(h.database.db, 'developer')
 
     const result = await registry(['developer'])

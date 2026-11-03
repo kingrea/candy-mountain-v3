@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { projectUptimeIncidentsPath, type IncidentListResponse, type Monitor, type MonitorIncident, type MonitorStatus } from '@candy-mountain/shared'
+import { workspaceUptimeIncidentsPath, type IncidentListResponse, type Monitor, type MonitorIncident, type MonitorStatus } from '@candy-mountain/shared'
 
 const props = defineProps<{
   statuses: MonitorStatus[]
@@ -21,7 +21,7 @@ async function loadClosed() {
   const current = slug.value
   if (!current) return
   try {
-    const response = await $api<IncidentListResponse>(`${projectUptimeIncidentsPath(current)}?status=closed&limit=${UPTIME_CLOSED_INCIDENTS}`)
+    const response = await $api<IncidentListResponse>(`${workspaceUptimeIncidentsPath(current)}?status=closed&limit=${UPTIME_CLOSED_INCIDENTS}`)
     if (slug.value !== current) return
     closed.value = response.incidents
     failed.value = false

@@ -4,7 +4,7 @@ import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type {
-  Actor, ActivityListResponse, ApiErrorBody, IncidentListResponse, Monitor, MonitorCheckListResponse, MonitorStatusResponse, Project, UptimeStatusResponse,
+  Actor, ActivityListResponse, ApiErrorBody, IncidentListResponse, Monitor, MonitorCheckListResponse, MonitorStatusResponse, Workspace, UptimeStatusResponse,
 } from '@candy-mountain/shared'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { listActivityEvents } from '../activity'
@@ -12,8 +12,8 @@ import { createTestApp } from '../testing/platform'
 import type { AuthStrategy } from '../auth'
 import { dataPaths } from '../data-dir'
 import type { PlatformDatabase } from '../db'
-import { setEnabledModules } from '../project-modules/enablement'
-import { archiveProject, createProject, unarchiveProject } from '../projects/projects'
+import { setEnabledModules } from '../workspace-modules/enablement'
+import { archiveWorkspace, unarchiveWorkspace } from '../workspaces/workspaces'
 import { openTestDatabase } from '../testing'
 import { MONITOR_SOURCE_REGISTRY } from './builtin-sources'
 import type { MonitorCheckResult } from './check'
@@ -25,6 +25,7 @@ import { createMonitor } from './service'
 import { createMonitorSourceRegistry, defineMonitorSource } from './sources'
 import { deriveMonitorState, monitorStatus } from './state'
 import { startIncidentTracker, type IncidentTracker } from './tracker'
+import { createWorkspaceWithRepository } from '../repository/test-support'
 
 const T0 = Date.parse('2026-10-01T00:00:00.000Z')
 const at = (s: number) => new Date(T0 + s * 1000).toISOString()
@@ -34,7 +35,7 @@ type Outcome = 'up' | 'down' | 'slow' | 'degraded'
 
 let database: PlatformDatabase
 let root: string
-let project: Project
+let project: Workspace
 let outcome: Outcome
 let running: { scheduler: UptimeScheduler, tracker: IncidentTracker }[]
 
@@ -57,7 +58,7 @@ beforeEach(async () => {
   database = openTestDatabase()
   root = mkdtempSync(join(tmpdir(), 'candy-mountain-incidents-'))
   mkdirSync(join(root, '.beads'))
-  project = await createProject(database.db, { name: 'Alpha', source: { kind: 'local-path', path: root } })
+  project = await createWorkspaceWithRepository(database.db, { name: 'Alpha', path: root })
   setEnabledModules(database.db, project.id, ['operations'])
   outcome = 'up'
   running = []
@@ -237,12 +238,12 @@ describe('incidents', () => {
     await advance(30)
     expect(listMonitorChecks(database.db, m.id)).toHaveLength(2)
 
-    archiveProject(database.db, project.slug)
+    archiveWorkspace(database.db, project.slug)
     expect(scheduler.scheduled()).toEqual([])
     await advance(120)
     expect(listMonitorChecks(database.db, m.id)).toHaveLength(2)
 
-    unarchiveProject(database.db, project.slug)
+    unarchiveWorkspace(database.db, project.slug)
     expect(scheduler.scheduled()).toEqual([m.id])
     await advance(0)
     expect(listMonitorChecks(database.db, m.id)).toHaveLength(3)
@@ -269,7 +270,7 @@ describe('uptime state routes', () => {
     start()
     await advance(60)
     stop()
-    const base = `/projects/${project.slug}`
+    const base = `/workspaces/${project.slug}`
 
     const status = await get<MonitorStatusResponse>(`${base}/monitors/${m.id}/status?recent=2`)
     expect(status.status).toBe(200)
@@ -300,7 +301,7 @@ describe('uptime state routes', () => {
 
   it('reports an unknown state with no history and rejects bad queries', async () => {
     const m = monitor()
-    const base = `/projects/${project.slug}`
+    const base = `/workspaces/${project.slug}`
     expect((await get<MonitorStatusResponse>(`${base}/monitors/${m.id}/status`)).body.status).toMatchObject({ state: 'unknown', lastCheck: null, openIncident: null, recentChecks: [] })
     const bad = async (path: string, code: string, status: number) => {
       const res = await get<ApiErrorBody>(path)
@@ -312,7 +313,7 @@ describe('uptime state routes', () => {
     await bad(`${base}/uptime/status?recent=201`, 'invalid_request', 400)
     await bad(`${base}/uptime/incidents?monitor=nope`, 'not_found', 404)
     await bad(`${base}/monitors/nope/status`, 'not_found', 404)
-    await bad('/projects/nope/uptime/status', 'not_found', 404)
+    await bad('/workspaces/nope/uptime/status', 'not_found', 404)
   })
 })
 

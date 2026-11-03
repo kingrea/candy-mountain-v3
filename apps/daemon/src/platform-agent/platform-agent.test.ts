@@ -1,6 +1,6 @@
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { BOTS_CAPABILITY_ID, PLATFORM_AGENT_ID, PLATFORM_SETTINGS_PATH, projectRegistryPath, projectThreadsPath, threadPromptPath, type Actor, type AgentSessionEvent, type ApiErrorBody, type ChatThreadResponse, type Project, type RegistryResponse } from '@candy-mountain/shared'
+import { BOTS_CAPABILITY_ID, PLATFORM_AGENT_ID, PLATFORM_SETTINGS_PATH, workspaceRegistryPath, workspaceThreadsPath, threadPromptPath, type Actor, type AgentSessionEvent, type ApiErrorBody, type ChatThreadResponse, type Workspace, type RegistryResponse } from '@candy-mountain/shared'
 import { eq } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createTestApp } from '../testing/platform'
@@ -9,8 +9,7 @@ import { assertCapability, CapabilityManifestError } from '../capabilities'
 import { pluginInstances } from '../db/schema'
 import { resolveActorRungs } from '../grants/resolve'
 import { createPluginInstance } from '../plugins/instances/instances'
-import { setEnabledModules } from '../project-modules/enablement'
-import { createProject } from '../projects/projects'
+import { setEnabledModules } from '../workspace-modules/enablement'
 import { startAcpPlatform, type AcpPlatform } from '../chat-claude-code/test-support'
 import { resolveCapabilityAccess } from '../registry'
 import { MasterKey } from '../secrets'
@@ -19,6 +18,7 @@ import type { PlatformTurnContext } from './context'
 import { platformAgentCapability } from './manifest'
 import { scriptedReply, startStubGateway, type StubGateway } from './test-support'
 import { describePlatform, openView, startChat } from './tools'
+import { createWorkspaceWithRepository } from '../repository/test-support'
 
 const ADMIN: Actor = { id: 'admin-actor', username: 'admin', displayName: 'Admin', roles: ['admin'] }
 const DEVELOPER: Actor = { id: 'dev-actor', username: 'dev', displayName: 'Dev', roles: ['developer'] }
@@ -56,10 +56,10 @@ async function json<T>(res: Response, status: number): Promise<T> {
   return res.json() as Promise<T>
 }
 
-async function project(slug = 'alpha', modules = ['issues', 'agent-hub']): Promise<Project> {
+async function workspace(slug = 'alpha', modules = ['issues', 'agent-hub']): Promise<Workspace> {
   const path = join(temp!.root, '..', 'repos', slug)
   mkdirSync(path, { recursive: true })
-  const created = await createProject(platform!.db, { name: 'Alpha', slug, source: { kind: 'local-path', path } })
+  const created = await createWorkspaceWithRepository(platform!.db, { name: 'Alpha', slug, path })
   setEnabledModules(platform!.db, created.id, modules as never)
   return created
 }
@@ -69,17 +69,17 @@ async function configureGateway(): Promise<void> {
   await json(await call('PUT', PLATFORM_SETTINGS_PATH, { gatewayBaseUrl: gateway.url, gatewayKey: 'sk-stub-key', modelId: 'stub-model' }), 200)
 }
 
-const registry = async (actor: Actor = ADMIN) => json<RegistryResponse>(await call('GET', projectRegistryPath('alpha'), undefined, actor), 200)
+const registry = async (actor: Actor = ADMIN) => json<RegistryResponse>(await call('GET', workspaceRegistryPath('alpha'), undefined, actor), 200)
 
-function healthyClaude(projectId: string): void {
+function healthyClaude(workspaceId: string): void {
   const p = platform!
-  const instance = createPluginInstance({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly }, { type: 'claude-code', scope: 'project', projectId, config: {}, secrets: {} })
+  const instance = createPluginInstance({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly }, { type: 'claude-code', scope: 'workspace', workspaceId, config: {}, secrets: {} })
   p.db.update(pluginInstances).set({ health: { healthy: true }, healthCheckedAt: new Date().toISOString() }).where(eq(pluginInstances.id, instance.id)).run()
 }
 
 /** Prompts a fresh platform thread and returns its session log once the turn has ended. */
 async function converse(text: string, actor: Actor = ADMIN): Promise<{ thread: ChatThreadResponse, events: AgentSessionEvent[] }> {
-  const thread = await json<ChatThreadResponse>(await call('POST', projectThreadsPath('alpha'), { agentId: PLATFORM_AGENT_ID }, actor), 201)
+  const thread = await json<ChatThreadResponse>(await call('POST', workspaceThreadsPath('alpha'), { agentId: PLATFORM_AGENT_ID }, actor), 201)
   const ended = new Promise<void>((resolve) => {
     const unsubscribe = platform!.sessions.subscribe(thread.session.id, (message) => {
       if (message.type === 'event' && message.event.kind === 'turn_end') {
@@ -101,7 +101,7 @@ const kindsOf = (events: AgentSessionEvent[]) => events.map(e => e.kind).filter(
 describe('platform agent in the registry', () => {
   it('is absent until the gateway base URL, key and model are all set, then appears for every role', async () => {
     await boot()
-    await project()
+    await workspace()
     expect((await registry()).agents.map(a => a.id)).toEqual([])
     const before = (await registry()).capabilities.find(cap => cap.id === 'platform-agent')
     expect(before).toMatchObject({ rung: 'chat', chat: true, ready: false, modules: [], tools: ['open_view', 'start_chat', 'describe_platform'] })
@@ -120,7 +120,7 @@ describe('platform agent in the registry', () => {
 
     await json(await call('PUT', PLATFORM_SETTINGS_PATH, { gatewayKey: null }), 200)
     expect((await registry()).agents).toEqual([])
-    const refused = await call('POST', projectThreadsPath('alpha'), { agentId: PLATFORM_AGENT_ID })
+    const refused = await call('POST', workspaceThreadsPath('alpha'), { agentId: PLATFORM_AGENT_ID })
     expect(refused.status).toBe(409)
     expect(((await refused.json()) as ApiErrorBody).error.code).toBe('not_ready')
   })
@@ -140,19 +140,19 @@ describe('platform agent in the registry', () => {
 })
 
 describe('platform agent tools', () => {
-  function turnFor(actor: Actor, project: Project): PlatformTurnContext {
+  function turnFor(actor: Actor, workspace: Workspace): PlatformTurnContext {
     const p = { ...platform!, scopeLabel: platform!.product.config.scope.label }
-    const registry = { project: { id: project.id, slug: project.slug, name: project.name }, admin: actor.roles.includes('admin'), modules: [], groups: [], views: [], agents: [], capabilities: [], degraded: [] }
-    return { actor, project, capabilities: p.capabilities, registry, scopeUrlPrefix: p.product.config.scope.urlPrefix, access: id => resolveCapabilityAccess(p, actor, project, id), model: { baseUrl: 'http://stub', modelId: 'm', apiKey: 'k' } }
+    const registry = { workspace: { id: workspace.id, slug: workspace.slug, name: workspace.name }, admin: actor.roles.includes('admin'), modules: [], groups: [], views: [], agents: [], capabilities: [], degraded: [] }
+    return { actor, workspace, capabilities: p.capabilities, registry, scopeUrlPrefix: p.product.config.scope.urlPrefix, access: id => resolveCapabilityAccess(p, actor, workspace, id), model: { baseUrl: 'http://stub', modelId: 'm', apiKey: 'k' } }
   }
 
   it('returns typed actions for the admin and refusals as values for everyone else', async () => {
     await boot()
-    const alpha = await project()
+    const alpha = await workspace()
     healthyClaude(alpha.id)
     await configureGateway()
 
-    expect(openView(turnFor(ADMIN, alpha), 'overview')).toEqual({ refused: false, action: { kind: 'navigate', to: '/p/alpha', projectSlug: 'alpha', viewId: 'overview', capabilityId: 'overview' }, summary: expect.stringContaining('Overview') })
+    expect(openView(turnFor(ADMIN, alpha), 'overview')).toEqual({ refused: false, action: { kind: 'navigate', to: '/p/alpha', workspaceSlug: 'alpha', viewId: 'overview', capabilityId: 'overview' }, summary: expect.stringContaining('Overview') })
     expect(openView(turnFor(ADMIN, alpha), 'nope')).toMatchObject({ refused: true, code: 'not_found' })
     expect(openView(turnFor(DEVELOPER, alpha), 'overview')).toMatchObject({ refused: false, action: { kind: 'navigate', to: '/p/alpha' } })
     expect(openView(turnFor(DEVELOPER, alpha), 'issues')).toEqual({ refused: true, code: 'not_granted', reason: expect.stringContaining("Rung 'none' of 'issues'") })
@@ -163,7 +163,7 @@ describe('platform agent tools', () => {
     expect(startChat(turnFor(ADMIN, alpha), PLATFORM_AGENT_ID)).toMatchObject({ refused: true, code: 'invalid_request' })
     expect(startChat(turnFor(ADMIN, alpha), 'ghost')).toMatchObject({ refused: true, code: 'not_found' })
 
-    expect(describePlatform(turnFor(DEVELOPER, alpha))).toMatchObject({ refused: false, project: { slug: 'alpha', name: 'Alpha' }, actor: { displayName: 'Dev', admin: false } })
+    expect(describePlatform(turnFor(DEVELOPER, alpha))).toMatchObject({ refused: false, workspace: { slug: 'alpha', name: 'Alpha' }, actor: { displayName: 'Dev', admin: false } })
   })
 })
 
@@ -172,13 +172,13 @@ describe('start_chat with bots', () => {
 
   async function botTurn(actor: Actor, agents: unknown[], botsUsable = true): Promise<PlatformTurnContext> {
     await boot()
-    const alpha = await project()
+    const alpha = await workspace()
     healthyClaude(alpha.id)
     await configureGateway()
     const p = { ...platform!, scopeLabel: platform!.product.config.scope.label }
-    const registry = { project: { id: alpha.id, slug: 'alpha', name: 'Alpha' }, admin: actor.roles.includes('admin'), modules: [], groups: [], views: [], agents, capabilities: [], degraded: [] } as unknown as RegistryResponse
+    const registry = { workspace: { id: alpha.id, slug: 'alpha', name: 'Alpha' }, admin: actor.roles.includes('admin'), modules: [], groups: [], views: [], agents, capabilities: [], degraded: [] } as unknown as RegistryResponse
     const usable = (id: string) => ({ ...resolveCapabilityAccess(p, actor, alpha, id), enabled: true, reasons: [], rung: { name: 'chat', chat: true } as never })
-    return { actor, project: alpha, capabilities: p.capabilities, registry, scopeUrlPrefix: p.product.config.scope.urlPrefix, access: id => (botsUsable && id === BOTS_CAPABILITY_ID ? usable(id) : resolveCapabilityAccess(p, actor, alpha, id)), model: { baseUrl: 'http://stub', modelId: 'm', apiKey: 'k' } }
+    return { actor, workspace: alpha, capabilities: p.capabilities, registry, scopeUrlPrefix: p.product.config.scope.urlPrefix, access: id => (botsUsable && id === BOTS_CAPABILITY_ID ? usable(id) : resolveCapabilityAccess(p, actor, alpha, id)), model: { baseUrl: 'http://stub', modelId: 'm', apiKey: 'k' } }
   }
 
   it('opens a bot thread by agent id or case-insensitive name, with the id unchanged', async () => {
@@ -205,7 +205,7 @@ describe('start_chat with bots', () => {
 describe('platform agent threads', () => {
   it('describes the platform from the registry through the configured gateway', async () => {
     await boot()
-    const alpha = await project()
+    const alpha = await workspace()
     healthyClaude(alpha.id)
     await configureGateway()
 
@@ -218,18 +218,18 @@ describe('platform agent threads', () => {
     expect(textOf(events)).toMatch(/^In Alpha you can open Overview, Issues.* and chat with Claude Code\.$/)
     expect(events.at(-1)).toMatchObject({ kind: 'turn_end', stopReason: 'end_turn' })
 
-    const listed = await json<{ threads: { id: string, working: boolean, unread: boolean, title: string | null }[] }>(await call('GET', projectThreadsPath('alpha', PLATFORM_AGENT_ID)), 200)
+    const listed = await json<{ threads: { id: string, working: boolean, unread: boolean, title: string | null }[] }>(await call('GET', workspaceThreadsPath('alpha', PLATFORM_AGENT_ID)), 200)
     expect(listed.threads).toEqual([expect.objectContaining({ id: thread.thread.id, working: false, unread: true, title: 'Describe the platform for me' })])
   })
 
   it('returns a navigate action the browser applies, and remembers the conversation on the next turn', async () => {
     await boot()
-    await project()
+    await workspace()
     await configureGateway()
 
     const { thread, events } = await converse('open overview')
     expect(kindsOf(events)).toEqual(['prompt', 'tool_call', 'tool_result', 'client_action', 'text', 'turn_end'])
-    expect(events[3]).toMatchObject({ kind: 'client_action', action: { kind: 'navigate', to: '/p/alpha', viewId: 'overview', projectSlug: 'alpha', capabilityId: 'overview' } })
+    expect(events[3]).toMatchObject({ kind: 'client_action', action: { kind: 'navigate', to: '/p/alpha', viewId: 'overview', workspaceSlug: 'alpha', capabilityId: 'overview' } })
     expect(textOf(events)).toBe('The browser opens Overview for Alpha.')
 
     gateway!.requests.length = 0
@@ -249,7 +249,7 @@ describe('platform agent threads', () => {
 
   it('returns an open_thread action for an agent the actor may chat with', async () => {
     await boot()
-    const alpha = await project()
+    const alpha = await workspace()
     healthyClaude(alpha.id)
     await configureGateway()
 
@@ -260,7 +260,7 @@ describe('platform agent threads', () => {
 
   it('relays a refusal for a view the actor cannot see, without any action', async () => {
     await boot()
-    await project()
+    await workspace()
     await configureGateway()
 
     const { events } = await converse('open issues', DEVELOPER)
@@ -271,9 +271,9 @@ describe('platform agent threads', () => {
 
   it('fails the turn cleanly when the gateway is removed between the thread and the prompt', async () => {
     await boot()
-    await project()
+    await workspace()
     await configureGateway()
-    const thread = await json<ChatThreadResponse>(await call('POST', projectThreadsPath('alpha'), { agentId: PLATFORM_AGENT_ID }), 201)
+    const thread = await json<ChatThreadResponse>(await call('POST', workspaceThreadsPath('alpha'), { agentId: PLATFORM_AGENT_ID }), 201)
     await json(await call('PUT', PLATFORM_SETTINGS_PATH, { modelId: null }), 200)
 
     const refused = await call('POST', threadPromptPath('alpha', thread.thread.id), { text: 'hello' })

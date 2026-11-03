@@ -1,15 +1,15 @@
-import type { ApiErrorBody, ChatAgentOptionsResponse, ChatThread, ChatThreadCloseResponse, ChatThreadListResponse, ChatThreadPromptResponse, ChatThreadResponse, CreateChatThreadRequest, Project, UpdateChatThreadRequest } from '@candy-mountain/shared'
+import type { ApiErrorBody, ChatAgentOptionsResponse, ChatThread, ChatThreadCloseResponse, ChatThreadListResponse, ChatThreadPromptResponse, ChatThreadResponse, CreateChatThreadRequest, Workspace, UpdateChatThreadRequest } from '@candy-mountain/shared'
 import { Hono, type Context, type MiddlewareHandler } from 'hono'
 import type { AppEnv } from '../app'
 import { BotStartError } from '../bot-sessions/errors'
-import { ProjectError } from '../projects/errors'
-import { getProjectBySlug } from '../projects/projects'
+import { WorkspaceError } from '../workspaces/errors'
+import { getWorkspaceBySlug } from '../workspaces/workspaces'
 import { checkChat, resolveCapabilityAccess, type GateRefusal, type GateResult } from '../registry'
 import { SessionError } from '../sessions'
 import { familyCapability } from '../sessions/access'
 import { parsePrompt } from '../sessions/routes'
 import { ThreadError } from './errors'
-import { chatAgents, findThreadAgent, projectBotAgents, type ChatAgent, type ThreadService } from './service'
+import { chatAgents, findThreadAgent, workspaceBotAgents, type ChatAgent, type ThreadService } from './service'
 
 const TITLE_MAX_LENGTH = 200
 
@@ -71,34 +71,34 @@ export function threadRoutes(service: ThreadService) {
   const app = new Hono<AppEnv>()
   app.onError((error, c) => {
     if (error instanceof BotStartError) return c.json<ApiErrorBody>({ error: { code: error.reason, message: error.message } }, error.status)
-    if (error instanceof ThreadError || error instanceof SessionError || error instanceof ProjectError) {
+    if (error instanceof ThreadError || error instanceof SessionError || error instanceof WorkspaceError) {
       return c.json<ApiErrorBody>({ error: { code: error.code, message: error.message } }, error.status)
     }
     throw error
   })
 
-  const projectOf = (c: Context<AppEnv>) => getProjectBySlug(c.var.db, c.req.param('slug')!)
+  const workspaceOf = (c: Context<AppEnv>) => getWorkspaceBySlug(c.var.db, c.req.param('slug')!)
 
   /** Another actor's thread is reported missing rather than forbidden. */
   function threadOf(c: Context<AppEnv>): ChatThread {
     const id = c.req.param('id')!
     const thread = service.get(id)
-    if (!thread || thread.projectId !== projectOf(c).id || thread.actorId !== c.var.actor.id) throw new ThreadError('not_found', `No thread with id "${id}" in this project`)
+    if (!thread || thread.workspaceId !== workspaceOf(c).id || thread.actorId !== c.var.actor.id) throw new ThreadError('not_found', `No thread with id "${id}" in this project`)
     return thread
   }
 
-  const agentNamed = (c: Context<AppEnv>, agentId: string): ChatAgent => findThreadAgent(c.var.db, c.var.capabilities, projectOf(c).id, agentId)
+  const agentNamed = (c: Context<AppEnv>, agentId: string): ChatAgent => findThreadAgent(c.var.db, c.var.capabilities, workspaceOf(c).id, agentId)
 
   /** A bot session also streams and asks through the session routes, which gate on its family's chat capability. */
-  function checkAgent(c: Context<AppEnv>, project: Project, agent: ChatAgent): GateResult {
+  function checkAgent(c: Context<AppEnv>, workspace: Workspace, agent: ChatAgent): GateResult {
     const capabilityIds = agent.botId === undefined ? [agent.capabilityId] : [agent.capabilityId, familyCapability(c.var.capabilities, agent.family) ?? '']
-    const results = capabilityIds.map(capabilityId => checkChat(resolveCapabilityAccess(c.var, c.var.actor, project, capabilityId)))
+    const results = capabilityIds.map(capabilityId => checkChat(resolveCapabilityAccess(c.var, c.var.actor, workspace, capabilityId)))
     return results.find(result => !result.allowed) ?? results[0]!
   }
 
   const gateAgent = (agentOf: (c: Context<AppEnv>) => string | Promise<string>): MiddlewareHandler<AppEnv> => async (c, next) => {
     const agent = agentNamed(c, await agentOf(c))
-    const result = checkAgent(c, projectOf(c), agent)
+    const result = checkAgent(c, workspaceOf(c), agent)
     if (!result.allowed) return refusal(c, result)
     await next()
   }
@@ -106,34 +106,34 @@ export function threadRoutes(service: ThreadService) {
   const agentOfThread = (c: Context<AppEnv>): ChatAgent => agentNamed(c, threadOf(c).agentId)
 
   app.get('/:slug/threads', async (c) => {
-    const project = projectOf(c)
+    const workspace = workspaceOf(c)
     const filter = c.req.query('agent')
     if (filter !== undefined) {
       const agent = agentNamed(c, filter)
-      const result = checkAgent(c, project, agent)
+      const result = checkAgent(c, workspace, agent)
       if (!result.allowed) return refusal(c, result)
-      return c.json<ChatThreadListResponse>({ threads: service.list(project.id, c.var.actor.id, [agent.id]) })
+      return c.json<ChatThreadListResponse>({ threads: service.list(workspace.id, c.var.actor.id, [agent.id]) })
     }
     const allowed: string[] = []
     let firstRefusal: GateRefusal | undefined
-    for (const agent of [...chatAgents(c.var.capabilities), ...projectBotAgents(c.var.db, project.id)]) {
-      const result = checkAgent(c, project, agent)
+    for (const agent of [...chatAgents(c.var.capabilities), ...workspaceBotAgents(c.var.db, c.var.capabilities, workspace.id)]) {
+      const result = checkAgent(c, workspace, agent)
       if (result.allowed) allowed.push(agent.id)
       else firstRefusal ??= result
     }
     if (!allowed.length && firstRefusal) return refusal(c, firstRefusal)
-    return c.json<ChatThreadListResponse>({ threads: service.list(project.id, c.var.actor.id, allowed) })
+    return c.json<ChatThreadListResponse>({ threads: service.list(workspace.id, c.var.actor.id, allowed) })
   })
 
   app.post('/:slug/threads', gateAgent(async c => parseCreateThread(await readJson(c)).agentId), async (c) => {
     const input = parseCreateThread(await readJson(c))
-    const response = await service.create({ project: projectOf(c), actorId: c.var.actor.id, agent: agentNamed(c, input.agentId), title: input.title, model: input.model, effort: input.effort, issueIds: input.issueIds, signal: c.req.raw.signal })
+    const response = await service.create({ workspace: workspaceOf(c), actorId: c.var.actor.id, agent: agentNamed(c, input.agentId), title: input.title, model: input.model, effort: input.effort, issueIds: input.issueIds, signal: c.req.raw.signal })
     return c.json<ChatThreadResponse>(response, 201)
   })
 
   app.get('/:slug/threads/agents/:agentId/options', gateAgent(c => c.req.param('agentId')!), (c) => {
     const agent = agentNamed(c, c.req.param('agentId')!)
-    const choices = agent.botId === undefined ? service.options(projectOf(c), agent) : { models: [], efforts: [] }
+    const choices = agent.botId === undefined ? service.options(workspaceOf(c), agent) : { models: [], efforts: [] }
     return c.json<ChatAgentOptionsResponse>({ options: { agentId: agent.id, family: agent.family, ...choices } })
   })
 
@@ -141,7 +141,7 @@ export function threadRoutes(service: ThreadService) {
 
   app.patch('/:slug/threads/:id', gateThread, async (c) => {
     const input = parseUpdateThread(await readJson(c))
-    return c.json<ChatThreadResponse>(service.update(projectOf(c), threadOf(c), agentOfThread(c), input))
+    return c.json<ChatThreadResponse>(service.update(workspaceOf(c), threadOf(c), agentOfThread(c), input))
   })
 
   app.post('/:slug/threads/:id/read', gateThread, c => c.json<{ thread: ChatThread }>({ thread: service.markRead(threadOf(c)) }))

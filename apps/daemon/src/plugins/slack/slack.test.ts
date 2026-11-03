@@ -72,9 +72,9 @@ describe('slack plugin type', () => {
 
   // Instances reject a scope their type does not list, so this list is what refuses a project-scoped Slack instance.
   it('rejects the project scope', () => {
-    expect(PLUGIN_SCOPES).toContain('project')
+    expect(PLUGIN_SCOPES).toContain('workspace')
     expect(slackPluginType.scopes).toEqual(['global'])
-    expect(slackPluginType.scopes.includes('project')).toBe(false)
+    expect(slackPluginType.scopes.includes('workspace')).toBe(false)
   })
 
   it('validates stored config', () => {

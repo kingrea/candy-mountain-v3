@@ -4,8 +4,8 @@ import {
   MONITOR_INTERVAL_MIN_SECONDS,
   MONITOR_NAME_MAX_LENGTH,
   MONITOR_TARGET_MAX_LENGTH,
-  projectMonitorPath,
-  projectMonitorsPath,
+  workspaceMonitorPath,
+  workspaceMonitorsPath,
   type Monitor,
   type MonitorResponse,
   type MonitorSourceInfo,
@@ -65,8 +65,8 @@ async function onSubmit() {
   const monitor = props.monitor
   try {
     const response = monitor
-      ? await $api<MonitorResponse>(projectMonitorPath(slug.value, monitor.id), { method: 'PATCH', body: uptimeUpdateBody(monitor, fields.value, state) })
-      : await $api<MonitorResponse>(projectMonitorsPath(slug.value), { method: 'POST', body: uptimeCreateBody(fields.value, state) })
+      ? await $api<MonitorResponse>(workspaceMonitorPath(slug.value, monitor.id), { method: 'PATCH', body: uptimeUpdateBody(monitor, fields.value, state) })
+      : await $api<MonitorResponse>(workspaceMonitorsPath(slug.value), { method: 'POST', body: uptimeCreateBody(fields.value, state) })
     emit('saved', response.monitor, !monitor)
     open.value = false
   }

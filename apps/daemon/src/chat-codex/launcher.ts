@@ -7,7 +7,7 @@ export const codexLauncher: SessionLauncher = {
     if (posture.codex) assertCodexLaunchOptions(posture.codex)
   },
   launch(row, base, deps) {
-    const context = codexLaunchContext(deps, row.projectId)
+    const context = codexLaunchContext(deps, row.workspaceId)
     if (!context) throw new SessionError('family_unavailable', 'The Codex plugin is not set up for this project.')
     return { ...base, configHome: context.home, command: context.command, env: row.posture?.env, codex: row.posture?.codex }
   },

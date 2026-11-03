@@ -1,4 +1,4 @@
-import type { CapabilityId, ProjectFactId } from './capabilities'
+import type { CapabilityId, WorkspaceFactId } from './capabilities'
 import type { PluginTypeId } from './plugins'
 
 export type ModuleId = string
@@ -19,18 +19,18 @@ export interface ModuleDefinition {
   capabilities: readonly ModuleMember[]
 }
 
-export const projectModulesPath = (slug: string) => `/projects/${slug}/modules`
+export const workspaceModulesPath = (slug: string) => `/workspaces/${slug}/modules`
 
-export interface ProjectModulesResponse {
+export interface WorkspaceModulesResponse {
   modules: ModuleId[]
 }
 
-export interface SetProjectModulesRequest {
+export interface SetWorkspaceModulesRequest {
   modules: ModuleId[]
 }
 
-export const PROJECT_MODULES_ERROR_CODES = ['invalid_request', 'module_not_found'] as const
-export type ProjectModulesErrorCode = (typeof PROJECT_MODULES_ERROR_CODES)[number]
+export const WORKSPACE_MODULES_ERROR_CODES = ['invalid_request', 'module_not_found'] as const
+export type WorkspaceModulesErrorCode = (typeof WORKSPACE_MODULES_ERROR_CODES)[number]
 
 export const MODULES_PATH = '/modules'
 
@@ -39,7 +39,7 @@ export interface ModuleCapabilityInfo extends ModuleMember {
   description: string
   requiresPlugins: readonly string[]
   requiresAnyPlugins: readonly (readonly PluginTypeId[])[]
-  requiresProjectFacts: readonly ProjectFactId[]
+  requiresWorkspaceFacts: readonly WorkspaceFactId[]
 }
 
 /** A module definition with each member's manifest details, so a client can show what a disabled module needs. */

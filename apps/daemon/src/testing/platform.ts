@@ -52,6 +52,7 @@ export function platformApp(platform: Platform, deps: Partial<AppDeps> = {}): Re
     modules: platform.modules,
     pluginTypes: platform.pluginTypes,
     families: platform.families,
+    workspaceFacts: platform.workspaceFacts,
     secrets: platform.secrets.writeOnly,
     secretsReader: platform.secrets,
     runtime: platform.runtime,

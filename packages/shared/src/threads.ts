@@ -1,10 +1,10 @@
-import { PROJECTS_PATH } from './projects'
+import { WORKSPACES_PATH } from './workspaces'
 import type { AgentSession, AgentSessionFamily } from './sessions'
 
-/** A conversation one actor has with one chat agent in one project; it wraps one session at a time. */
+/** A conversation one actor has with one chat agent in one workspace; it wraps one session at a time. */
 export interface ChatThread {
   id: string
-  projectId: string
+  workspaceId: string
   actorId: string
   /** A registry agent id, e.g. 'claude-code'. */
   agentId: string
@@ -118,15 +118,15 @@ export const THREAD_ERROR_CODES = ['invalid_request', 'not_found', 'unsupported_
 export type ThreadErrorCode = (typeof THREAD_ERROR_CODES)[number]
 
 /** Without `agentId` the list covers every agent the actor may chat with. */
-export function projectThreadsPath(projectSlug: string, agentId?: string): string {
-  const base = `${PROJECTS_PATH}/${encodeURIComponent(projectSlug)}/threads`
+export function workspaceThreadsPath(workspaceSlug: string, agentId?: string): string {
+  const base = `${WORKSPACES_PATH}/${encodeURIComponent(workspaceSlug)}/threads`
   return agentId ? `${base}?agent=${encodeURIComponent(agentId)}` : base
 }
 
-export const projectThreadPath = (projectSlug: string, threadId: string) => `${projectThreadsPath(projectSlug)}/${encodeURIComponent(threadId)}`
-export const threadReadPath = (projectSlug: string, threadId: string) => `${projectThreadPath(projectSlug, threadId)}/read`
-export const threadPromptPath = (projectSlug: string, threadId: string) => `${projectThreadPath(projectSlug, threadId)}/prompt`
-export const threadCancelPath = (projectSlug: string, threadId: string) => `${projectThreadPath(projectSlug, threadId)}/cancel`
+export const workspaceThreadPath = (workspaceSlug: string, threadId: string) => `${workspaceThreadsPath(workspaceSlug)}/${encodeURIComponent(threadId)}`
+export const threadReadPath = (workspaceSlug: string, threadId: string) => `${workspaceThreadPath(workspaceSlug, threadId)}/read`
+export const threadPromptPath = (workspaceSlug: string, threadId: string) => `${workspaceThreadPath(workspaceSlug, threadId)}/prompt`
+export const threadCancelPath = (workspaceSlug: string, threadId: string) => `${workspaceThreadPath(workspaceSlug, threadId)}/cancel`
 /** Bot threads only: cancels a running turn and releases the worktree unless it holds unpushed work. */
-export const threadClosePath = (projectSlug: string, threadId: string) => `${projectThreadPath(projectSlug, threadId)}/close`
-export const chatAgentOptionsPath = (projectSlug: string, agentId: string) => `${projectThreadsPath(projectSlug)}/agents/${encodeURIComponent(agentId)}/options`
+export const threadClosePath = (workspaceSlug: string, threadId: string) => `${workspaceThreadPath(workspaceSlug, threadId)}/close`
+export const chatAgentOptionsPath = (workspaceSlug: string, agentId: string) => `${workspaceThreadsPath(workspaceSlug)}/agents/${encodeURIComponent(agentId)}/options`

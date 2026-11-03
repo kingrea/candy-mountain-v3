@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { desc, eq, inArray } from 'drizzle-orm'
 import type { Db } from '../db'
-import { slackTurns, type SlackTurnState } from '../db/schema'
+import { slackTurns, type SlackTurnState } from '../bots/schema'
 import type { SlackProgressMode, SlackTurnMessage } from './progress'
 
 export interface SlackTurn {

@@ -2,7 +2,8 @@ import { createHash } from 'node:crypto'
 import { BOT_SECRET_LABELS, BOT_SECRET_NAMES, type BotSlackConnection, type BotSlackReasonCode } from '@candy-mountain/shared'
 import { eq } from 'drizzle-orm'
 import { botSecretOwner, computeBotStatus, createBotSecrets, type BotReadDeps } from '../bots'
-import { bots, projects } from '../db/schema'
+import { bots } from '../bots/schema'
+import { workspaces } from '../db/schema'
 import { resolvePluginInstance } from '../plugins/instances/instances'
 import { createSlackClient, createSlackOperations, type SlackClient, type SlackClientOptions, type SlackOperations } from '../plugins/slack'
 import { SecretsLockedError } from '../secrets'
@@ -52,7 +53,12 @@ const fingerprintOf = (appToken: string, botToken: string) => createHash('sha256
  * Keeps one Socket Mode connection per active bot. Bots are polled rather than hooked so changes made any way are seen;
  * the base-branch check is skipped because a host outage should not drop Slack.
  */
-export function startSlackConnections(deps: BotReadDeps, { reconcileMs = SLACK_RECONCILE_MS, socket, log = console }: SlackConnectionsOptions = {}): SlackConnections {
+export type SlackConnectionsDeps = BotReadDeps & {
+  /** False when the product boots no bots capability, whose table then does not exist; there are no bot connections to run. */
+  botsBooted?: boolean
+}
+
+export function startSlackConnections(deps: SlackConnectionsDeps, { reconcileMs = SLACK_RECONCILE_MS, socket, log = console }: SlackConnectionsOptions = {}): SlackConnections {
   const bus = createSlackEventBus(log)
   const managed = new Map<string, Managed>()
   const idle = new Map<string, BotSlackConnection>()
@@ -123,7 +129,7 @@ export function startSlackConnections(deps: BotReadDeps, { reconcileMs = SLACK_R
 
   function reconcile() {
     if (closed) return
-    const rows = deps.db.select({ bot: bots, archivedAt: projects.archivedAt }).from(bots).innerJoin(projects, eq(projects.id, bots.projectId)).all()
+    const rows = deps.botsBooted === false ? [] : deps.db.select({ bot: bots, archivedAt: workspaces.archivedAt }).from(bots).innerJoin(workspaces, eq(workspaces.id, bots.projectId)).all()
     const families = new Map<string, ReturnType<typeof resolvePluginInstance>>()
     const seen = new Set<string>()
     for (const { bot, archivedAt } of rows) {

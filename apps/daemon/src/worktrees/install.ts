@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { AGENT_ENV_ALLOWLIST } from '../acp/env'
-import type { WorktreeDependenciesStatus } from '../db/schema/worktree-leases'
+import type { WorktreeDependenciesStatus } from '../bots/schema'
 
 export type PackageManager = 'pnpm' | 'npm' | 'yarn'
 

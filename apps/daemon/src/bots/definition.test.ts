@@ -2,26 +2,28 @@ import { randomUUID } from 'node:crypto'
 import { existsSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { PROJECTS_PATH, type ApiErrorBody } from '@candy-mountain/shared'
+import { WORKSPACES_PATH, type ApiErrorBody } from '@candy-mountain/shared'
 import { eq } from 'drizzle-orm'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fakeBins } from '../acp/test-support'
 import { CapabilityDefinitionError } from '../capabilities/definition'
 import { fixtureDefinition } from '../capabilities/fixtures'
 import { ACP_SESSIONS, chatClaudeCodeDefinition } from '../chat-claude-code/definition'
-import { bots, worktreeLeases } from '../db/schema'
+import { bots, worktreeLeases } from './schema'
 import { capabilityDefinitions } from '../definitions'
 import { codexPluginType, PLUGIN_TYPES } from '../plugins'
 import type { Platform } from '../platform'
 import { createTestApp, startTestPlatform, withoutCapabilities, type TestPlatformOptions } from '../testing/platform'
-import { createProject, findProjectBySlug } from '../projects/projects'
+import { findWorkspaceBySlug } from '../workspaces/workspaces'
 import { MasterKey } from '../secrets'
 import { SLACK_CONNECTIONS, slackDefinition } from '../slack/definition'
+import { repositoryDefinition } from '../repository/definition'
 import { createTempDataDir, type TempDataDir } from '../testing'
 import { THREAD_BOTS } from '../threads/bots'
 import { THREAD_SESSIONS } from '../threads/sessions'
 import { botSecretOwner } from './bots'
 import { BOT_SESSIONS, BOT_SLACK_DECISIONS, BOT_SLACK_HANDOFFS, BOT_SLACK_ROUTER, BOT_WORKTREE_RECLAIMER, BOT_WORKTREES, botsDefinition } from './definition'
+import { createWorkspaceWithRepository } from '../repository/test-support'
 
 const acp = { bins: fakeBins, killTimeoutMs: 1000 }
 
@@ -53,7 +55,7 @@ describe('the bots definition', () => {
     expect(platform.runtime.service(THREAD_BOTS)).toBe(botSessions)
     expect(platform.runtime.services('bots').has(BOT_WORKTREES)).toBe(true)
     expect(platform.runtime.services('bots').has(BOT_WORKTREE_RECLAIMER)).toBe(true)
-    expect(platform.runtime.started.map(s => s.definition.id)).toEqual(['threads', 'overview', 'issues', 'slack', 'chat-claude-code', 'chat-codex', 'bots', 'team', 'uptime', 'deployments', 'platform-agent'])
+    expect(platform.runtime.started.map(s => s.definition.id)).toEqual(['threads', 'overview', 'repository', 'issues', 'slack', 'chat-claude-code', 'chat-codex', 'bots', 'team', 'uptime', 'deployments', 'platform-agent'])
     for (const key of [BOT_SLACK_ROUTER, BOT_SLACK_DECISIONS, BOT_SLACK_HANDOFFS]) expect(platform.runtime.services('bots').has(key), key.name).toBe(true)
   })
 
@@ -61,7 +63,7 @@ describe('the bots definition', () => {
     const { app } = start(withAcp())
 
     for (const [path, method] of [['bots', 'GET'], ['bots/b1', 'GET'], ['bots/b1/sessions', 'POST'], ['bots/b1/slack', 'GET']] as const) {
-      const res = await app.request(`${PROJECTS_PATH}/nope/${path}`, { method })
+      const res = await app.request(`${WORKSPACES_PATH}/nope/${path}`, { method })
       expect(res.status, path).toBe(404)
       expect(((await res.json()) as ApiErrorBody).error.code, path).toBe('not_found')
     }
@@ -71,15 +73,15 @@ describe('the bots definition', () => {
     const { platform, app } = start({ ...withAcp(), secretsKey: MasterKey.generate() })
     const checkout = mkdtempSync(join(tmpdir(), 'candy-mountain-bots-'))
     try {
-      const project = await createProject(platform.db, { name: 'alpha', source: { kind: 'local-path', path: checkout } })
+      const project = await createWorkspaceWithRepository(platform.db, { name: 'alpha', path: checkout })
       const now = new Date().toISOString()
       const botId = randomUUID()
       platform.db.insert(bots).values({ id: botId, projectId: project.id, name: 'Ana', family: 'claude-code', writeScope: 'read-only', answersIn: { anywhere: true }, createdAt: now, updatedAt: now }).run()
       platform.secrets.set(botSecretOwner(botId), 'slackBotToken', 'xoxb-secret')
       platform.db.insert(worktreeLeases).values({ id: randomUUID(), projectId: project.id, holderKind: 'session', holderId: 's1', path: join(checkout, 'wt'), branch: 'cm/bot/ana/s1', baseBranch: 'main', createdAt: now, updatedAt: now, lastUsedAt: now }).run()
 
-      expect((await app.request(`${PROJECTS_PATH}/alpha`, { method: 'DELETE' })).status).toBe(204)
-      expect(findProjectBySlug(platform.db, 'alpha')).toBeNull()
+      expect((await app.request(`${WORKSPACES_PATH}/alpha`, { method: 'DELETE' })).status).toBe(204)
+      expect(findWorkspaceBySlug(platform.db, 'alpha')).toBeNull()
       expect(platform.db.select().from(bots).where(eq(bots.projectId, project.id)).all()).toEqual([])
       expect(platform.secrets.isSet(botSecretOwner(botId), 'slackBotToken')).toBe(false)
       expect(platform.runtime.services('bots').get(BOT_WORKTREES).list(project.id)).toEqual([])
@@ -118,22 +120,23 @@ describe('the bots definition', () => {
   })
 
   it('boots without bots: their routes answer not found, nothing offers bot sessions, threads are still served and Slack routing stays off', async () => {
-    const { platform, app } = start({ ...withoutCapabilities('bots'), capabilities: capabilityDefinitions({ chatClaudeCode: { acp } }).filter(c => c.id !== 'bots') })
+    // Team requires the hasBots fact bots declares, so a product without bots leaves team out too.
+    const { platform, app } = start({ ...withoutCapabilities('bots', 'team'), capabilities: capabilityDefinitions({ chatClaudeCode: { acp } }).filter(c => c.id !== 'bots' && c.id !== 'team') })
 
-    expect(platform.runtime.started.map(s => s.definition.id)).toEqual(['threads', 'overview', 'issues', 'slack', 'team', 'chat-claude-code', 'chat-codex', 'uptime', 'deployments', 'platform-agent'])
+    expect(platform.runtime.started.map(s => s.definition.id)).toEqual(['threads', 'overview', 'repository', 'issues', 'slack', 'chat-claude-code', 'chat-codex', 'uptime', 'deployments', 'platform-agent'])
     expect(platform.runtime.service(BOT_SESSIONS)).toBeUndefined()
     expect(platform.runtime.service(THREAD_BOTS)).toBeUndefined()
     expect(platform.runtime.service(THREAD_SESSIONS)).toBeDefined()
     expect(platform.runtime.service(BOT_SLACK_ROUTER)).toBeUndefined()
     for (const [path, method] of [['bots', 'GET'], ['bots/b1/sessions', 'POST'], ['bots/b1/slack', 'GET']] as const) {
-      const res = await app.request(`${PROJECTS_PATH}/nope/${path}`, { method })
+      const res = await app.request(`${WORKSPACES_PATH}/nope/${path}`, { method })
       expect(res.status, path).toBe(404)
       expect(await res.text(), path).toBe('404 Not Found')
     }
-    const threads = await app.request(`${PROJECTS_PATH}/nope/threads`)
+    const threads = await app.request(`${WORKSPACES_PATH}/nope/threads`)
     expect(threads.status).toBe(404)
     expect(((await threads.json()) as ApiErrorBody).error.code).toBe('not_found')
-    expect((await app.request(PROJECTS_PATH)).status).toBe(200)
+    expect((await app.request(WORKSPACES_PATH)).status).toBe(200)
   })
 
   it('refuses a list with bots but without chat-claude-code, naming both, and touches nothing on disk', () => {
@@ -156,7 +159,7 @@ describe('the bots definition', () => {
     temp = createTempDataDir()
     // A stand-in chat-codex that brings no codex family, so the dependency is met but the family is not.
     const chatCodex = fixtureDefinition('chat-codex', { manifest: null, dependsOn: ['chat-claude-code'] })
-    const options: TestPlatformOptions = { capabilities: [chatClaudeCodeDefinition({ acp }), chatCodex, slackDefinition(), botsDefinition()], modules: [], pluginTypes: [...PLUGIN_TYPES, codexPluginType], families: [{ id: 'platform', name: 'Platform agent' }] }
+    const options: TestPlatformOptions = { capabilities: [repositoryDefinition(), chatClaudeCodeDefinition({ acp }), chatCodex, slackDefinition(), botsDefinition()], modules: [], pluginTypes: [...PLUGIN_TYPES, codexPluginType], families: [{ id: 'platform', name: 'Platform agent' }] }
     expect(() => startTestPlatform(temp.root, options)).toThrow(CapabilityDefinitionError)
     expect(() => startTestPlatform(temp.root, options)).toThrow("Capability 'bots': bot family 'codex' is not a registered session family.")
   })

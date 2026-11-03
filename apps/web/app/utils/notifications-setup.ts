@@ -26,6 +26,9 @@ export const DESTINATION_HINTS: Record<DestinationType, { label: string, placeho
   member: { label: 'Direct message', placeholder: 'U0123ABCD', help: 'Slack member ID, starts with U or W. Find it in the member profile.' },
 }
 
+/** The daemon sends a rule for every kind it lists; this only satisfies the index type. */
+export const emptyNotificationRule: NotificationRule = Object.freeze({ enabled: false, destination: null, lastFailureAt: null, lastFailureReason: null, lastDeliveredAt: null })
+
 export function ruleToDraft(rule: NotificationRule): RuleDraft {
   const destination = rule.destination
   return {
