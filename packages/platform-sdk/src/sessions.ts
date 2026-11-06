@@ -1,9 +1,18 @@
-import type { BotSessionHolder } from './bot-sessions'
 import type { DecisionEventPayload } from './decisions'
 import type { PlatformClientAction } from './platform-agent'
 import { WORKSPACES_PATH } from './workspaces'
 
 export type AgentSessionFamily = string
+
+/** Who holds a bot session: a console thread in the chat panel, or a Slack thread. Read by the platform's session posture, so it stays here rather than with bots. */
+export const BOT_SESSION_HOLDER_KINDS = ['console', 'slack'] as const
+export type BotSessionHolderKind = (typeof BOT_SESSION_HOLDER_KINDS)[number]
+
+export interface BotSessionHolder {
+  kind: BotSessionHolderKind
+  /** The console thread id, or the Slack thread key the Slack surface chooses. */
+  id: string
+}
 
 /**
  * `idle`: no live process (never started, reaped or exited); the next prompt resumes it.

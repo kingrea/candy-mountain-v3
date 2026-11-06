@@ -1,0 +1,12 @@
+{
+  "name": "@fixture/epsilon",
+  "private": true,
+  "type": "module",
+  "webLayer": "epsilon",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@fixture/delta": "link:../delta-layer"
+  }
+}

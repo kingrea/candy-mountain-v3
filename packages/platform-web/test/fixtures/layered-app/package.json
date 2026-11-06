@@ -3,6 +3,8 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@fixture/delta": "link:../delta-layer"
+    "@fixture/delta": "link:../delta-layer",
+    "@fixture/epsilon": "link:../epsilon-layer",
+    "@fixture/platform-web": "link:../platform-layer"
   }
 }

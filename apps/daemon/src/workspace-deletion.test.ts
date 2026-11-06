@@ -29,9 +29,12 @@ function foreignKeysOf(db: Db, table: string): ForeignKey[] {
   return [...declared, ...logical]
 }
 
+// Mastra creates its storage asynchronously after boot, so whether a scan sees it depends on timing; none of it is keyed to a workspace.
+const isMastraTable = (table: string) => table.startsWith('mastra_')
+
 /** Keyed tables in an order where every referenced table comes first; a table that reaches no workspace fails the test until it is classified. */
 function keyedTables(db: Db): { table: string, foreignKeys: ForeignKey[] }[] {
-  const pending = new Map(tableNames(db).filter(t => !UNKEYED_TABLES.has(t)).map(t => [t, foreignKeysOf(db, t).filter(fk => fk.table !== t)]))
+  const pending = new Map(tableNames(db).filter(t => !UNKEYED_TABLES.has(t) && !isMastraTable(t)).map(t => [t, foreignKeysOf(db, t).filter(fk => fk.table !== t)]))
   const ordered: { table: string, foreignKeys: ForeignKey[] }[] = []
   const placed = new Set(['workspaces'])
   while (pending.size) {

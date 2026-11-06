@@ -1,5 +1,6 @@
 // What a distribution boots with.
 export { startPlatform, type Platform, type PlatformOptions } from './platform'
+export { loadDaemonConfig, runDaemon, type DaemonConfig } from './daemon'
 export { createApp, type AppDeps, type AppEnv, type AppVariables } from './app'
 export { assertProduct, productCapabilityRegistry, ProductError, suppliedIds, type Product } from './product'
 export { platformDefinitions } from './platform-capabilities'
@@ -68,7 +69,7 @@ export { WorkspaceAgentError, type WorkspaceAgentListing, type WorkspaceAgentSou
 
 // The agent MCP host.
 export { startAgentMcpHost, type AgentMcpHost, type AgentMcpServerDefinition, type LaunchMcpServer } from './agent-mcp/host'
-export { claudeMcpToolRule, SLACK_POST_BLOCKS_TOOL, WRAPPED_MCP_TOOL_RULES, WRAPPED_MCP_TOOLS, type WrappedMcpTool } from './agent-mcp/tools'
+export { claudeMcpToolRule, type WrappedMcpTool } from './agent-mcp/tools'
 
 // The platform schema set's tables, for a capability's foreign keys and the platform-owned rows it reads.
 export { activityEvents, agentSessionEvents, agentSessions, authSessions, chatThreads, chatThreadSessions, organisations, platformMeta, pluginInstances, roleGrants, roles, userPasswords, userRoles, users, workspaceModules, workspaces } from './db/schema'

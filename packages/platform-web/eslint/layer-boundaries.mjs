@@ -1,6 +1,8 @@
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, realpathSync } from 'node:fs'
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { workspacePackages, workspaceRoot } from '@candy-mountain/platform-config/package-boundaries'
+import { createConfigForNuxt } from '@nuxt/eslint-config/flat'
 import ts from 'typescript'
 import { hasNuxtConfig, packageLayers, PLATFORM_DIR, platformLayers } from '../layer-list.mjs'
 import { SCOPE_PAGES_DIR } from '../scope-routes.mjs'
@@ -13,7 +15,7 @@ export const PLATFORM_LAYER = 'platform-web'
 // The one capability whose manifest view path is '' owns the project home, app/pages/p/[project]/index.vue.
 export const PROJECT_HOME_LAYER = 'overview'
 
-// A layer may always use its own files; packages such as @candy-mountain/platform-sdk are never restricted unless they are layer packages.
+// A layer may always use its own files; packages such as @candy-mountain/platform-sdk are never restricted unless they are layer packages or the platform package.
 // A plugin-type layer (no manifest, no pages) is a capability layer here.
 export const ALLOWED = {
   core: ['shared'],
@@ -21,20 +23,30 @@ export const ALLOWED = {
   capability: ['core', 'shared'],
 }
 
+// A layer package keeps its daemon entry under src/; the daemon rule set owns those files.
+export const DAEMON_SOURCE = 'src'
+
 const DIRECTIONS = 'Allowed: capability -> core, capability -> chat, chat -> core, core -> chat.'
-const DOCS = 'apps/web/layers/README.md'
+const DOCS = 'packages/platform-web/README.md'
 const LAYER_ID = /^[a-z][a-z\d]*(?:-[a-z\d]+)*$/
 const PROJECT_PAGES = [SCOPE_PAGES_DIR, '[project]']
+const TOOLING_CONFIG = /^(?:eslint|vitest)\.config\.[cm]?[jt]s$/
 
-/**
- * The linted app: its root (the distribution, or this package itself) and the platform package whose layers it
- * extends. Tests point both at fixtures through settings.
- */
-function projectOf(context) {
-  const settings = context.settings?.['cm-layers'] ?? {}
-  return {
-    root: resolve(settings.root ?? context.cwd),
-    platform: settings.platform ? resolve(settings.platform) : PLATFORM_DIR,
+function readJson(file) {
+  try {
+    return JSON.parse(readFileSync(file, 'utf8'))
+  }
+  catch {
+    return undefined
+  }
+}
+
+function realDir(path) {
+  try {
+    return realpathSync(path)
+  }
+  catch {
+    return resolve(path)
   }
 }
 
@@ -44,24 +56,68 @@ function inside(dir, file) {
 }
 
 // A short lifetime keeps long-lived editor ESLint servers current as layers change.
-function cached(store, project, compute) {
-  const key = `${project.root}\n${project.platform}`
+function cached(store, key, compute) {
   const now = Date.now()
   const hit = store.get(key)
   if (hit && now - hit.at < 2000) return hit.value
-  const value = compute(project)
+  const value = compute()
   store.set(key, { at: now, value })
   return value
 }
 
-const packageScans = new Map()
-const layerPackages = project => cached(packageScans, project, ({ root }) => packageLayers(root))
+const dependsOn = (manifest, name) => Boolean(name) && name in { ...manifest?.devDependencies, ...manifest?.dependencies }
+
+function workspaceMembers(workspace) {
+  if (!workspace) return []
+  return [...workspacePackages(workspace).values()].map(({ dir }) => ({ dir: realDir(dir), manifest: readJson(join(dir, 'package.json')) }))
+}
+
+/**
+ * The linted root and what it sees. A web app (the distribution, or the platform package itself) is its own app
+ * and sees the layer packages it depends on. A layer package (its package.json says `webLayer`) is linted as the
+ * apps extending it see it: each workspace package depending on it and on the platform package is such an app and
+ * lends its layers/ directories, and every workspace layer package is a sibling it may not use.
+ */
+function describeProject(root, platform, workspace) {
+  const manifest = readJson(join(root, 'package.json'))
+  const platformName = readJson(join(platform, 'package.json'))?.name
+  const base = { root, platform, platformName, platformLayers: platformLayers(platform) }
+  if (typeof manifest?.webLayer !== 'string') return { ...base, apps: [root], packages: packageLayers(root) }
+
+  const members = workspaceMembers(workspace ?? workspaceRoot(root))
+  const apps = members
+    .filter(({ manifest: app }) => typeof app.webLayer !== 'string' && dependsOn(app, manifest.name) && dependsOn(app, platformName))
+    .map(({ dir }) => dir)
+  const packages = new Map()
+  for (const { dir, manifest: member } of members) {
+    if (typeof member.webLayer === 'string') packages.set(member.webLayer, { name: member.name, dir })
+  }
+  for (const dir of [...apps, root]) for (const [id, pkg] of packageLayers(dir)) packages.set(id, pkg)
+  packages.set(manifest.webLayer, { name: manifest.name, dir: realDir(root) })
+  return { ...base, apps, packages }
+}
+
+const projects = new Map()
+
+/** Tests point root, platform and workspace at fixtures through settings. */
+function projectOf(context) {
+  const settings = context.settings?.['cm-layers'] ?? {}
+  const root = resolve(settings.root ?? context.cwd)
+  const platform = settings.platform ? resolve(settings.platform) : PLATFORM_DIR
+  const workspace = settings.workspace ? resolve(settings.workspace) : undefined
+  const key = [root, platform, workspace].join('\n')
+  return cached(projects, key, () => ({ key, ...describeProject(root, platform, workspace) }))
+}
+
+/** Where `~/` and `~~/` point: the app's root, which for a layer package is the app that extends it. */
+const appRoot = project => project.apps[0] ?? project.root
 
 function layerRoot(project, layer) {
   if (layer === PLATFORM_LAYER) return project.platform
-  const pkg = layerPackages(project).get(layer)
+  const pkg = project.packages.get(layer)
   if (pkg) return pkg.dir
-  return join(platformLayers(project.platform).includes(layer) ? project.platform : project.root, 'layers', layer)
+  if (project.platformLayers.includes(layer)) return join(project.platform, 'layers', layer)
+  return join(project.apps.find(app => existsSync(join(app, 'layers', layer))) ?? appRoot(project), 'layers', layer)
 }
 
 /** `core` or a layer name for a file under `base`; null for a stray file in its layers/ directory; undefined outside it. */
@@ -74,10 +130,18 @@ function layerUnder(base, file) {
   return parts[1]
 }
 
-/** `core`, a layer name, or null for files outside the web app, the platform package and the layer packages. */
+/** `core`, a layer name, or null for files outside the web apps, the platform package and the layer packages. */
 function ownerOfPath(project, file) {
-  for (const [id, { dir }] of layerPackages(project)) if (inside(dir, file)) return id
-  return layerUnder(project.platform, file) ?? layerUnder(project.root, file) ?? null
+  for (const [id, { dir }] of project.packages) if (inside(dir, file)) return id
+  return layerUnder(project.platform, file) ?? project.apps.map(app => layerUnder(app, file)).find(owner => owner !== undefined) ?? null
+}
+
+/** The owner whose rules a linted file obeys: as ownerOfPath, except a layer package's daemon source obeys none. */
+function subjectOf(project, file) {
+  for (const { dir } of project.packages.values()) {
+    if (inside(dir, file)) return relative(dir, file).split(sep)[0] === DAEMON_SOURCE ? null : ownerOfPath(project, file)
+  }
+  return ownerOfPath(project, file)
 }
 
 function kindOf(owner) {
@@ -284,12 +348,14 @@ function addOwner(map, key, owner) {
 
 /** Nuxt skips a layer that has no nuxt.config. */
 function registeredLayers(project) {
-  const layersDir = join(project.root, 'layers')
-  const packages = layerPackages(project)
-  const local = entries(layersDir)
-    .filter(entry => entry.isDirectory() && !packages.has(entry.name) && hasNuxtConfig(join(layersDir, entry.name)))
-    .map(entry => entry.name)
-  return [...new Set([...platformLayers(project.platform), ...local, ...[...packages].filter(([, { dir }]) => hasNuxtConfig(dir)).map(([id]) => id)])]
+  const packages = project.packages
+  const local = project.apps.flatMap((app) => {
+    const layersDir = join(app, 'layers')
+    return entries(layersDir)
+      .filter(entry => entry.isDirectory() && !packages.has(entry.name) && hasNuxtConfig(join(layersDir, entry.name)))
+      .map(entry => entry.name)
+  })
+  return [...new Set([...project.platformLayers, ...local, ...[...packages].filter(([, { dir }]) => hasNuxtConfig(dir)).map(([id]) => id)])]
 }
 
 function scanLayers(project) {
@@ -312,7 +378,7 @@ function scanLayers(project) {
 }
 
 const scans = new Map()
-const layerIndex = project => cached(scans, project, scanLayers)
+const layerIndex = project => cached(scans, project.key, () => scanLayers(project))
 
 function staticString(node) {
   if (!node) return undefined
@@ -331,11 +397,12 @@ function resolveSource(project, source, filename) {
   const layer = /^#layers\/([^/]+)(\/.*)?$/.exec(source)
   if (layer) return join(layerRoot(project, layer[1]), layer[2] ?? '')
   // Nuxt's localLayerAliases can point ~/ at the layer's own app/ at build time, but typecheck always means the root app.
-  if (/^[~@]\//.test(source)) return join(project.root, 'app', source.slice(2))
-  if (/^(?:~~|@@)\//.test(source)) return join(project.root, source.slice(3))
+  if (/^[~@]\//.test(source)) return join(appRoot(project), 'app', source.slice(2))
+  if (/^(?:~~|@@)\//.test(source)) return join(appRoot(project), source.slice(3))
   if (isAbsolute(source)) return source
-  for (const { name, dir } of layerPackages(project).values()) {
-    if (source === name || source.startsWith(`${name}/`)) return join(dir, source.slice(name.length))
+  const named = [...project.packages.values(), { name: project.platformName, dir: project.platform }]
+  for (const { name, dir } of named) {
+    if (name && (source === name || source.startsWith(`${name}/`))) return join(dir, source.slice(name.length))
   }
   return undefined
 }
@@ -351,8 +418,23 @@ function calleeName(callee) {
 
 function layerOf(context) {
   const project = projectOf(context)
-  const owner = ownerOfPath(project, context.filename)
+  const owner = subjectOf(project, context.filename)
   return { project, owner, layer: owner && owner !== 'core' ? owner : null }
+}
+
+/** Visitors calling `check` with the source node of every static import, re-export, import type, require and vi.mock. */
+function moduleSources(check, importDeclaration = node => check(node.source)) {
+  return {
+    ImportDeclaration: importDeclaration,
+    ExportNamedDeclaration: node => node.source && check(node.source),
+    ExportAllDeclaration: node => check(node.source),
+    ImportExpression: node => check(node.source),
+    TSImportType: node => check(node.source ?? node.argument?.literal),
+    CallExpression(node) {
+      const name = calleeName(node.callee)
+      if (name === 'require' || (name?.startsWith('vi.') && MODULE_CALLS.has(name.slice(3)))) check(node.arguments[0])
+    },
+  }
 }
 
 const noCrossLayerImport = {
@@ -393,17 +475,37 @@ const noCrossLayerImport = {
       }
     }
 
-    return {
-      ImportDeclaration: checkVirtual,
-      ExportNamedDeclaration: node => node.source && checkSource(node.source),
-      ExportAllDeclaration: node => checkSource(node.source),
-      ImportExpression: node => checkSource(node.source),
-      TSImportType: node => checkSource(node.source ?? node.argument?.literal),
-      CallExpression(node) {
-        const name = calleeName(node.callee)
-        if (name === 'require' || (name?.startsWith('vi.') && MODULE_CALLS.has(name.slice(3)))) checkSource(node.arguments[0])
-      },
+    return moduleSources(checkSource, checkVirtual)
+  },
+}
+
+const noPlatformPackageImport = {
+  meta: {
+    type: 'problem',
+    docs: { description: 'Forbid a layer outside the platform package from importing it by package name or path', url: DOCS },
+    schema: [],
+    messages: {
+      forbidden: '{{from}} may not import {{platform}} by package name or path (\'{{source}}\'). '
+        + 'Reach core through its auto-imports, #imports, #components or #layers/' + PLATFORM_LAYER + '/…; wire types belong in @candy-mountain/platform-sdk.',
+    },
+  },
+  create(context) {
+    const { project, layer } = layerOf(context)
+    if (!layer || inside(project.platform, context.filename)) return {}
+    // A layer package's lint and test configs take their presets from the platform package.
+    if (TOOLING_CONFIG.test(relative(layerRoot(project, layer), context.filename))) return {}
+    const name = project.platformName
+
+    function check(node) {
+      const source = staticString(node)
+      if (source === undefined) return
+      const byName = Boolean(name) && (source === name || source.startsWith(`${name}/`))
+      const byPath = (source.startsWith('.') || isAbsolute(source)) && inside(project.platform, resolveSource(project, source, context.filename))
+      if (!byName && !byPath) return
+      context.report({ node, messageId: 'forbidden', data: { from: upperFirst(describe(layer)), platform: name ?? 'the platform package', source } })
     }
+
+    return moduleSources(check)
   },
 }
 
@@ -593,6 +695,7 @@ const plugin = {
   rules: {
     'no-cross-layer-import': noCrossLayerImport,
     'no-cross-layer-auto-import': noCrossLayerAutoImport,
+    'no-platform-package-import': noPlatformPackageImport,
     'layer-prefix': layerPrefixRule,
     'layer-pages': layerPages,
   },
@@ -613,8 +716,33 @@ export function layerBoundaries(configUrl) {
     rules: {
       'cm-layers/no-cross-layer-import': 'error',
       'cm-layers/no-cross-layer-auto-import': 'error',
+      'cm-layers/no-platform-package-import': 'error',
       'cm-layers/layer-prefix': 'error',
       'cm-layers/layer-pages': 'error',
     },
   }
+}
+
+/**
+ * The whole lint config of a layer package (its package.json declares `webLayer`): Nuxt's rules for its layer files
+ * (not its daemon source), the given configs (the platform-config preset), and every boundary rule as the apps
+ * extending the layer see it.
+ * @param {string} configUrl the package's eslint.config `import.meta.url`
+ * @param {...object} configs
+ */
+export async function layerPackageConfig(configUrl, ...configs) {
+  const root = fileURLToPath(new URL('.', configUrl))
+  if (typeof readJson(join(root, 'package.json'))?.webLayer !== 'string') {
+    throw new Error(`layerPackageConfig: ${join(root, 'package.json')} must declare "webLayer": "<id>".`)
+  }
+  const nuxt = await createConfigForNuxt({
+    features: { standalone: true },
+    dirs: { root: ['.'], src: ['app'], componentsPrefixed: ['app/components'] },
+  }).toConfigs()
+  const globalIgnore = config => Object.keys(config).every(key => key === 'name' || key === 'ignores')
+  return [
+    ...nuxt.map(config => (globalIgnore(config) ? config : { ...config, ignores: [...(config.ignores ?? []), `${DAEMON_SOURCE}/**`] })),
+    ...configs,
+    layerBoundaries(configUrl),
+  ]
 }

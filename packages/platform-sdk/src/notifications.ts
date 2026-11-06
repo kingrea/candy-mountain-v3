@@ -82,6 +82,6 @@ export interface NotificationDeliveryResponse {
   activeChannelId: string | null
 }
 
-/** What a `deploy.attempted` activity payload's `outcome` must be for notifications to tell success from failure. */
-export const DEPLOY_OUTCOMES = ['succeeded', 'failed'] as const
-export type DeployOutcome = (typeof DEPLOY_OUTCOMES)[number]
+/** The platform's notification rules validate destinations with these, so they stay here rather than with the team and bots capabilities. */
+export const SLACK_CHANNEL_ID_PATTERN = /^[CG][A-Z0-9]{2,}$/
+export const SLACK_MEMBER_ID_PATTERN = /^[UW][A-Z0-9]{2,}$/

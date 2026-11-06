@@ -1,0 +1,20 @@
+{
+  "name": "@candy-mountain/candy-mountain",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.test.json",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@candy-mountain/platform-sdk": "workspace:*"
+  },
+  "devDependencies": {
+    "@candy-mountain/platform-config": "workspace:*"
+  }
+}

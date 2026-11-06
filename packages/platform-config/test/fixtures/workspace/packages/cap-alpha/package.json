@@ -1,0 +1,15 @@
+{
+  "name": "@candy-mountain/cap-alpha",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./wire": "./src/wire.ts"
+  },
+  "dependencies": {
+    "@candy-mountain/platform-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@candy-mountain/platform-config": "workspace:*"
+  }
+}

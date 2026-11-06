@@ -1,27 +1,34 @@
-import { botsDefinition, type BotsOptions } from './bots/definition'
-import { type CapabilityRegistryEntry, overviewDefinition, platformAgentDefinition, type PlatformAgentOptions } from '@candy-mountain/platform-daemon'
-import { chatClaudeCodeDefinition, type ChatClaudeCodeOptions } from './chat-claude-code/definition'
-import { chatCodexDefinition } from './chat-codex/definition'
-import { deploymentsDefinition, type DeploymentsOptions } from './deployments/definition'
-import { issuesDefinition, type IssuesOptions } from './issues/definition'
-import { repositoryDefinition } from './repository/definition'
-import { teamDefinition } from './team/definition'
-import { slackDefinition, type SlackOptions } from './slack/definition'
-import { uptimeDefinition } from './uptime/definition'
-import type { UptimeSchedulerOptions } from './uptime/scheduler'
+import { botsDefinition } from '@candy-mountain/cap-bots'
+import { chatClaudeCodeDefinition } from '@candy-mountain/cap-chat-claude-code'
+import { chatCodexDefinition } from '@candy-mountain/cap-chat-codex'
+import { deploymentsDefinition } from '@candy-mountain/cap-deployments'
+import { issuesDefinition } from '@candy-mountain/cap-issues'
+import { repositoryDefinition } from '@candy-mountain/cap-repository'
+import { slackDefinition } from '@candy-mountain/cap-slack'
+import { teamDefinition } from '@candy-mountain/cap-team'
+import { uptimeDefinition } from '@candy-mountain/cap-uptime'
+import { overviewDefinition, platformAgentDefinition, type CapabilityRegistryEntry } from '@candy-mountain/platform-daemon'
 
-export interface CapabilityDefinitionOptions {
-  bots?: BotsOptions
-  chatClaudeCode?: ChatClaudeCodeOptions
-  deployments?: DeploymentsOptions
-  issues?: IssuesOptions
-  platformAgent?: PlatformAgentOptions
-  slack?: SlackOptions
-  uptime?: UptimeSchedulerOptions
+/** Candy Mountain's capabilities by id, in registration order. */
+export const DEFINITIONS = {
+  'overview': overviewDefinition,
+  'repository': repositoryDefinition,
+  'issues': issuesDefinition,
+  'slack': slackDefinition,
+  'bots': botsDefinition,
+  'team': teamDefinition,
+  'chat-claude-code': chatClaudeCodeDefinition,
+  'chat-codex': chatCodexDefinition,
+  'uptime': uptimeDefinition,
+  'deployments': deploymentsDefinition,
+  'platform-agent': platformAgentDefinition,
 }
 
-/** What the daemon boots from; this module lives outside capabilities/ so a definition's routes can reach the capabilities index without a cycle. */
-export function capabilityDefinitions({ bots, chatClaudeCode, deployments, issues, platformAgent, slack, uptime }: CapabilityDefinitionOptions = {}): readonly CapabilityRegistryEntry[] {
-  return [overviewDefinition(), repositoryDefinition(), issuesDefinition(issues), slackDefinition(slack), botsDefinition(bots), teamDefinition(), chatClaudeCodeDefinition(chatClaudeCode), chatCodexDefinition(), uptimeDefinition(uptime), deploymentsDefinition(deployments), platformAgentDefinition(platformAgent)]
-}
+type DefinitionId = keyof typeof DEFINITIONS
 
+/** Options for a definition's factory, keyed by its id; tests use them to swap in fakes. */
+export type CapabilityDefinitionOptions = { [Id in DefinitionId]?: Parameters<(typeof DEFINITIONS)[Id]>[0] }
+
+export function capabilityDefinitions(options: CapabilityDefinitionOptions = {}): readonly CapabilityRegistryEntry[] {
+  return (Object.keys(DEFINITIONS) as DefinitionId[]).map(id => (DEFINITIONS[id] as (options?: unknown) => CapabilityRegistryEntry)(options[id]))
+}

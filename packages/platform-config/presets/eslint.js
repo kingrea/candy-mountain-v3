@@ -1,6 +1,7 @@
 import js from '@eslint/js'
 import globals from 'globals'
 import tseslint from 'typescript-eslint'
+import { packageBoundaries } from '../eslint/package-boundaries.mjs'
 
 // Scoped to script files so a Nuxt package can extend it without its TypeScript parser taking over .vue files.
 export default tseslint.config(
@@ -10,4 +11,5 @@ export default tseslint.config(
     extends: [js.configs.recommended, tseslint.configs.recommended],
     languageOptions: { globals: globals.node },
   },
+  packageBoundaries(),
 )

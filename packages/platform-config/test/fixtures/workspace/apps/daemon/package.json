@@ -1,0 +1,9 @@
+{
+  "name": "@fixture/daemon",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@candy-mountain/cap-alpha": "workspace:*",
+    "@candy-mountain/platform-core": "workspace:*"
+  }
+}

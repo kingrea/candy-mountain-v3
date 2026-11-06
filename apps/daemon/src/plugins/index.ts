@@ -1,7 +1,0 @@
-export * from './claude-code'
-export * from './codex'
-export * from './heroku'
-export * from './netlify'
-export * from './repository'
-export * from './slack'
-export { PLUGIN_TYPES } from './types'

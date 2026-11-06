@@ -1,10 +1,11 @@
-import { CANDY_MOUNTAIN_PRODUCT, type AnyCapabilityManifest } from '@candy-mountain/platform-sdk'
+import type { AnyCapabilityManifest, ScopeLabel } from '@candy-mountain/platform-sdk'
 import { describe, expect, it } from 'vitest'
 import { fixtureCapability } from '../capabilities/fixtures'
 import { capabilityReadiness, requiredPluginTypes, type PluginReadiness, type WorkspaceFactMessages, type WorkspaceFacts } from './readiness'
 
 const bots: AnyCapabilityManifest = { ...fixtureCapability('bots', ['repository']), requiresAnyPlugins: [['claude-code', 'codex']] }
-const label = CANDY_MOUNTAIN_PRODUCT.scope.label
+/** The assertions below are worded for a product that calls a workspace a project. */
+const label: ScopeLabel = { singular: 'project', plural: 'projects', singularTitle: 'Project', pluralTitle: 'Projects' }
 const facts: WorkspaceFacts = { hasBeads: true, isGitRepo: true, hasRemote: true, hasBots: false }
 const ready = (name: string): PluginReadiness => ({ name, state: 'ready' })
 const plugins = (overrides: Record<string, PluginReadiness>) => ({

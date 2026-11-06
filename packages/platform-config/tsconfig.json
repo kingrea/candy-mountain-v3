@@ -3,5 +3,6 @@
   "compilerOptions": {
     "types": ["node"]
   },
-  "include": ["src", "presets", "vitest.config.ts"]
+  "include": ["src", "presets", "eslint", "test", "vitest.config.ts"],
+  "exclude": ["test/fixtures"]
 }

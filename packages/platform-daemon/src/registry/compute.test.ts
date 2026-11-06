@@ -1,4 +1,4 @@
-import { CANDY_MOUNTAIN_PRODUCT, type AnyCapabilityManifest, type ModuleDefinition, type ScopeLabel } from '@candy-mountain/platform-sdk'
+import type { AnyCapabilityManifest, ModuleDefinition, ScopeLabel } from '@candy-mountain/platform-sdk'
 import { describe, expect, it } from 'vitest'
 import { fixtureCapability } from '../capabilities/fixtures'
 import { computeRegistry, type RegistryInput } from './compute'
@@ -17,13 +17,16 @@ const MODULES: readonly ModuleDefinition[] = [
   { id: 'operations', label: 'Operations', description: 'Ops.', icon: 'i-lucide-activity', capabilities: [{ capabilityId: 'uptime', defaultRung: 'read' }, { capabilityId: 'team', defaultRung: 'read' }] },
 ]
 
+/** The assertions below are worded for a product that calls a workspace a project. */
+const PROJECT_LABEL: ScopeLabel = { singular: 'project', plural: 'projects', singularTitle: 'Project', pluralTitle: 'Projects' }
+
 const healthy: PluginReadiness = { name: 'Repository', state: 'ready' }
 
 function input(overrides: Partial<RegistryInput> = {}): RegistryInput {
   return {
     workspace: { id: 'p1', slug: 'alpha', name: 'Alpha' },
     scopeUrlPrefix: 'p',
-    scopeLabel: CANDY_MOUNTAIN_PRODUCT.scope.label,
+    scopeLabel: PROJECT_LABEL,
     capabilities: CAPABILITIES,
     modules: MODULES,
     enabledModules: ['issues', 'operations'],

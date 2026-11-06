@@ -30,6 +30,7 @@
   "devDependencies": {
     "@candy-mountain/platform-config": "workspace:*",
     "@nuxt/eslint": "^1.17.0",
+    "@nuxt/eslint-config": "^1.17.0",
     "vue-tsc": "^3.3.13"
   }
 }

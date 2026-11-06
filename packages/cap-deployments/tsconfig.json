@@ -1,0 +1,8 @@
+{
+  "extends": "@candy-mountain/platform-config/tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  // The web layer (app/, test/) needs Nuxt's generated types, so the distribution's nuxt typecheck covers it.
+  "include": ["src", "drizzle.config.ts", "vitest.config.ts"]
+}

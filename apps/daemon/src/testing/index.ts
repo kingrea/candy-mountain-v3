@@ -1,6 +1,6 @@
 import { createActivityEventTypeRegistry, declaredActivityEventTypes, instanceHarness as platformInstanceHarness, isCapabilityDefinition, migrationSets, openTestDatabase as openPlatformTestDatabase, platformDefinitions, type AnyPluginType, type InstanceHarness, type InstanceHarnessOptions, type MigrationSet, type PlatformDatabase } from '@candy-mountain/platform-daemon'
 import { CANDY_MOUNTAIN } from '../candy-mountain'
-import { createWorkspaceWithRepository } from '../repository/test-support'
+import { createWorkspaceWithRepository } from '@candy-mountain/cap-repository'
 
 export { createTempDataDir, type TempDataDir } from '@candy-mountain/platform-daemon'
 export * from './platform'
@@ -12,6 +12,11 @@ export const testActivityEventTypes = () => createActivityEventTypeRegistry(decl
 
 /** Every set Candy Mountain boots, in the order it applies them. */
 export const testMigrationSets = (): MigrationSet[] => migrationSets(candyMountainDefinitions())
+
+/** The capabilities whose tables the numbered history created; a database from before the split carries across only onto a product listing every one. */
+const PRE_SPLIT_CAPABILITIES = ['repository', 'issues', 'team', 'bots', 'uptime', 'deployments']
+
+export const carriesPreSplitDatabases = PRE_SPLIT_CAPABILITIES.every(id => CANDY_MOUNTAIN.capabilities.some(c => c.id === id))
 
 /** Every Candy Mountain table, with its activity event types registered. */
 export function openTestDatabase({ seed = true }: { seed?: boolean } = {}): PlatformDatabase {

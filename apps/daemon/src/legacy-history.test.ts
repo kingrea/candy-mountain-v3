@@ -6,7 +6,7 @@ import { drizzle } from 'drizzle-orm/better-sqlite3'
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
 import { readMigrationFiles } from 'drizzle-orm/migrator'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { testMigrationSets } from './testing'
+import { carriesPreSplitDatabases, testMigrationSets } from './testing'
 import { LEGACY_MIGRATIONS_DIR, LEGACY_MIGRATIONS_TABLE, LegacyHistoryError, migrationsBefore, migrationsTableFor, openDatabase, PLATFORM_MIGRATION_SET_ID, schemaShape } from '@candy-mountain/platform-daemon'
 
 const AT = '2026-11-01T00:00:00.000Z'
@@ -69,7 +69,7 @@ describe('the per-set histories against the legacy numbered history', () => {
     expect(sqlite.pragma('foreign_key_check')).toEqual([])
   }
 
-  it('build the same tables, columns, foreign keys and indexes', () => {
+  it.runIf(carriesPreSplitDatabases)('build the same tables, columns, foreign keys and indexes', () => {
     const { sqlite } = legacyDatabase('legacy')
     try {
       const expected = schemaShape(sqlite)
@@ -81,7 +81,7 @@ describe('the per-set histories against the legacy numbered history', () => {
     }
   })
 
-  it('carry a fully migrated database across with every row, applying nothing', () => {
+  it.runIf(carriesPreSplitDatabases)('carry a fully migrated database across with every row, applying nothing', () => {
     const { file, sqlite } = legacyDatabase('full')
     const row = insert(sqlite)
     row('organisations', { id: 'o1', slug: 'acme', name: 'Acme', created_at: AT, updated_at: AT })
@@ -148,7 +148,7 @@ describe('the per-set histories against the legacy numbered history', () => {
     }
   })
 
-  it.each([
+  it.runIf(carriesPreSplitDatabases).each([
     ['in the default Drizzle table', LEGACY_MIGRATIONS_TABLE],
     ['in the platform set table the first migration-sets build used', migrationsTableFor(PLATFORM_MIGRATION_SET_ID)],
   ])('apply the legacy migrations an early database is missing, then carry it across with every row (history %s)', (_, table) => {
@@ -233,6 +233,12 @@ describe('the per-set histories against the legacy numbered history', () => {
     const { file, sqlite } = legacyDatabase('partial', { before: '0011_project_assignees' })
     sqlite.close()
     expectRefusedUntouched(file, /no set being opened owns 'uptime_checks', 'uptime_incidents', 'uptime_monitors'/, testMigrationSets().filter(set => set.id !== 'uptime'))
+  })
+
+  it.runIf(!carriesPreSplitDatabases)('refuse a fully migrated database once the product no longer lists every capability that owned its tables', () => {
+    const { file, sqlite } = legacyDatabase('orphaned')
+    sqlite.close()
+    expectRefusedUntouched(file, /no set being opened owns/)
   })
 
   it('refuse a database that has both the numbered history and a per-set history', () => {

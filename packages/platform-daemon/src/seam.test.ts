@@ -28,8 +28,8 @@ const PLATFORM_FOLDERS = [
   'workspaces',
 ]
 
-/** Packages this one may import: the SDK and the libraries the daemon runs on, never an app or a capability package. */
-const ALLOWED_PACKAGES = /^(node:|@candy-mountain\/platform-sdk(\/daemon)?$|@candy-mountain\/platform-daemon$|@agentclientprotocol\/sdk|@mastra\/|better-sqlite3|drizzle-orm|drizzle-kit|hono|zod|vitest)/
+/** Packages this one may import: the SDK, the runtime config and the libraries the daemon runs on, never an app or a capability package. */
+const ALLOWED_PACKAGES = /^(node:|@candy-mountain\/platform-sdk(\/daemon)?$|@candy-mountain\/platform-daemon$|@candy-mountain\/platform-config$|@hono\/node-server$|@agentclientprotocol\/sdk|@mastra\/|better-sqlite3|drizzle-orm|drizzle-kit|hono|zod|vitest)/
 
 const PACKAGE_ROOT = dirname(SRC)
 

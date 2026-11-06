@@ -7,13 +7,14 @@ import { generateSQLiteDrizzleJson, generateSQLiteMigration } from 'drizzle-kit/
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
 import { afterEach, describe, expect, it } from 'vitest'
 import { migrationsBefore, migrationsTableFor, openDatabase, PLATFORM_MIGRATION_SET_ID, schemaShape } from '@candy-mountain/platform-daemon'
-import { testMigrationSets } from './testing'
+import { carriesPreSplitDatabases, testMigrationSets } from './testing'
 
 const AT = '2026-11-01T00:00:00.000Z'
 
 const count = (sqlite: Database.Database, table: string) => (sqlite.prepare(`SELECT count(*) AS n FROM "${table}"`).get() as { n: number }).n
 
-describe('the workspace migration', () => {
+// A legacy database carries across only onto the full product's sets.
+describe.runIf(carriesPreSplitDatabases)('the workspace migration', () => {
   let dir: string | undefined
   afterEach(() => {
     if (dir) rmSync(dir, { recursive: true, force: true })

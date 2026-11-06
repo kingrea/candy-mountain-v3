@@ -7,7 +7,8 @@
     ".": "./src/index.ts",
     "./tsconfig.base.json": "./presets/tsconfig.base.json",
     "./eslint": "./presets/eslint.js",
-    "./vitest": "./presets/vitest.ts"
+    "./vitest": "./presets/vitest.ts",
+    "./package-boundaries": "./eslint/package-boundaries.mjs"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -20,6 +21,10 @@
     "typescript-eslint": "^8.72.0"
   },
   "peerDependencies": {
-    "vitest": "^5.0.5"
+    "vitest": "^5.0.5",
+    "eslint": "^10.13.0"
+  },
+  "devDependencies": {
+    "eslint": "^10.13.0"
   }
 }

@@ -51,7 +51,7 @@ export interface InstanceHarnessOptions {
 }
 
 export function instanceHarness(types: readonly AnyPluginType[], { locked = false, product, openDatabase = openTestDatabase, createWorkspace: makeWorkspace = (db, { name, slug }) => createWorkspace(db, { name, slug }) }: InstanceHarnessOptions = {}): InstanceHarness {
-  const root = mkdtempSync(join(tmpdir(), 'candy-mountain-instances-'))
+  const root = mkdtempSync(join(tmpdir(), 'platform-instances-'))
   const secretsDir = join(root, 'secrets')
   const database = openDatabase()
   const store = locked ? lockedSecretsStore() : createSecretsStore(secretsDir, MasterKey.generate())

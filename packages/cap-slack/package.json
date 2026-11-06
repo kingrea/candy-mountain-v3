@@ -1,0 +1,27 @@
+{
+  "name": "@candy-mountain/cap-slack",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "webLayer": "slack",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@candy-mountain/platform-daemon": "workspace:*",
+    "@candy-mountain/platform-sdk": "workspace:*",
+    "nuxt": "^4.6.2",
+    "ws": "^8.22.0"
+  },
+  "devDependencies": {
+    "@candy-mountain/platform-config": "workspace:*",
+    "@candy-mountain/platform-web": "workspace:*",
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/ws": "^8.18.2"
+  }
+}

@@ -1,4 +1,4 @@
-import { CANDY_MOUNTAIN_PRODUCT } from '@candy-mountain/platform-sdk'
+import { CANDY_MOUNTAIN_PRODUCT } from '@candy-mountain/candy-mountain'
 import { createApp, startPlatform, suppliedIds, type AppDeps, type Platform, type PlatformOptions, type Product } from '@candy-mountain/platform-daemon'
 import { CANDY_MOUNTAIN } from '../candy-mountain'
 

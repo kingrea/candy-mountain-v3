@@ -19,7 +19,7 @@ describe('schema', () => {
     const latest = JSON.parse(readFileSync(join(meta, snapshots.at(-1)!), 'utf8')) as DrizzleSQLiteSnapshotJSON
     const current = await generateSQLiteDrizzleJson(set.schema)
 
-    expect(await generateSQLiteMigration(latest, current), `run \`pnpm --filter @candy-mountain/daemon db:generate --config <the ${id} set's drizzle.config.ts> --name <short_name>\``).toEqual([])
+    expect(await generateSQLiteMigration(latest, current), `run \`pnpm db:generate --name <short_name>\` in the package that owns the ${id} set`).toEqual([])
   })
 
   it.each(sets.filter(set => set.id !== 'platform').map(set => [set.id, set] as const))('set %s references only platform tables, its own and its declared dependencies\'', (id, set) => {

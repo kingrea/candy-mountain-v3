@@ -28,7 +28,10 @@ async function registeredLayers(overrides: Record<string, unknown>) {
 
 describe('explicit web layer list', () => {
   it('finds layer packages among the app\'s dependencies', () => {
-    expect([...packageLayers(fixtureRoot)]).toEqual([['delta', { name: '@fixture/delta', dir: packageRoot }]])
+    expect([...packageLayers(fixtureRoot)]).toEqual([
+      ['delta', { name: '@fixture/delta', dir: packageRoot }],
+      ['epsilon', { name: '@fixture/epsilon', dir: realpathSync(fileURLToPath(new URL('../fixtures/epsilon-layer', import.meta.url))) }],
+    ])
   })
 
   it('resolves listed ids to directories and packages in list order, skipping the shell\'s own layers', () => {
