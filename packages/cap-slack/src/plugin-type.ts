@@ -5,12 +5,12 @@ import { createSlackOperations } from './operations'
 export const slackPluginType = definePluginType({
   id: 'slack',
   name: 'Slack',
-  description: 'A platform-wide Slack bot that sends notifications for projects without a bot of their own.',
+  description: 'A Slack bot that sends this project\'s notifications when none of its bots has a Slack token.',
   reach: [
     'Post messages to Slack channels the bot has been added to.',
     'Send direct messages to members of the workspace.',
   ],
-  scopes: ['global'],
+  scopes: ['workspace'],
   singleInstance: true,
   configFields: [
     { kind: 'string', name: 'defaultChannelId', label: 'Default channel ID', description: 'Where messages go when no channel or member is given; the bot must be in the channel.', placeholder: 'C0123456789', pattern: '[CG][A-Z0-9]+' },

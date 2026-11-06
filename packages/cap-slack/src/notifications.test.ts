@@ -52,13 +52,13 @@ async function setup(): Promise<Workspace> {
   return h.createWorkspace('alpha')
 }
 
-const addPlugin = () => createPluginInstance(h.deps, { type: 'slack', scope: 'global', workspaceId: null, config: {}, secrets: { botToken: 'xoxb-plugin' } })
+const addPlugin = (workspace: Workspace) => createPluginInstance(h.deps, { type: 'slack', scope: 'workspace', workspaceId: workspace.id, config: {}, secrets: { botToken: 'xoxb-plugin' } })
 
 const delivery = (workspace: Workspace, destination: NotificationDelivery['destination']): NotificationDelivery =>
   ({ workspaceId: workspace.id, kind: 'incident.opened', destination, title: 'API <down>', url: 'http://web.test/p/alpha' }) as NotificationDelivery
 
 describe('the Slack notification channel', () => {
-  it('describes no sender, then the platform plugin, then the first bot the source names', async () => {
+  it('describes no sender, then the project plugin, then the first bot the source names', async () => {
     const workspace = await setup()
     expect(channel(null).describe(workspace)).toEqual({
       label: 'Slack',
@@ -67,9 +67,9 @@ describe('the Slack notification channel', () => {
       setup: { label: 'Set up Slack', link: '/p/alpha/setup/plugins' },
       destinations: expect.objectContaining({ channel: expect.any(Object), member: expect.any(Object) }),
     })
-    addPlugin()
-    expect(channel(null).describe(workspace).sender).toBe('Platform Slack plugin')
-    expect(channel([]).describe(workspace).sender).toBe('Platform Slack plugin')
+    addPlugin(workspace)
+    expect(channel(null).describe(workspace).sender).toBe('Project Slack plugin')
+    expect(channel([]).describe(workspace).sender).toBe('Project Slack plugin')
     expect(channel([{ id: 'b1', name: 'Ana' }, { id: 'b2', name: 'Bob' }], { b1: 'xoxb-ana' }).describe(workspace).sender).toBe('Project bot Ana')
   })
 
@@ -79,7 +79,7 @@ describe('the Slack notification channel', () => {
     expect(await channel(null).deliver(delivery(workspace, { channelId: 'C1' }), signal)).toBe(false)
     expect(calls).toEqual([])
 
-    addPlugin()
+    addPlugin(workspace)
     expect(await channel(null).deliver(delivery(workspace, { channelId: 'C1' }), signal)).toBe(true)
     expect(calls).toEqual([{ method: 'chat.postMessage', token: 'xoxb-plugin', body: { channel: 'C1', text: 'API &lt;down&gt;\n<http://web.test/p/alpha|Open in Candy Mountain>' } }])
 

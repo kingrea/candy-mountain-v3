@@ -72,13 +72,13 @@ describe('the slack definition', () => {
     expect(await platform.agentMcp.serversFor(session('slack'))).toMatchObject([{ name: SLACK_POST_BLOCKS_TOOL.server, tools: [SLACK_POST_BLOCKS_TOOL.tool] }])
   })
 
-  it('delivers notifications through the platform Slack plugin while no bots are attached', async () => {
+  it('delivers notifications through the project\'s Slack plugin while no bots are attached', async () => {
     const { platform, app } = start(withSlack())
     expect(platform.runtime.notificationChannels.map(c => c.id)).toEqual([SLACK_NOTIFICATION_CHANNEL_ID])
     const workspace = createWorkspace(platform.db, { name: 'alpha', slug: 'alpha' })
     const res = await app.request(workspaceNotificationsPath('alpha'), { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ rules: { 'incident.opened': { enabled: true, destination: { channelId: 'C777' } } } }) })
     expect(res.status).toBe(200)
-    createPluginInstance({ db: platform.db, pluginTypes: platform.pluginTypes, secrets: platform.secrets.writeOnly }, { type: 'slack', scope: 'global', workspaceId: null, config: {}, secrets: { botToken: 'xoxb-plugin' } })
+    createPluginInstance({ db: platform.db, pluginTypes: platform.pluginTypes, secrets: platform.secrets.writeOnly }, { type: 'slack', scope: 'workspace', workspaceId: workspace.id, config: {}, secrets: { botToken: 'xoxb-plugin' } })
 
     appendActivityEvent(platform.db, { workspaceId: workspace.id, type: 'incident.opened', title: 'API <down> & out', link: '/w/alpha/uptime' })
     await platform.notifications.idle()

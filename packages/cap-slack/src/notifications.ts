@@ -6,7 +6,7 @@ import { slackConfig, slackPluginType } from './plugin-type'
 
 export interface SlackNotificationChannelDeps extends PluginInstanceDeps {
   secretsReader: SecretsReader
-  /** Without an attached source only the platform Slack plugin can post. */
+  /** Without an attached source only the project's Slack plugin can post. */
   slack: Pick<SlackConnections, 'web' | 'source'>
   scopeUrlPrefix: string
   scopeLabel: ScopeLabel
@@ -25,7 +25,7 @@ const SLACK_DESTINATIONS: NotificationChannelDescription['destinations'] = {
   member: { label: 'Direct message', placeholder: 'U0123ABCD', help: 'Slack member ID, starts with U or W. Find it in the member profile.', pattern: SLACK_MEMBER_ID_PATTERN.source, mismatch: 'Not a Slack member ID. Expected something like U0123ABCD.' },
 }
 
-/** Posts as the project's first bot with a Slack bot token (by name), else as the platform Slack plugin; declines when there is neither. */
+/** Posts as the project's first bot with a Slack bot token (by name), else as the project's Slack plugin; declines when there is neither. */
 export function slackNotificationChannel(deps: SlackNotificationChannelDeps, { fetch }: SlackNotificationChannelOptions = {}): NotificationChannel {
   const botsWithToken = (projectId: string) => deps.slack.source()?.notificationSenders(projectId) ?? []
 
@@ -52,7 +52,7 @@ export function slackNotificationChannel(deps: SlackNotificationChannelDeps, { f
     describe(workspace) {
       const bot = botsWithToken(workspace.id)[0]
       let sender = bot ? `${deps.scopeLabel.singularTitle} bot ${bot.name}` : null
-      if (!sender && resolvePluginInstance(deps, workspace.id, slackPluginType.id)?.secrets.botToken === 'set') sender = 'Platform Slack plugin'
+      if (!sender && resolvePluginInstance(deps, workspace.id, slackPluginType.id)?.secrets.botToken === 'set') sender = `${deps.scopeLabel.singularTitle} Slack plugin`
       return {
         label: 'Slack',
         sender,

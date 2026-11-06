@@ -59,7 +59,7 @@ afterEach(() => {
 })
 
 describe('slack plugin type', () => {
-  it('is registered as a single-instance, global-only type', () => {
+  it('is registered as a single-instance, project-only type', () => {
     expect(createPluginTypeRegistry([slackPluginType]).get('slack')).toBe(slackPluginType)
     const info = pluginTypeInfo(slackPluginType)
     expect(info.singleInstance).toBe(true)
@@ -67,11 +67,11 @@ describe('slack plugin type', () => {
     expect(info.secretFields).toEqual([expect.objectContaining({ name: 'botToken', required: true })])
   })
 
-  // Instances reject a scope their type does not list, so this list is what refuses a project-scoped Slack instance.
-  it('rejects the project scope', () => {
-    expect(PLUGIN_SCOPES).toContain('workspace')
-    expect(slackPluginType.scopes).toEqual(['global'])
-    expect(slackPluginType.scopes.includes('workspace')).toBe(false)
+  // Instances reject a scope their type does not list, so this list is what refuses a platform-wide Slack instance.
+  it('rejects the global scope', () => {
+    expect(PLUGIN_SCOPES).toContain('global')
+    expect(slackPluginType.scopes).toEqual(['workspace'])
+    expect(slackPluginType.scopes.includes('global')).toBe(false)
   })
 
   it('validates stored config', () => {
