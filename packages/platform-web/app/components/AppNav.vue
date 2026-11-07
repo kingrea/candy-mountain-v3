@@ -31,6 +31,7 @@ const systemItems = computed(() => [labelItem(systemGroup.value), ...toItems(sys
     v-if="capabilityItems.length"
     :collapsed="collapsed"
     :items="capabilityItems"
+    color="neutral"
     orientation="vertical"
     tooltip
   >
@@ -49,6 +50,7 @@ const systemItems = computed(() => [labelItem(systemGroup.value), ...toItems(sys
   <UNavigationMenu
     :collapsed="collapsed"
     :items="systemItems"
+    color="neutral"
     orientation="vertical"
     tooltip
     class="mt-auto"

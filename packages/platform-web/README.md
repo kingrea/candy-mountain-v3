@@ -4,6 +4,23 @@ This is the conventions document for capability layers and the shell they plug i
 
 Every capability's UI is a Nuxt layer at the root of its capability package, `packages/cap-<capability-id>/`. A plugin type's UI lives in the layer of the capability package that brings it (see Plugin-type layers). One more layer, `chat`, is shared infrastructure rather than a capability. **Core** is the shell in this package (`@candy-mountain/platform-web`, itself a Nuxt layer that a distribution such as `apps/web` extends): its `app/`, the Nitro proxy (`server/`), `shared/`, the `chat` and `overview` layers under its own `layers/`, its tests and config. Core holds the platform's own pages (projects, settings) and plumbing; it never knows about a capability or a product plugin type, and it never imports a product: the distribution's `nuxt.config.ts` hands it the product configuration through the `platformWeb: { product }` option of the package's Nuxt module (`modules/platform-web.ts`), which the shell reads as `PRODUCT` (`shared/utils/product.ts`). `apps/web`, Candy Mountain's web distribution, holds only that config (with the product configuration from `@candy-mountain/candy-mountain`), its `package.json` (one dependency per capability package), `public/` and distribution-level tests.
 
+## Shared visual system
+
+The shell owns the neutral palette in `app/assets/css/main.css` and Nuxt UI component defaults in `app/app.config.ts`. Capability layers inherit both. The visual reference is Subframe's [editor](https://mobbin.com/screens/ff6c5e7e-cce9-4a4c-9412-04eb28fd5fb9) and [document grid](https://mobbin.com/screens/f8559775-327a-4d27-b8db-9987a3148b45), viewed on Mobbin: neutral grey canvas, lighter panels, restrained separators and compact navigation. Values are our interpretation of the screenshots, not exported Subframe tokens.
+
+| Role | Utility | Use |
+| --- | --- | --- |
+| Workspace canvas | `bg-canvas` | Dashboard panels and the space around content |
+| App chrome | `bg-shell` | Header, sidebar and chat rail |
+| Content surface | `bg-default` | Cards, lists, inputs and dialogs |
+| Secondary surface | `bg-muted` / `bg-elevated` | Hover, selection and nested controls |
+| Separators | `border-default` / `divide-muted` | Panel edges / quieter row dividers |
+| Text hierarchy | `text-highlighted`, `text-toned`, `text-muted` | Headings, body emphasis and supporting text |
+
+Use the semantic utilities rather than hardcoded greys so light and dark mode stay paired. The neutral scale is `neutral`, not `slate`. Product primary colours still come from `PRODUCT.theme`; navigation uses neutral selection, leaving the accent for actions and status.
+
+The base text size is 14px; dashboard titles are 18px. Keep the existing system font and explicit type sizes where the content needs them. Spacing follows the existing 4px scale: 8px between controls, 16px on narrow page edges, 24px on small desktop edges and 32px on large desktop edges. Cards use 16/20px padding and 12px corners; controls use 8px corners. Component-specific overrides such as zero-padding tables and transcripts still take priority. Keep focus rings, disabled styles and semantic status colours from Nuxt UI.
+
 ## Registration
 
 The web app registers exactly the layers the product configuration lists. `apps/web/nuxt.config.ts` spreads `layerListConfig(CANDY_MOUNTAIN_PRODUCT.layers, root)` from `@candy-mountain/platform-web/layer-list` (`packages/platform-web/layer-list.mjs`) and appends `@candy-mountain/platform-web` to its `extends`. Each id in the product configuration's `layers` (`packages/candy-mountain/src/product.ts`) resolves to a layer package the app depends on (below) or, in a distribution that keeps one, to a `layers/<id>/` directory of its own; the shell's own layers (`platformLayers()`: `chat`, `overview`) are listed too but resolve to nothing, since extending the shell brings them. A listed id that resolves to neither, that resolves to both, or whose package has no `nuxt.config` fails the build with an error naming it. A `layers/<id>/` directory that is not listed is dropped (with its `#layers/<id>` alias) in the `modules:before` hook, because Nuxt globs `layers/*` regardless. List order is layer priority (first wins). There is no glob-only mode: Nuxt's glob never registers a layer package.

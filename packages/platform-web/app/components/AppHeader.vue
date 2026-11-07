@@ -1,10 +1,10 @@
 <template>
-  <header class="flex h-(--ui-header-height) shrink-0 items-center gap-3 border-b border-default bg-default px-4">
+  <header class="flex h-(--ui-header-height) shrink-0 items-center gap-3 border-b border-muted bg-shell px-4">
     <UDashboardSidebarToggle color="neutral" variant="ghost" />
 
     <NuxtLink to="/" :aria-label="`${PRODUCT.name} home`" class="flex shrink-0 items-center gap-2 rounded-md focus-visible:outline-2 focus-visible:outline-primary">
-      <UIcon name="i-lucide-mountain-snow" class="size-6 text-primary" />
-      <span class="hidden text-lg font-bold tracking-tight text-highlighted sm:inline">{{ PRODUCT.name }}</span>
+      <UIcon name="i-lucide-mountain-snow" class="size-5 text-primary" />
+      <span class="hidden text-sm font-semibold tracking-tight text-highlighted sm:inline">{{ PRODUCT.name }}</span>
     </NuxtLink>
 
     <div class="flex shrink-0 items-center gap-1 ms-auto">

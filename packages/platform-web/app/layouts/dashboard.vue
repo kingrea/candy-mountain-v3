@@ -12,7 +12,7 @@
       <UDashboardSidebar
         collapsible
         resizable
-        :ui="{ header: 'px-2', body: 'px-2', footer: 'hidden lg:flex px-2' }"
+        :ui="{ footer: 'hidden lg:flex' }"
       >
         <template #header="{ collapsed }">
           <ProjectPicker :collapsed="collapsed" />

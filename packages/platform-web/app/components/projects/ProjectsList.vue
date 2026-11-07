@@ -43,16 +43,16 @@ function actions(project: Workspace): DropdownMenuItem[][] {
 <template>
   <div class="flex flex-col gap-6">
     <section v-for="group in groups" :key="group.id" :data-group="group.id">
-      <h2 class="mb-2 flex items-center gap-2 text-sm font-semibold text-highlighted">
+      <h2 class="mb-3 flex items-center gap-2 text-sm font-medium text-toned">
         {{ group.label }}
         <UBadge :label="String(group.projects.length)" color="neutral" variant="soft" size="sm" />
       </h2>
 
-      <ul class="divide-y divide-default rounded-md border border-default">
+      <ul class="divide-y divide-muted overflow-hidden rounded-xl border border-default bg-default">
         <li
           v-for="project in group.projects"
           :key="project.id"
-          class="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:gap-4"
+          class="flex flex-col gap-2 px-4 py-4 sm:flex-row sm:items-center sm:gap-4 sm:px-5"
           :class="{ 'opacity-60': project.archived }"
           :data-project="project.slug"
         >

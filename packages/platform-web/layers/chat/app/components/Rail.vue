@@ -3,7 +3,7 @@
     v-if="entries.length"
     aria-label="Chat"
     data-testid="chat-rail"
-    class="flex w-12 shrink-0 flex-col items-center gap-1 border-l border-default bg-elevated/50 py-2"
+    class="flex w-12 shrink-0 flex-col items-center gap-2 border-l border-default bg-shell py-3"
   >
     <UDropdownMenu :items="newItems" :content="{ side: 'left', align: 'start' }">
       <UButton
