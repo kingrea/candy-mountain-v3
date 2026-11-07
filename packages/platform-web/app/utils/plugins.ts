@@ -11,6 +11,7 @@ import {
   type PluginSecretState,
   type PluginSecretValues,
   type PluginTypeInfo,
+  type PluginTypeUser,
   type RegistryResponse,
 } from '@candy-mountain/platform-sdk'
 import { SCOPE } from './scope-label'
@@ -51,6 +52,13 @@ export function pluginsNeededBy(registry: RegistryResponse | null): Record<strin
     }
   }
   return neededBy
+}
+
+/** The first capability a plugin type serves, with a count for the rest; null when none does. */
+export function pluginUsedByLabel(users: readonly PluginTypeUser[]): string | null {
+  const [first, ...rest] = users
+  if (!first) return null
+  return rest.length ? `${first.label} +${rest.length} more` : first.label
 }
 
 export interface PluginConfigEntry {

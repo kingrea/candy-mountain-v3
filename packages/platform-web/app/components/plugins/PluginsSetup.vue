@@ -17,22 +17,21 @@ const resolvedIds = computed(() => new Set(types.value.flatMap((type) => {
 const loading = computed(() => (status.value === 'pending' && !instances.value.length) || (typesStatus.value === 'pending' && !types.value.length))
 const loadError = computed(() => error.value ?? typesError.value)
 
+// An empty scope says nothing the catalog below does not, so it is left out rather than shown with a placeholder.
 const groups = computed(() => [
   {
     id: 'project',
     title: project.value ? `${project.value.name} plugins` : `${SCOPE.singularTitle} plugins`,
     description: `Used by this ${SCOPE.singular} only, ahead of any platform-wide plugin of the same type.`,
-    empty: `This ${SCOPE.singular} has no plugins of its own yet.`,
     instances: projectInstances.value,
   },
   {
     id: 'global',
     title: 'Platform-wide plugins',
     description: `Shared by every ${SCOPE.singular} that has no plugin of its own of that type.`,
-    empty: 'No platform-wide plugins.',
     instances: globalInstances.value,
   },
-])
+].filter(group => group.instances.length))
 
 const form = reactive<{ open: boolean, type: PluginTypeInfo | null, instance: PluginInstance | null, scopes: PluginScope[] }>({
   open: false,
@@ -84,7 +83,7 @@ function onSaved(instance: PluginInstance, created: boolean) {
         <p class="mb-3 text-sm text-muted">
           {{ group.description }}
         </p>
-        <div v-if="group.instances.length" class="flex flex-col gap-3">
+        <div class="flex flex-col gap-3">
           <PluginsInstanceCard
             v-for="instance in group.instances"
             :key="instance.id"
@@ -94,9 +93,6 @@ function onSaved(instance: PluginInstance, created: boolean) {
             @edit="openEdit"
           />
         </div>
-        <p v-else class="rounded-md border border-dashed border-default px-4 py-3 text-sm text-muted">
-          {{ group.empty }}
-        </p>
       </section>
 
       <section data-group="catalog">

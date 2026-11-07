@@ -13,6 +13,7 @@ import {
   pluginSecretErrors,
   pluginSecretsPayload,
   pluginsNeededBy,
+  pluginUsedByLabel,
 } from '../../app/utils/plugins'
 
 const repository: PluginTypeInfo = {
@@ -117,6 +118,12 @@ describe('plugin availability', () => {
     } as unknown as RegistryResponse
     expect(pluginsNeededBy(registry)).toEqual({ 'repository': ['Bots', 'Team'], 'claude-code': ['Bots'], 'codex': ['Bots'] })
     expect(pluginsNeededBy(null)).toEqual({})
+  })
+
+  it('labels a plugin by the first capability it serves and counts the rest', () => {
+    expect(pluginUsedByLabel([])).toBeNull()
+    expect(pluginUsedByLabel([{ id: 'bots', label: 'Bots' }])).toBe('Bots')
+    expect(pluginUsedByLabel([{ id: 'deployments', label: 'Deployments' }, { id: 'bots', label: 'Bots' }, { id: 'team', label: 'Team' }])).toBe('Deployments +2 more')
   })
 })
 

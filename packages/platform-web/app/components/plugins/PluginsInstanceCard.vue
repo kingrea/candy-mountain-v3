@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import type { PluginInstance, PluginTypeInfo } from '@candy-mountain/platform-sdk'
+import type { PluginInstance, PluginTypeListEntry } from '@candy-mountain/platform-sdk'
 import type { DropdownMenuItem } from '@nuxt/ui'
 import ProjectsConfirmModal from '#layers/platform-web/app/components/projects/ProjectsConfirmModal.vue'
 
 const props = defineProps<{
   instance: PluginInstance
   /** Undefined when the daemon no longer registers the instance's type. */
-  type?: PluginTypeInfo
+  type?: PluginTypeListEntry
   /** Capabilities waiting on this instance to be configured and healthy. */
   neededBy?: string[]
 }>()
@@ -26,6 +26,8 @@ const secrets = computed(() => (props.type?.secretFields ?? []).map(field => ({
   set: props.instance.secrets[field.name] === 'set',
 })))
 const panel = computed(() => (props.type ? pluginPanelFor(props.type.id) : undefined))
+const usedBy = computed(() => pluginUsedByLabel(props.type?.usedBy ?? []))
+const usedByAll = computed(() => props.type?.usedBy.map(user => user.label).join(', '))
 
 const testing = ref(false)
 const actionError = ref<ApiErrorInfo | null>(null)
@@ -82,6 +84,16 @@ const menu = computed<DropdownMenuItem[][]>(() => [
         <div class="flex flex-wrap items-center gap-2">
           <span class="font-medium text-highlighted">{{ name }}</span>
           <UBadge :label="PLUGIN_SCOPE_LABELS[instance.scope]" color="neutral" variant="outline" size="sm" />
+          <UBadge
+            v-if="usedBy"
+            :label="usedBy"
+            :title="usedByAll"
+            icon="i-lucide-puzzle"
+            color="neutral"
+            variant="soft"
+            size="sm"
+            data-testid="plugin-used-by"
+          />
           <UBadge v-if="!type" label="Unknown type" color="warning" variant="subtle" size="sm" />
           <UBadge
             v-if="neededBy?.length"

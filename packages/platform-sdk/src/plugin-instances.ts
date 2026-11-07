@@ -1,3 +1,4 @@
+import type { CapabilityId } from './capabilities'
 import type { PluginConfig, PluginHealth, PluginScope, PluginTypeId, PluginTypeInfo } from './plugins'
 
 export const PLUGINS_PATH = '/plugins'
@@ -50,8 +51,18 @@ export interface PluginInstanceResponse {
   instance: PluginInstance
 }
 
+export interface PluginTypeUser {
+  id: CapabilityId
+  label: string
+}
+
+export interface PluginTypeListEntry extends PluginTypeInfo {
+  /** The capability that brings the type first, when it has a manifest, then every capability that requires it. */
+  usedBy: PluginTypeUser[]
+}
+
 export interface PluginTypeListResponse {
-  types: PluginTypeInfo[]
+  types: PluginTypeListEntry[]
 }
 
 export const PLUGIN_INSTANCE_ERROR_CODES = [

@@ -27,6 +27,7 @@ import {
   type SecretsReader,
 } from './instances'
 import { parseCreatePluginInstance, parseUpdatePluginInstance } from './validation'
+import { pluginTypeUsers } from './users'
 
 function workspaceIdOf(c: Context<AppEnv>, slug: string): string {
   const workspace = findWorkspaceBySlug(c.var.db, slug)
@@ -56,7 +57,9 @@ function onError(error: Error, c: Context) {
 export function pluginTypeRoutes() {
   const app = new Hono<AppEnv>()
   app.onError(onError)
-  app.get('/', c => c.json<PluginTypeListResponse>({ types: c.var.pluginTypes.list().map(pluginTypeInfo) }))
+  app.get('/', c => c.json<PluginTypeListResponse>({
+    types: c.var.pluginTypes.list().map(type => ({ ...pluginTypeInfo(type), usedBy: pluginTypeUsers(type.id, c.var.capabilities) })),
+  }))
 
   app.on(['GET', 'POST'], '/:id/:action', requireAdmin(), async (c) => {
     const type = c.var.pluginTypes.byId(c.req.param('id'))
