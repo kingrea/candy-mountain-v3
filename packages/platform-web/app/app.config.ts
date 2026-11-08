@@ -2,10 +2,7 @@ import { PRODUCT } from '../shared/utils/product'
 
 export default defineAppConfig({
   ui: {
-    colors: {
-      primary: PRODUCT.theme.primary,
-      neutral: 'neutral',
-    },
+    colors: PRODUCT.theme.colors,
     dashboardGroup: {
       base: 'bg-canvas',
     },

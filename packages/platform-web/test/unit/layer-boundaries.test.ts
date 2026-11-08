@@ -53,6 +53,7 @@ describe('layer boundary lint', () => {
     '../platform-layer/layers/chat/app/components/Panel.vue',
     '../platform-layer/layers/chat/app/composables/useChatThread.ts',
     'layers/alpha/nuxt.config.ts',
+    'layers/alpha/app/app.config.ts',
     'layers/alpha/app/components/Card.vue',
     'layers/alpha/app/composables/useAlpha.ts',
     'layers/alpha/app/utils/alpha.ts',
@@ -131,7 +132,6 @@ describe('layer boundary lint', () => {
 
   describe('with a package layer', () => {
     it.each([
-      '../delta-layer/nuxt.config.ts',
       '../delta-layer/app/components/Widget.vue',
       '../delta-layer/app/composables/useDelta.ts',
       '../delta-layer/app/utils/delta.ts',
@@ -187,6 +187,7 @@ describe('layer boundary lint', () => {
   describe('with two layer packages', () => {
     it.each([
       '../epsilon-layer/nuxt.config.ts',
+      '../epsilon-layer/app/app.config.ts',
       '../epsilon-layer/vitest.config.ts',
       '../epsilon-layer/app/components/Gauge.vue',
       '../epsilon-layer/app/composables/useEpsilon.ts',
@@ -269,5 +270,114 @@ describe('layer boundary lint', () => {
       expect(own.size).toBeGreaterThan(0)
       for (const [file, found] of own) expect({ file, found }).toEqual({ file, found: findings(file) })
     }, 60_000)
+  })
+
+  describe('layer styling', () => {
+    const docs = 'See packages/platform-web/README.md.'
+    const rule = 'cm-layers/layer-styling'
+    // The same forms in a directory layer of the app and in a layer package; the package is also linted from its own root.
+    const layers = [
+      ['styled', 'layers/styled', () => results],
+      ['delta', '../delta-layer', () => results],
+      ['delta', '../delta-layer', () => ownDelta],
+    ] as const
+    let ownDelta: Map<string, Finding[]>
+
+    beforeAll(async () => {
+      ownDelta = await lintFixture(packageRoot, [packageRoot])
+    }, 60_000)
+
+    function styling(lint: () => Map<string, Finding[]>, file: string): Finding[] {
+      const found = lint().get(file)
+      if (!found) throw new Error(`fixture ${file} was not linted`)
+      return found.filter(finding => finding.rule === 'fatal' || finding.rule === rule)
+    }
+
+    it.each(layers)('passes every allowed form in the %s layer (%s)', (_, dir, lint) => {
+      expect(styling(lint, `${dir}/app/components/Allowed.vue`)).toEqual([])
+    })
+
+    // Every rule, not just this one: these config files are otherwise clean, so nothing else may fire on them.
+    it.each(layers)('rejects stylesheets registered through the nuxt.config css option of the %s layer (%s)', (layer, dir, lint) => {
+      const registers = (source: string) =>
+        `The \`${layer}\` layer may not register the stylesheet '${source}' through its nuxt.config \`css\` option: a registered sheet is global. Style the layer's own markup from scoped blocks. ${docs}`
+      expect(lint().get(`${dir}/nuxt.config.ts`)).toEqual([
+        { rule, message: registers(`./app/assets/${layer}.css`) },
+        { rule, message: registers(`~/assets/${layer}.css`) },
+      ])
+    })
+
+    it.each(layers)('rejects the ui key in the app config of the %s layer but keeps its registration keys (%s)', (layer, dir, lint) => {
+      expect(lint().get(`${dir}/app/app.config.ts`)).toEqual([
+        {
+          rule,
+          message: `The \`${layer}\` layer may not set \`ui\` in its app config: it rewrites Nuxt UI's component defaults for the whole app. Pass a per-instance \`ui\` prop or wrap the component under the layer's prefix. ${docs}`,
+        },
+      ])
+    })
+
+    it.each(layers)('rejects an unscoped style block in the %s layer (%s)', (layer, dir, lint) => {
+      expect(styling(lint, `${dir}/app/components/Unscoped.vue`).map(f => f.message)).toEqual([
+        `A style block in the \`${layer}\` layer must be \`scoped\` or \`module\`; an unscoped block styles the whole app. ${docs}`,
+      ])
+    })
+
+    it.each(layers)('rejects a stylesheet the %s layer imports, loads through src or @imports (%s)', (layer, dir, lint) => {
+      const sheet = `The \`${layer}\` layer may not load the stylesheet '../assets/${layer}.css': an imported sheet is global. Style the layer's own markup from scoped blocks. ${docs}`
+      expect(styling(lint, `${dir}/app/plugins/${layer}-sheet.ts`).map(f => f.message)).toEqual([sheet])
+      expect(styling(lint, `${dir}/app/components/SheetSrc.vue`).map(f => f.message)).toEqual([sheet, sheet])
+    })
+
+    it.each(layers)('rejects :global and ::v-global selectors in the %s layer (%s)', (layer, dir, lint) => {
+      expect(styling(lint, `${dir}/app/components/GlobalSelector.vue`).map(f => f.message)).toEqual([
+        `\`.${layer}-wide :global(.alpha-card)\` in the \`${layer}\` layer escapes its scope with :global. ${docs}`,
+        `\`.${layer}-wide ::v-global(.alpha-card)\` in the \`${layer}\` layer escapes its scope with ::v-global. ${docs}`,
+      ])
+    })
+
+    it.each(layers)('rejects selectors reaching the document root, html, body or the colour-mode class in the %s layer (%s)', (layer, dir, lint) => {
+      const reaches = (selector: string, target: string) =>
+        `\`${selector}\` in the \`${layer}\` layer selects \`${target}\` (the document root, html, body or the colour-mode class), which belongs to the shell and the product. ${docs}`
+      expect(styling(lint, `${dir}/app/components/RootSelector.vue`).map(f => f.message)).toEqual([
+        reaches(':root', ':root'),
+        reaches('html', 'html'),
+        reaches(`.${layer}-deep :deep(body)`, 'body'),
+        reaches(`.dark .${layer}-deep`, '.dark'),
+      ])
+    })
+
+    it.each(layers)('rejects assigning shell, Tailwind theme and unprefixed custom properties in the %s layer (%s)', (layer, dir, lint) => {
+      const assigns = (property: string) =>
+        `\`${property}\` is assigned in the \`${layer}\` layer; a layer sets only its own custom properties (\`--${layer}-…\`) on its own root elements, never a shell (--ui-*, --app-*) or Tailwind theme variable. ${docs}`
+      expect(styling(lint, `${dir}/app/components/ShellVariable.vue`).map(f => f.message)).toEqual([
+        assigns('--ui-bg'),
+        assigns('--app-bg-canvas'),
+        assigns('--color-primary-500'),
+        assigns(`--${layer}ish-tone`),
+      ])
+    })
+
+    it.each(layers)('rejects Tailwind theme, base-layer and utility declarations in the %s layer (%s)', (layer, dir, lint) => {
+      const declares = (form: string) => `\`${form}\` in the \`${layer}\` layer declares Tailwind theme, base-layer or utility CSS, which is global. ${docs}`
+      expect(styling(lint, `${dir}/app/components/TailwindTheme.vue`).map(f => f.message)).toEqual([
+        declares('@theme'),
+        declares('@layer base'),
+        declares('@utility'),
+        declares('@tailwind'),
+      ])
+    })
+
+    it('leaves core\'s own style blocks, stylesheets and Nuxt UI defaults alone', () => {
+      expect(styling(() => results, '../platform-layer/app/components/CoreStyled.vue')).toEqual([])
+      expect(styling(() => results, '../platform-layer/nuxt.config.ts')).toEqual([])
+      expect(styling(() => results, '../platform-layer/app/app.config.ts')).toEqual([])
+    })
+
+    it('holds the shell\'s own chat layer to the same rule', () => {
+      expect(styling(() => results, '../platform-layer/layers/chat/app/components/Styled.vue').map(f => f.message)).toEqual([
+        `A style block in the \`chat\` layer must be \`scoped\` or \`module\`; an unscoped block styles the whole app. ${docs}`,
+        `\`--ui-bg\` is assigned in the \`chat\` layer; a layer sets only its own custom properties (\`--chat-…\`) on its own root elements, never a shell (--ui-*, --app-*) or Tailwind theme variable. ${docs}`,
+      ])
+    })
   })
 })

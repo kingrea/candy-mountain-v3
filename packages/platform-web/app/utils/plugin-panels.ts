@@ -1,4 +1,4 @@
-import type { PluginInstance, PluginScope, PluginTypeId, PluginTypeInfo } from '@candy-mountain/platform-sdk'
+import type { IconSource, PluginInstance, PluginScope, PluginTypeId, PluginTypeInfo } from '@candy-mountain/platform-sdk'
 import { markRaw, type Component } from 'vue'
 
 /** Props every plugin panel receives; a panel changes the instance through usePluginActions(), which refreshes the page. */
@@ -46,8 +46,8 @@ export function pluginFormFor(typeId: PluginTypeId): Component | undefined {
   return pluginForms.get(typeId)
 }
 
-/** An image URL (usually an SVG asset imported with `?url`) with optional classes, or an icon name as UIcon takes it. */
-export type PluginIcon = { src: string, class?: string } | { name: string }
+/** The image URL is usually an SVG asset imported with `?url`. */
+export type PluginIcon = IconSource
 
 export const PLUGIN_ICON_FALLBACK: PluginIcon = { name: 'i-lucide-plug' }
 

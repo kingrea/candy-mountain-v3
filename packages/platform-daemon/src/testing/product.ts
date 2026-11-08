@@ -2,10 +2,15 @@ import type { ProductConfig } from '@candy-mountain/platform-sdk'
 import { suppliedIds, type Product } from '../product'
 
 /** A product with nothing of its own; `testProduct` lists whatever parts a test supplies. */
-export const TEST_PRODUCT_CONFIG: Readonly<ProductConfig> = Object.freeze({
+export const TEST_PRODUCT_CONFIG: Readonly<ProductConfig> = Object.freeze<ProductConfig>({
   name: 'Test Product',
   description: 'A product for platform tests.',
-  theme: { primary: 'sky', hex: '#0ea5e9' },
+  theme: {
+    colors: { primary: 'sky', neutral: 'neutral' },
+    hex: '#0ea5e9',
+    logo: { name: 'i-lucide-box' },
+    colorMode: { default: 'system', switchable: true },
+  },
   scope: { label: { singular: 'workspace', plural: 'workspaces', singularTitle: 'Workspace', pluralTitle: 'Workspaces' }, urlPrefix: 'w', listPath: 'workspaces' },
   capabilities: [],
   modules: [],

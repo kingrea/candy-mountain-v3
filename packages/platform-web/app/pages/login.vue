@@ -41,7 +41,7 @@ async function onSubmit() {
     <UCard class="w-full max-w-sm">
       <template #header>
         <div class="flex items-center gap-2">
-          <UIcon name="i-lucide-mountain-snow" class="size-6 text-primary" />
+          <AppIcon :icon="PRODUCT.theme.logo" class="size-6 text-primary" />
           <h1 class="text-lg font-bold tracking-tight text-highlighted">
             Sign in to {{ PRODUCT.name }}
           </h1>

@@ -1,0 +1,28 @@
+/* Lagoon is not a Tailwind palette, so the primary alias resolves only because this sheet declares its scale. */
+@theme static {
+  --color-lagoon-50: oklch(97.8% 0.02 195);
+  --color-lagoon-100: oklch(94.6% 0.045 195);
+  --color-lagoon-200: oklch(89.4% 0.08 195);
+  --color-lagoon-300: oklch(82.4% 0.12 195);
+  --color-lagoon-400: oklch(72.8% 0.123 195);
+  --color-lagoon-500: oklch(63.6% 0.107 195);
+  --color-lagoon-600: oklch(54.6% 0.092 195);
+  --color-lagoon-700: oklch(47% 0.079 195);
+  --color-lagoon-800: oklch(40.6% 0.068 195);
+  --color-lagoon-900: oklch(35.6% 0.059 195);
+  --color-lagoon-950: oklch(25.8% 0.043 195);
+}
+
+@theme {
+  --font-sans: 'Manrope', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+.dark {
+  --ui-bg: #14201f;
+  --ui-bg-muted: #192826;
+  --ui-border: #24403d;
+  --ui-border-muted: #1d322f;
+  --app-bg-canvas: #0f1918;
+  --app-bg-shell: #14201f;
+}

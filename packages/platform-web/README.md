@@ -6,7 +6,7 @@ Every capability's UI is a Nuxt layer at the root of its capability package, `pa
 
 ## Shared visual system
 
-The shell owns the neutral palette in `app/assets/css/main.css` and Nuxt UI component defaults in `app/app.config.ts`. Capability layers inherit both. The visual reference is Subframe's [editor](https://mobbin.com/screens/ff6c5e7e-cce9-4a4c-9412-04eb28fd5fb9) and [document grid](https://mobbin.com/screens/f8559775-327a-4d27-b8db-9987a3148b45), viewed on Mobbin: neutral grey canvas, lighter panels, restrained separators and compact navigation. Values are our interpretation of the screenshots, not exported Subframe tokens.
+The shell sets the default neutral palette in `app/assets/css/main.css` and Nuxt UI component defaults in `app/app.config.ts`. A product may change either from its own files (see Product theme); capability layers inherit both and never change either, and what a layer may style is under Capability styling. The visual reference is Subframe's [editor](https://mobbin.com/screens/ff6c5e7e-cce9-4a4c-9412-04eb28fd5fb9) and [document grid](https://mobbin.com/screens/f8559775-327a-4d27-b8db-9987a3148b45), viewed on Mobbin: neutral grey canvas, lighter panels, restrained separators and compact navigation. Values are our interpretation of the screenshots, not exported Subframe tokens.
 
 | Role | Utility | Use |
 | --- | --- | --- |
@@ -17,9 +17,210 @@ The shell owns the neutral palette in `app/assets/css/main.css` and Nuxt UI comp
 | Separators | `border-default` / `divide-muted` | Panel edges / quieter row dividers |
 | Text hierarchy | `text-highlighted`, `text-toned`, `text-muted` | Headings, body emphasis and supporting text |
 
-Use the semantic utilities rather than hardcoded greys so light and dark mode stay paired. The neutral scale is `neutral`, not `slate`. Product primary colours still come from `PRODUCT.theme`; navigation uses neutral selection, leaving the accent for actions and status.
+Use the semantic utilities rather than hardcoded greys so light and dark mode stay paired and a product theme reaches them. The colour aliases come from the product (`PRODUCT.theme.colors`; Candy Mountain's neutral is `neutral`, not `slate`); navigation uses neutral selection, leaving the primary for actions and status.
 
-The base text size is 14px; dashboard titles are 18px. Keep the existing system font and explicit type sizes where the content needs them. Spacing follows the existing 4px scale: 8px between controls, 16px on narrow page edges, 24px on small desktop edges and 32px on large desktop edges. Cards use 16/20px padding and 12px corners; controls use 8px corners. Component-specific overrides such as zero-padding tables and transcripts still take priority. Keep focus rings, disabled styles and semantic status colours from Nuxt UI.
+The base text size is 14px; dashboard titles are 18px. The shell uses the system font, which a product replaces from its stylesheet (see Product theme); keep explicit type sizes where the content needs them. Spacing follows the existing 4px scale: 8px between controls, 16px on narrow page edges, 24px on small desktop edges and 32px on large desktop edges. Cards use 16/20px padding and 12px corners; controls use 8px corners (at the shell's default `--ui-radius`, from which both scale). Component-specific overrides such as zero-padding tables and transcripts still take priority. Keep focus rings, disabled styles and semantic status colours from Nuxt UI.
+
+## Product theme
+
+A product defines its whole look in two files it owns: the `theme` section of its product configuration (`ProductTheme` in `@candy-mountain/platform-sdk`) and a product stylesheet the distribution hands to the shell beside it. The shell supplies the defaults (the variables in the token list below and the component defaults in its `app/app.config.ts`) and reads both, so a new product needs no change to this package. The theme section stays plain JSON data because the daemon reads the same `ProductConfig`; that is why the stylesheet is a path in the distribution's `nuxt.config`, not a theme field. The shell's playground (`packages/platform-web/playground`: `product.ts` and the stylesheet its `nuxt.config.ts` hands over) uses every field, with a primary outside Tailwind's palette, and is the running example; Candy Mountain's theme (`packages/candy-mountain/src/product.ts`) uses Tailwind palettes only.
+
+### The theme fields
+
+```ts
+theme: {
+  colors: { primary: 'lagoon', neutral: 'stone', secondary: 'amber' },
+  hex: '#2a9d9e',
+  logo: { src: '/logo.svg', class: 'dark:invert' },
+  colorMode: { default: 'dark', switchable: false },
+},
+```
+
+| Field | What the shell does with it |
+| --- | --- |
+| `colors` | Nuxt UI's colour aliases: `primary` and `neutral` are required, `secondary`, `success`, `info`, `warning` and `error` optional (an omitted one keeps Nuxt UI's default). Each value is a Tailwind palette name (`pink`, `stone`) or the name of a scale the product stylesheet declares (Colour scales below). The shell hands the object to Nuxt UI as `ui.colors`, so `color="primary"`, `text-primary`, focus rings and `--ui-primary` follow it. |
+| `hex` | The primary colour as `#rrggbb`: the `theme-color` meta in every page's head and the `theme_color` of the PWA manifest (`/manifest.webmanifest`). Nothing checks it against `colors.primary`; keep it equal to the primary's main shade (Candy Mountain's is pink 500, `#ec4899`). |
+| `logo` | The shape plugin icons use: `{ name }`, an icon name as `UIcon` takes it (`i-lucide-mountain-snow`), or `{ src, class? }`, an image URL the distribution serves from its `public/` directory (`/logo.svg`) with optional classes for the `<img>`. The shell renders it beside the product name in the header (20px) and on the login page (24px). An icon is tinted `text-primary`; an image is fitted to the same box and gets an empty `alt`, since the product name beside it labels it. Tailwind generates only the classes it finds in the files it scans, which do not usually include the product configuration, so list any utility in `class` from the product stylesheet (`@source inline("dark:invert");`). The shell ships the `lucide` collection; an icon from another collection needs its `@iconify-json/<collection>` package in the distribution's dependencies. |
+| `colorMode.default` | `light`, `dark` or `system` (follow the operating system): the colour-mode module's preference, the mode a visitor gets before choosing one. |
+| `colorMode.switchable` | Whether the dashboard header shows the colour-mode toggle. When `false` the toggle is gone and the shell reads the mode from a storage key no toggle writes, so a choice a visitor made while the product was switchable cannot win: the default is the only mode. |
+
+The PWA icons are not theme fields: the manifest lists `/icons/icon-192.png`, `/icons/icon-512.png` and `/icons/icon-maskable-512.png`, the head links `/icons/apple-touch-icon.png`, and the distribution serves those files from `public/icons/`.
+
+### The product stylesheet
+
+```ts
+// apps/<distribution>/nuxt.config.ts
+export default defineNuxtConfig({
+  ...layerList,
+  extends: [...layerList.extends, '@candy-mountain/platform-web'],
+  platformWeb: { product: MY_PRODUCT, stylesheet: './theme.css' },
+})
+```
+
+`platformWeb.stylesheet` names a CSS file the distribution owns: an absolute path, a path relative to the distribution's root, or one through a Nuxt alias (`~/assets/css/theme.css`). A path that does not exist fails the build naming it. The shell then replaces its own sheet in the `css` option with one generated entry that imports the shell's `app/assets/css/main.css` and then the product sheet, so both compile in the same Tailwind root:
+
+- the product sheet's declarations come later and win over the shell's at equal specificity, so a plain `:root` or `.dark` rule overrides a shell variable with no `!important`;
+- `@theme`, `@apply`, `dark:` and the other variants work in it and see everything the shell's sheet set up. It does not import `tailwindcss` or `@nuxt/ui` again (the shell's sheet does); it may `@import` its own partials by relative path.
+
+A distribution whose aliases are all Tailwind palettes and that changes no variable leaves the option out, and the shell's sheet loads alone. The product sheet belongs to the distribution, not to a layer, so the Capability styling rules do not apply to it: it may declare colour scales, set the typeface, set any variable in the token list and set a capability's published knobs.
+
+### Colour scales
+
+Nuxt UI resolves each alias against Tailwind's colour theme and reads eleven shades of it. A Tailwind palette name needs nothing. Any other name needs its whole scale, `--color-<name>-50`, `-100`, `-200` and so on to `-900` and `-950`, declared in the product stylesheet (or a partial it imports) in a `@theme static` block; a plain rule such as `:root` also counts. A plain `@theme` or `@theme inline` block does not: Tailwind emits a theme variable only when a utility uses it, and Nuxt UI reads the scale at runtime where Tailwind never sees it, so the colour would render as nothing. The shell checks every alias whenever Nuxt loads the distribution (`nuxt dev`, `nuxt build` and `nuxt prepare` alike) and fails naming each alias, its colour and what is missing: no stylesheet handed over, no scale for the name, the scale in a `@theme` block Tailwind drops, or the shades a partial scale lacks.
+
+```
+The product theme names colours the build cannot resolve:
+- primary is "lagoon", which is not a Tailwind palette, and the product stylesheet /…/theme.css does not declare it: add --color-lagoon-50 to --color-lagoon-950 in @theme static.
+```
+
+### Typeface
+
+Set `--font-sans` (and `--font-mono` for code) in a `@theme` block of the product stylesheet, plain or `static`. The fonts module Nuxt UI already brings fetches a family named there (from its web font providers, or a font file in the distribution's `public/`) at weights 400 to 700; there is no theme field and no module to add. Without one the shell uses Tailwind's system font stack.
+
+### The token list
+
+These are the variables the shell's `app/assets/css/main.css` sets, and they are the theme contract: a product stylesheet may set any of them, and the shell keeps their names and roles stable. Set one under `:root` for both colour modes (a product `:root` rule comes after the shell's `.dark` block, so it replaces the shell's dark value too), under `.dark` for dark mode only, or under `:root:not(.dark)` for light mode only. `--ui-radius` and `--ui-header-height` have one value for both modes.
+
+| Variable | Drives | Light | Dark |
+| --- | --- | --- | --- |
+| `--ui-bg` | `bg-default`: cards, lists, inputs, dialogs | `#fcfcfc` | `#202020` |
+| `--ui-bg-muted` | `bg-muted` | `#f7f7f7` | `#262626` |
+| `--ui-bg-elevated` | `bg-elevated` | `#eeeeee` | `#303030` |
+| `--ui-bg-accented` | `bg-accented` | `#e5e5e5` | `#404040` |
+| `--ui-bg-inverted` | `bg-inverted` | `#262626` | `#f5f5f5` |
+| `--ui-text-dimmed` | `text-dimmed` | `#737373` | `#a3a3a3` |
+| `--ui-text-muted` | `text-muted` | `#6b6b6b` | `#a3a3a3` |
+| `--ui-text-toned` | `text-toned` | `#525252` | `#bdbdbd` |
+| `--ui-text` | `text-default` | `#404040` | `#d4d4d4` |
+| `--ui-text-highlighted` | `text-highlighted`: headings | `#262626` | `#f5f5f5` |
+| `--ui-text-inverted` | `text-inverted` | `#fcfcfc` | `#202020` |
+| `--ui-border` | `border-default`, `divide-default` | `#e5e5e5` | `#353535` |
+| `--ui-border-muted` | `border-muted`, `divide-muted` | `#eeeeee` | `#2b2b2b` |
+| `--ui-border-accented` | `border-accented` | `#d4d4d4` | `#525252` |
+| `--ui-border-inverted` | `border-inverted` | `#262626` | `#f5f5f5` |
+| `--ui-radius` | Tailwind's `rounded-xs` to `rounded-3xl`, which Nuxt UI derives from it (`rounded-sm` is one, `rounded-lg` two, `rounded-xl` three) | `0.25rem` | same |
+| `--ui-header-height` | Nuxt UI's header and panel-header heights | `3rem` | same |
+| `--app-bg-canvas` | `bg-canvas`: dashboard panels and the space around content | `#f0f0f0` | `#191919` |
+| `--app-bg-shell` | `bg-shell`: header, sidebar and chat rail | `#f7f7f7` | `#202020` |
+
+The surface, text and border values are fixed greys, not shades of the `neutral` alias: a product that picks another neutral (`stone`, say) changes Nuxt UI's neutral-coloured components but not these, so it sets them too if it wants its surfaces to match (`--ui-bg: var(--ui-color-neutral-50)` reads the alias's scale). Nuxt UI's other variables, `--ui-primary` and the rest, follow from the colour aliases; change the alias rather than setting them.
+
+### Example product stylesheet
+
+```css
+/* apps/<distribution>/theme.css, handed over as platformWeb.stylesheet */
+
+/* lagoon is not a Tailwind palette: all eleven shades, in @theme static so Tailwind always emits them. */
+@theme static {
+  --color-lagoon-50: #eefbfa;
+  --color-lagoon-100: #d5f4f1;
+  --color-lagoon-200: #aee8e4;
+  --color-lagoon-300: #79d5d1;
+  --color-lagoon-400: #45b9b8;
+  --color-lagoon-500: #2a9d9e;
+  --color-lagoon-600: #217e82;
+  --color-lagoon-700: #1f6569;
+  --color-lagoon-800: #1e5256;
+  --color-lagoon-900: #1c4549;
+  --color-lagoon-950: #0b2a2e;
+
+  --font-sans: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+/* The logo's class is in the product configuration, which Tailwind does not scan. */
+@source inline("dark:invert");
+
+/* Both modes. */
+:root {
+  --ui-radius: 0.375rem;
+  --app-bg-shell: var(--color-lagoon-50);
+}
+
+/* Dark mode only; --app-bg-shell needs a dark value because the :root rule above replaced the shell's. */
+.dark {
+  --ui-bg: #13201f;
+  --app-bg-canvas: #0d1716;
+  --app-bg-shell: var(--color-lagoon-950);
+}
+```
+
+With `colors: { primary: 'lagoon', ... }` in the theme this builds; remove the `@theme static` block and the build fails naming `primary` and `lagoon`.
+
+### Component defaults
+
+The shell's Nuxt UI component defaults (`ui` in its `app/app.config.ts`: panels on `bg-canvas`, the sidebar on `bg-shell`, card and control corners, page padding) stay in the shell. A product changes one from the distribution's own `app/app.config.ts`, which Nuxt merges over every layer's, the shell's included. The merge is deep, so only the keys named change:
+
+```ts
+// apps/<distribution>/app/app.config.ts
+export default defineAppConfig({
+  ui: {
+    button: { slots: { base: 'rounded-full' } },
+    card: { slots: { root: 'rounded-none' } },
+  },
+})
+```
+
+Leave `ui.colors` out: the shell sets it from `theme.colors`, and a value here would replace the product's aliases and skip the colour check. This is the distribution's file, not a layer's, so the rule against `ui` in a layer's app config does not apply to it.
+
+### Restyling a capability
+
+A product restyles a capability only by setting that capability's published knobs, the prefixed custom properties the layer names in its package, from the product stylesheet: `:root { --issues-graph-edge: var(--color-lagoon-300); }` for both modes, or under `.dark` for one. It never targets a layer's classes or working properties, which are scoped and free to change. How a layer publishes a knob is under Capability styling.
+
+## Capability styling
+
+A layer styles only what it brings. The shell and the product (see Product theme) own the look; a layer may add to it for its own markup and may never change it for anyone else. These rules hold for every layer that is not core: capability packages, connection packages and the shell's own `chat` and `overview` layers.
+
+**Allowed.** Each of these reaches only markup the layer renders:
+
+- **Per-instance `ui` overrides** on Nuxt UI components: the `ui` prop (and `class`) on one `U*` instance, using the semantic utilities from Shared visual system, such as `<UModal :ui="{ content: 'sm:max-w-sm' }">`.
+- **Components the layer wraps under its own prefix**: a layer that wants its own defaults for a Nuxt UI component wraps it (`app/components/Pill.vue` around `UBadge` with the variant, size and `ui` it wants, registered as `NotesPill`) and uses the wrapper. This is the layer's form of component defaults, and it applies only where the layer uses it.
+- **Scoped style blocks**: `<style scoped>` (a CSS-modules `<style module>` counts as scoped) in the layer's `.vue` files. `:deep()` is fine: it still starts from an element the component renders, so it reaches the Nuxt UI components and rendered content inside it and nothing outside.
+- **The layer's own custom properties**, named with the layer prefix in kebab case (`--<id>-`: `--issues-`, `--agent-hub-`), set on the layer's own root elements in a scoped block and derived from the shell's variables, so a product theme flows through them (below).
+
+**Forbidden.** None of these may appear in a layer:
+
+- a stylesheet registered through its layer config (`css` in the layer's `nuxt.config`);
+- an unscoped or `:global` style block (a `<style>` without `scoped`, or a `:global(...)` selector inside a scoped one; a stylesheet imported from a script or component, and a `<style src>`, are unscoped by nature);
+- selectors on the document root, `html`, `body` or the colour-mode class (`:root`, `html`, `body`, `.dark`);
+- assignment of any shell variable (`--ui-*`, `--app-*`) or Tailwind theme variable (`--color-*`, `--font-*`, `--radius-*` and the rest); a custom property a layer declares must carry its prefix, so any other name counts as one;
+- Tailwind theme, base-layer or utility declarations (`@theme`, `@layer base`, `@utility`);
+- the Nuxt UI key (`ui`) in its `app/app.config.ts`. Contributions to the shell's registration keys stay allowed: a layer's app config may carry any key the shell reads other than `ui`, and the registration functions (Project home cards, Projects page contributions, Chat contributions) are unaffected.
+
+**Why.** CSS has no sandbox. Every rule a layer ships lands in the one document the shell, the product and every other capability share: a sheet in `css`, an unscoped block or an imported `.css` file applies to every page; a selector on the root, `html`, `body` or `.dark`, or an assignment to a shell or Tailwind variable, changes every surface at once; a Tailwind theme, base or utility block changes what everyone's classes compile to; and `ui` in a layer's app config deep-merges into the shell's component defaults for every layer. So the boundary is drawn around what a layer is allowed to write, not around what it intends to change: the allowed forms are the ones whose reach stops at the layer's own elements (a scoped block carries the component's attribute, a `ui` prop applies to one instance, a wrapper applies where the layer uses it, a prefixed property is set on the layer's own root and named so nothing else reads it by accident). The boundary lint refuses each forbidden form (see Boundary lint), from the app and from the layer package's own root, rather than trusting the author or a reviewer to spot a stray `body {}`. Fix a finding by moving the styling into an allowed form; a change every page should see belongs in the shell, and one a product wants belongs in its product stylesheet. Do not disable the rule.
+
+**Publishing a variable a product can override.** A layer that lets a product restyle part of it publishes a prefixed custom property as a knob. Two things must reach the layer's markup: a product theme, which changes the shell's variables, and a product override, which sets the knob. So the layer declares its working properties on its own root element, reads the knob there with a shell variable as the fallback, and never declares the knob itself:
+
+```vue
+<!-- packages/cap-notes/app/components/Board.vue -->
+<template>
+  <section class="notes-board">
+    <article class="notes-card">...</article>
+  </section>
+</template>
+
+<style scoped>
+/* --notes-rule: published; a product sets it from its stylesheet, and the shell's accented border is the default. */
+.notes-board {
+  --notes-board-rule: var(--notes-rule, var(--ui-border-accented));
+  --notes-board-fill: color-mix(in oklab, var(--notes-board-rule) 10%, var(--ui-bg));
+}
+
+.notes-card {
+  border: 1px solid var(--notes-board-rule);
+  background: var(--notes-board-fill);
+}
+</style>
+```
+
+- The working properties (`--notes-board-*`) are declared on the layer's root element, so they resolve there: the shell variables they read are the ones in force for that element in the current colour mode, and a product theme that changes `--ui-border-accented` or its dark value reaches the board with no change to the layer.
+- The knob (`--notes-rule`) is only ever read. A declaration on an element beats a value inherited from `:root`, so if the layer declared `--notes-rule` on its root, a product's `:root { --notes-rule: ... }` would never reach the layer's markup. Reading it through `var(--knob, <shell value>)` makes the shell's value the default and the product's the override.
+- Derive from the shell's variables (and `--ui-primary` and the other colour aliases), never from fixed colours, so the default stays inside the product's look in both colour modes. A value that must differ between modes derives from a shell variable that already does, so the layer never needs the colour-mode class.
+- Name the published knobs in the layer package (a comment beside the declarations is enough) so a product author can find them. They are the layer's styling API: renaming one breaks every product that sets it.
+
+A product restyles a capability only by setting that capability's published knobs from its product stylesheet, for both colour modes or one (`:root { --notes-rule: ... }`, `.dark { --notes-rule: ... }`); Product theme covers how that stylesheet is loaded. It never targets a layer's classes or working properties, which are scoped and free to change.
+
+`packages/cap-issues` is the worked example: its scoped blocks read its own prefixed properties, declared on the elements its components render and derived from the shell's variables, and it publishes a knob a product can set (the dependency graph's edge colour).
 
 ## Registration
 
@@ -29,7 +230,7 @@ The web app registers exactly the layers the product configuration lists. `apps/
 - A layer the product includes only in development (Candy Mountain's template, `packages/cap-template`) is a `devDependencies` entry listed in `CANDY_MOUNTAIN_DEVELOPMENT.layers` (`packages/candy-mountain/src/development.ts`), never in `CANDY_MOUNTAIN_PRODUCT.layers`. `apps/web/nuxt.config.ts` registers the shipped layers and the shell for every environment and puts the development layers (`listLayers(CANDY_MOUNTAIN_DEVELOPMENT.layers, root)`) and the product with them (`CANDY_MOUNTAIN_DEVELOPMENT_PRODUCT`, under `platformWeb.product`) in `$development`, with the shipped product under `$production`; Nuxt applies the block named by `NODE_ENV`, which `nuxt dev` sets to `development` and `nuxt build` to `production`, and concatenates a block's `extends` onto the base list. So `nuxt dev` serves the template's pages and `nuxt build` has no trace of them (no layer, no route, no code in `.output`). The same test keeps the development list equal to the `devDependencies` layer packages, loads the config both ways and checks a development layer's route is there under `development` and absent under `production`. The app's `typecheck` script runs `nuxt typecheck` with `NODE_ENV=development`, the superset, so the development layers' `app/` is typechecked too. The daemon side of the same mechanism is "Development-only capabilities" in `apps/daemon/README.md`.
 - The layer id (the package's `webLayer`) is the capability id from the capability's manifest (lowercase kebab-case, e.g. `issues`, `agent-hub`), the plugin type id for a connection package's layer (e.g. `repository`, `claude-code`), or `chat`.
 - Registration gives the layer the alias `#layers/<id>` pointing at its root, in Vite and in the generated tsconfig. The distribution's `nuxt typecheck` covers every registered layer's `app/**`.
-- A layer's `app/app.config.ts` deep-merges into the app config (core wins on conflict). That is how a capability contributes to shared surfaces such as the chat layer without the chat layer importing it.
+- A layer's `app/app.config.ts` deep-merges into the app config; the distribution's own app config wins over every layer, and among layers the one earlier in `extends` wins, so a capability layer would win over the shell (which is why a layer may not set `ui` there; see Capability styling). Shared surfaces such as the chat layer, the project home and the projects page do not read app config: a capability contributes to them through registration functions called from its own Nuxt plugin (Chat contributions, Project home cards, Projects page contributions), so the shared layer never imports it.
 
 ## Layer packages
 
@@ -148,8 +349,9 @@ export default layerPackageConfig(import.meta.url, ...base)
 - `cm-layers/layer-prefix`: unprefixed exports in a layer's auto-imported files; a layer `nuxt.config` that registers components without its prefix; a layer directory that is not a kebab-case id.
 - `cm-layers/layer-pages`: capability pages outside `app/pages/p/[project]/<id>/`.
 - `cm-layers/no-platform-package-import`: a layer outside the platform package importing `@candy-mountain/platform-web` by package name (any subpath) or by a relative or absolute path into it. Core is reached through its auto-imports, `#imports`, `#components` and `#layers/platform-web/...`, never the package line. A layer's root `eslint.config.*` and `vitest.config.*` are exempt, and the files under its `test/` may import the package's test entry (`@candy-mountain/platform-web/test` and `/test/vitest`, below) and nothing else of it.
+- `cm-layers/layer-styling`: in every layer but core (the shell's own `chat` and `overview` layers included), a `.vue` style block that is neither `scoped` nor `module`; a stylesheet imported from a script or component, loaded through a style block's `src` or `@import`ed (an imported sheet is global; `?url` and `?raw` only yield strings); a `:global` / `::v-global` selector; a selector reaching `:root`, `html`, `body` or the colour-mode class; a declaration assigning any custom property without the layer's own prefix (`--<id>-…`, kebab-case layer id), which covers the shell's `--ui-*` / `--app-*` and Tailwind's theme variables; and Tailwind's `@theme`, `@utility`, `@custom-variant`, `@tailwind`, `@plugin`, `@config`, `@source` and `@layer theme|base|components|utilities`. Reading any variable with `var()` is fine, as are `:deep()`, per-instance `ui` overrides and prefixed knobs read with a shell fallback. It also refuses every stylesheet a layer registers through its `nuxt.config` `css` option (environment overrides such as `$production` included), and the `ui` key in its `app/app.config.ts`, which would rewrite Nuxt UI's component defaults for everyone; any other app config key, such as a contribution to one of the shell's registration keys, stays allowed.
 
-Ownership comes from where a file lives, not its name: a file under a layer package's real root belongs to that layer, a file under `layers/<id>/` of the platform package or of the web root to `<id>`, any other file under the platform package or the web root to core. For a layer package, `#layers/<id>/...` resolves into the package, and an import by the package's name (`@scope/pkg`, its root entry included, or `@scope/pkg/...`) or by a relative path into it is checked like any other layer import, so one layer package using another fails `no-cross-layer-import` even when its `package.json` lists the other for the daemon side; other packages stay unrestricted. Fix a violation by moving code to the side that owns it, registering through app config, or moving a shared type into `@candy-mountain/platform-sdk`; do not disable the rule. `packages/platform-web/test/unit/layer-boundaries.test.ts` lints the fixture app in `packages/platform-web/test/fixtures/layered-app/`, its linked layer packages `test/fixtures/delta-layer/` and `test/fixtures/epsilon-layer/` (a capability package's shape, with a daemon `src/`), and `test/fixtures/platform-layer/`, which stands in for the shell (core plus `chat` and `overview` layers, pointed at through the `cm-layers` setting `platform`); `test/fixtures/pnpm-workspace.yaml` is their workspace. All are ignored by the normal lint. The test asserts each rule fires for directory layers, package layers and the layers inside the platform package alike, the package-to-package and package-to-platform cases, and that linting each layer package from its own root reports the same findings as linting the app.
+Ownership comes from where a file lives, not its name: a file under a layer package's real root belongs to that layer, a file under `layers/<id>/` of the platform package or of the web root to `<id>`, any other file under the platform package or the web root to core. For a layer package, `#layers/<id>/...` resolves into the package, and an import by the package's name (`@scope/pkg`, its root entry included, or `@scope/pkg/...`) or by a relative path into it is checked like any other layer import, so one layer package using another fails `no-cross-layer-import` even when its `package.json` lists the other for the daemon side; other packages stay unrestricted. Fix a violation by moving code to the side that owns it, registering from the layer's own Nuxt plugin, or moving a shared type into `@candy-mountain/platform-sdk`; do not disable the rule. `packages/platform-web/test/unit/layer-boundaries.test.ts` lints the fixture app in `packages/platform-web/test/fixtures/layered-app/`, its linked layer packages `test/fixtures/delta-layer/` and `test/fixtures/epsilon-layer/` (a capability package's shape, with a daemon `src/`), and `test/fixtures/platform-layer/`, which stands in for the shell (core plus `chat` and `overview` layers, pointed at through the `cm-layers` setting `platform`); `test/fixtures/pnpm-workspace.yaml` is their workspace. All are ignored by the normal lint. The test asserts each rule fires for directory layers, package layers and the layers inside the platform package alike, the package-to-package and package-to-platform cases, and that linting each layer package from its own root reports the same findings as linting the app.
 
 ## Plugin-type layers
 

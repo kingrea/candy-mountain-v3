@@ -30,6 +30,8 @@ export const DAEMON_SOURCE = 'src'
 const DIRECTIONS = 'Allowed: capability -> core, capability -> chat, chat -> core, core -> chat.'
 const DOCS = 'packages/platform-web/README.md'
 const LAYER_ID = /^[a-z][a-z\d]*(?:-[a-z\d]+)*$/
+const NUXT_CONFIG = /^nuxt\.config\.[cm]?[jt]s$/
+const APP_CONFIG = /^app\/app\.config\.[cm]?[jt]s$/
 const PROJECT_PAGES = [SCOPE_PAGES_DIR, '[project]']
 const TOOLING_CONFIG = /^(?:eslint|vitest)\.config\.[cm]?[jt]s$/
 // A layer's tests and the one subpath of the platform package they may import: the web test kit.
@@ -531,7 +533,7 @@ const layerPrefixRule = {
     if (!layer) return {}
     const rel = relative(layerRoot(project, layer), context.filename)
 
-    if (/^nuxt\.config\.[cm]?[jt]s$/.test(rel)) {
+    if (NUXT_CONFIG.test(rel)) {
       const prefix = layerPrefix(layer)
       const configured = []
       return {
@@ -610,6 +612,243 @@ const layerPages = {
   },
 }
 
+const STYLESHEET = /\.(?:css|scss|sass|less|styl|stylus|pcss|postcss)$/
+// Nuxt UI configures the colour-mode module with no class suffix, so these classes sit on <html>.
+const COLOUR_MODE_CLASSES = ['dark', 'light']
+// Tailwind's own cascade layers; a layer may still name a cascade layer of its own.
+const TAILWIND_LAYERS = new Set(['theme', 'base', 'components', 'utilities'])
+const TAILWIND_AT_RULES = new Set(['theme', 'utility', 'custom-variant', 'tailwind', 'plugin', 'config', 'source'])
+
+/** A `?url` or `?raw` import yields a string, not a sheet in the document. */
+function importsStylesheet(source) {
+  const [path, query] = source.split('?', 2)
+  return STYLESHEET.test(path) && !['url', 'raw'].includes(query ?? '')
+}
+
+/**
+ * The preludes (`selector {`, `@media … {`) and statements (`prop: value;`, `@import …;`) of a style block in
+ * document order with their offsets, skipping comments, strings and anything in parentheses. Nesting (Sass, native)
+ * falls out, because every brace opens or closes a block; no CSS parser is needed for what the rule looks at.
+ */
+function cssParts(source) {
+  const css = blankComments(source)
+  const parts = []
+  let start = 0
+  let parens = 0
+  const part = (kind, end) => {
+    const text = css.slice(start, end)
+    if (text.trim()) parts.push({ kind, text, offset: start })
+    start = end + 1
+  }
+  for (let i = 0; i < css.length; i++) {
+    const ch = css[i]
+    if (ch === '"' || ch === '\'') i = stringEnd(css, i)
+    else if (ch === '(') parens++
+    else if (ch === ')') parens = Math.max(0, parens - 1)
+    else if (parens > 0) continue
+    else if (ch === '{') part('prelude', i)
+    else if (ch === ';' || ch === '}') part('statement', i)
+  }
+  part('statement', css.length)
+  return parts
+}
+
+function stringEnd(css, open) {
+  let i = open + 1
+  for (; i < css.length && css[i] !== css[open] && css[i] !== '\n'; i++) if (css[i] === '\\') i++
+  return i
+}
+
+/**
+ * Block and line comments replaced by spaces, so offsets into the original text survive; strings are left alone, and
+ * `//` inside parentheses is an unquoted url(http://…), not a Sass comment.
+ */
+function blankComments(css) {
+  let out = ''
+  let parens = 0
+  for (let i = 0; i < css.length; i++) {
+    const ch = css[i]
+    if (ch === '"' || ch === '\'') {
+      const end = stringEnd(css, i)
+      out += css.slice(i, end + 1)
+      i = end
+    }
+    else if (ch === '(' || ch === ')') {
+      parens = Math.max(0, parens + (ch === '(' ? 1 : -1))
+      out += ch
+    }
+    else if (ch === '/' && (css[i + 1] === '*' || (css[i + 1] === '/' && parens === 0))) {
+      const close = css[i + 1] === '*' ? css.indexOf('*/', i + 2) : css.indexOf('\n', i)
+      const end = close < 0 ? css.length : css[i + 1] === '*' ? close + 2 : close
+      out += css.slice(i, end).replace(/[^\n]/g, ' ')
+      i = end - 1
+    }
+    else out += ch
+  }
+  return out
+}
+
+/** Selector text with quoted strings and attribute selectors blanked, so `[title="body"]` is not a body selector. */
+const bareSelector = selector => selector.replace(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/g, '""').replace(/\[[^\]]*\]/g, '[]')
+
+function rootTarget(selector) {
+  const bare = bareSelector(selector)
+  if (/(?<![\w-]):root(?![\w-])/.test(bare)) return ':root'
+  const element = /(?<![\w.#:-])(html|body)(?![\w-])/.exec(bare)
+  if (element) return element[1]
+  const mode = new RegExp(`\\.(${COLOUR_MODE_CLASSES.join('|')})(?![\\w-])`).exec(bare)
+  return mode ? `.${mode[1]}` : undefined
+}
+
+/** The file an `@import url("x.css") layer(base)` or `@import 'x.css'` names. */
+function importTarget(prelude) {
+  return /^\s*(?:url\()?\s*["']?([^"')\s]+)/.exec(prelude)?.[1] ?? prelude.trim()
+}
+
+function tailwindForm(atRule, prelude) {
+  if (TAILWIND_AT_RULES.has(atRule)) return `@${atRule}`
+  if (atRule !== 'layer') return undefined
+  const named = prelude.split(',').map(name => name.trim()).find(name => TAILWIND_LAYERS.has(name))
+  return named ? `@layer ${named}` : undefined
+}
+
+function propertyName(property) {
+  if (property.type !== 'Property') return undefined
+  return property.key.type === 'Identifier' && !property.computed ? property.key.name : staticString(property.key)
+}
+
+/** The object literal a config file exports, through `defineNuxtConfig(…)`, `satisfies`/`as` and a top-level const. */
+function configObject(program) {
+  let node = program.body.find(statement => statement.type === 'ExportDefaultDeclaration')?.declaration
+  const seen = new Set()
+  while (node && !seen.has(node)) {
+    seen.add(node)
+    if (['TSAsExpression', 'TSSatisfiesExpression', 'TSNonNullExpression'].includes(node.type)) node = node.expression
+    else if (node.type === 'CallExpression') node = node.arguments[0]
+    else if (node.type === 'Identifier') node = topLevelInit(program, node.name)
+    else break
+  }
+  return node?.type === 'ObjectExpression' ? node : undefined
+}
+
+function topLevelInit(program, name) {
+  for (const statement of program.body) {
+    const declaration = statement.type === 'ExportNamedDeclaration' ? statement.declaration : statement
+    if (declaration?.type !== 'VariableDeclaration') continue
+    const declarator = declaration.declarations.find(d => d.id.type === 'Identifier' && d.id.name === name)
+    if (declarator) return declarator.init
+  }
+  return undefined
+}
+
+const ENV_OVERRIDES = new Set(['$production', '$development', '$test'])
+
+/** A nuxt.config's top level and its environment overrides, each of which may set `css`. */
+function nuxtConfigLevels(config) {
+  const levels = [config]
+  for (const property of config.properties) {
+    const name = propertyName(property)
+    if (property.value?.type !== 'ObjectExpression') continue
+    if (ENV_OVERRIDES.has(name)) levels.push(property.value)
+    else if (name === '$env') levels.push(...property.value.properties.map(env => env.value).filter(value => value?.type === 'ObjectExpression'))
+  }
+  return levels
+}
+
+const layerStyling = {
+  meta: {
+    type: 'problem',
+    docs: { description: 'Keep a layer\'s styling inside the markup it renders: scoped blocks, its own prefixed variables, no stylesheets or Nuxt UI defaults', url: DOCS },
+    schema: [],
+    messages: {
+      unscoped: `A style block in the \`{{layer}}\` layer must be \`scoped\` or \`module\`; an unscoped block styles the whole app. See ${DOCS}.`,
+      sheet: `The \`{{layer}}\` layer may not load the stylesheet '{{source}}': an imported sheet is global. Style the layer's own markup from scoped blocks. See ${DOCS}.`,
+      global: `\`{{selector}}\` in the \`{{layer}}\` layer escapes its scope with {{form}}. See ${DOCS}.`,
+      root: `\`{{selector}}\` in the \`{{layer}}\` layer selects \`{{target}}\` (the document root, html, body or the colour-mode class), which belongs to the shell and the product. See ${DOCS}.`,
+      variable: `\`{{property}}\` is assigned in the \`{{layer}}\` layer; a layer sets only its own custom properties (\`--{{layer}}-…\`) on its own root elements, never a shell (--ui-*, --app-*) or Tailwind theme variable. See ${DOCS}.`,
+      tailwind: `\`{{form}}\` in the \`{{layer}}\` layer declares Tailwind theme, base-layer or utility CSS, which is global. See ${DOCS}.`,
+      configSheet: `The \`{{layer}}\` layer may not register the stylesheet '{{source}}' through its nuxt.config \`css\` option: a registered sheet is global. Style the layer's own markup from scoped blocks. See ${DOCS}.`,
+      appConfigUi: `The \`{{layer}}\` layer may not set \`ui\` in its app config: it rewrites Nuxt UI's component defaults for the whole app. Pass a per-instance \`ui\` prop or wrap the component under the layer's prefix. See ${DOCS}.`,
+    },
+  },
+  create(context) {
+    const { project, layer } = layerOf(context)
+    if (!layer) return {}
+    const sourceCode = context.sourceCode
+    const rel = relative(layerRoot(project, layer), context.filename).split(sep).join('/')
+    const ownProperty = new RegExp(`^--${layer}(?:-|$)`)
+
+    function checkImport(node) {
+      const source = staticString(node)
+      if (source !== undefined && importsStylesheet(source)) context.report({ node, messageId: 'sheet', data: { layer, source } })
+    }
+
+    function report(offset, length, messageId, data) {
+      const loc = { start: sourceCode.getLocFromIndex(offset), end: sourceCode.getLocFromIndex(offset + length) }
+      context.report({ loc, messageId, data: { layer, ...data } })
+    }
+
+    function checkCss(text, base) {
+      for (const { kind, text: raw, offset } of cssParts(text)) {
+        const lead = raw.length - raw.trimStart().length
+        const part = raw.trim()
+        const at = offset + lead
+        const atRule = /^@([\w-]+)/.exec(part)
+        if (atRule) {
+          const form = kind === 'prelude' ? tailwindForm(atRule[1], part.slice(atRule[0].length)) : TAILWIND_AT_RULES.has(atRule[1]) ? atRule[0] : undefined
+          if (form) report(base + at, part.length, 'tailwind', { form })
+          else if (kind === 'statement' && atRule[1] === 'import') report(base + at, part.length, 'sheet', { source: importTarget(part.slice(atRule[0].length)) })
+          continue
+        }
+        if (kind === 'prelude') {
+          const global = /(?<![\w-])(::v-global|:global)(?![\w-])/.exec(bareSelector(part))
+          if (global) report(base + at, part.length, 'global', { selector: part, form: global[1] })
+          const target = rootTarget(part)
+          if (target) report(base + at, part.length, 'root', { selector: part, target })
+          continue
+        }
+        const property = /^(--[\w-]+)\s*:/.exec(part)
+        if (property && !ownProperty.test(property[1])) report(base + at, property[1].length, 'variable', { property: property[1] })
+      }
+    }
+
+    function checkStyleBlocks() {
+      const fragment = sourceCode.parserServices?.getDocumentFragment?.()
+      for (const element of fragment?.children ?? []) {
+        if (element.type !== 'VElement' || element.name !== 'style') continue
+        const attributes = new Map(element.startTag.attributes.filter(attr => !attr.directive).map(attr => [attr.key.name, attr.value?.value ?? '']))
+        if (attributes.has('src')) context.report({ node: element.startTag, messageId: 'sheet', data: { layer, source: attributes.get('src') } })
+        if (!attributes.has('scoped') && !attributes.has('module')) context.report({ node: element.startTag, messageId: 'unscoped', data: { layer } })
+        for (const child of element.children) if (child.type === 'VText') checkCss(child.value, child.range[0])
+      }
+    }
+
+    function checkNuxtConfig(program) {
+      const config = configObject(program)
+      for (const level of config ? nuxtConfigLevels(config) : []) {
+        const css = level.properties.find(property => propertyName(property) === 'css')
+        if (!css) continue
+        const sheets = css.value.type === 'ArrayExpression' ? css.value.elements.filter(Boolean) : [css.value]
+        for (const sheet of sheets) context.report({ node: sheet, messageId: 'configSheet', data: { layer, source: staticString(sheet) ?? sourceCode.getText(sheet) } })
+      }
+    }
+
+    function checkAppConfig(program) {
+      const ui = configObject(program)?.properties.find(property => propertyName(property) === 'ui')
+      if (ui) context.report({ node: ui.key, messageId: 'appConfigUi', data: { layer } })
+    }
+
+    const checkConfig = NUXT_CONFIG.test(rel) ? checkNuxtConfig : APP_CONFIG.test(rel) ? checkAppConfig : undefined
+    return {
+      ...moduleSources(checkImport),
+      'Program:exit'(program) {
+        checkStyleBlocks()
+        checkConfig?.(program)
+      },
+    }
+  },
+}
+
 const plugin = {
   meta: { name: 'cm-layers' },
   rules: {
@@ -618,6 +857,7 @@ const plugin = {
     'no-platform-package-import': noPlatformPackageImport,
     'layer-prefix': layerPrefixRule,
     'layer-pages': layerPages,
+    'layer-styling': layerStyling,
   },
 }
 
@@ -639,6 +879,7 @@ export function layerBoundaries(configUrl) {
       'cm-layers/no-platform-package-import': 'error',
       'cm-layers/layer-prefix': 'error',
       'cm-layers/layer-pages': 'error',
+      'cm-layers/layer-styling': 'error',
     },
   }
 }

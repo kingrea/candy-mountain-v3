@@ -15,9 +15,24 @@ describe('CANDY_MOUNTAIN_PRODUCT', () => {
     }
   })
 
-  it('has a theme colour as a Nuxt UI name and a hex', () => {
-    expect(product.theme.primary).toMatch(/^[a-z]+$/)
+  it('names a colour scale for every alias it sets, and the primary colour as a hex', () => {
+    expect(product.theme.colors).toEqual({ primary: 'pink', neutral: 'neutral' })
+    for (const scale of Object.values(product.theme.colors)) {
+      expect(scale).toMatch(/^[a-z]+(?:-[a-z]+)*$/)
+    }
     expect(product.theme.hex).toMatch(/^#[0-9a-f]{6}$/)
+  })
+
+  it('has the mountain icon as its logo', () => {
+    expect(product.theme.logo).toEqual({ name: 'i-lucide-mountain-snow' })
+  })
+
+  it('follows the system colour mode and lets the user switch it', () => {
+    expect(product.theme.colorMode).toEqual({ default: 'system', switchable: true })
+  })
+
+  it('keeps the theme plain JSON data', () => {
+    expect(JSON.parse(JSON.stringify(product.theme))).toEqual(product.theme)
   })
 
   it('prefixes workspaces and names their list page with single lowercase path segments', () => {

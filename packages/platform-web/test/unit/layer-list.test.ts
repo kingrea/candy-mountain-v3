@@ -56,7 +56,7 @@ describe('explicit web layer list', () => {
 
   it('registers exactly the listed layers, dropping unlisted directories', async () => {
     const glob = await registeredLayers({})
-    expect(glob.names).toEqual(['alpha', 'beta', 'gadget'])
+    expect(glob.names).toEqual(['alpha', 'beta', 'gadget', 'styled'])
 
     const listed = await registeredLayers(layerListConfig(['alpha', 'chat', 'delta'], fixtureRoot))
     expect(listed.names).toEqual(['alpha', 'delta'])

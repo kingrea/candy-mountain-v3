@@ -1,11 +1,11 @@
-import type { ProductConfig } from '@candy-mountain/platform-sdk'
+import type { ProductConfig, ProductTheme } from '@candy-mountain/platform-sdk'
 
 export const WEB_MANIFEST_CONTENT_TYPE = 'application/manifest+json'
 
 // The dark slate neutral from app.config belongs to the shell, not the product.
 const BACKGROUND_COLOR = '#0f172a'
 
-export function webManifest(product: Pick<ProductConfig, 'name' | 'description' | 'theme'>) {
+export function webManifest(product: Pick<ProductConfig, 'name' | 'description'> & { theme: Pick<ProductTheme, 'hex'> }) {
   return {
     name: product.name,
     short_name: product.name,

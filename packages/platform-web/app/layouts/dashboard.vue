@@ -2,7 +2,7 @@
   <UDashboardGroup storage-key="cm-dashboard" class="flex-col">
     <AppHeader>
       <template #actions>
-        <UColorModeButton />
+        <UColorModeButton v-if="PRODUCT.theme.colorMode.switchable" />
         <AppLogout />
       </template>
     </AppHeader>

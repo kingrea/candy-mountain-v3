@@ -38,7 +38,7 @@ function open(event: MouseEvent, id: string) {
 </script>
 
 <template>
-  <section class="flex flex-col gap-3" aria-label="Dependency graph" data-testid="issue-graph">
+  <section class="issues-graph flex flex-col gap-3" aria-label="Dependency graph" data-testid="issue-graph">
     <UEmpty
       v-if="loadError && issues.length === 0"
       icon="i-lucide-circle-x"
@@ -103,7 +103,7 @@ function open(event: MouseEvent, id: string) {
             :aria-label="`${node.issue.id}: ${node.issue.title} (${issuesStatusMeta(node.issue.status).label})`"
             class="graph-node"
             :class="{ 'graph-node-closed': node.issue.status === 'closed' }"
-            :style="{ '--node-colour': statusColour(node.issue.status) }"
+            :style="{ '--issues-graph-node': statusColour(node.issue.status) }"
             :data-id="node.issue.id"
             data-testid="issue-graph-node"
             @click="open($event, node.issue.id)"
@@ -130,9 +130,19 @@ function open(event: MouseEvent, id: string) {
 </template>
 
 <style scoped>
+/* --issues-graph-edge: published; a product sets it from its stylesheet, and the shell's accented border is the default. */
+.issues-graph {
+  --issues-graph-edge-color: var(--issues-graph-edge, var(--ui-border-accented));
+  --issues-graph-node-bg: var(--ui-bg);
+  --issues-graph-focus: var(--ui-primary);
+  --issues-graph-text: var(--ui-text-highlighted);
+  --issues-graph-text-muted: var(--ui-text-muted);
+  --issues-graph-font-mono: var(--font-mono, ui-monospace, monospace);
+}
+
 .graph-edge {
   fill: none;
-  stroke: var(--ui-border-accented);
+  stroke: var(--issues-graph-edge-color);
   stroke-width: 1.5;
 }
 
@@ -141,7 +151,7 @@ function open(event: MouseEvent, id: string) {
 }
 
 .graph-arrow {
-  fill: var(--ui-border-accented);
+  fill: var(--issues-graph-edge-color);
 }
 
 .graph-node {
@@ -150,39 +160,39 @@ function open(event: MouseEvent, id: string) {
 }
 
 .graph-node-box {
-  fill: color-mix(in oklab, var(--node-colour) 10%, var(--ui-bg));
-  stroke: var(--node-colour);
+  fill: color-mix(in oklab, var(--issues-graph-node) 10%, var(--issues-graph-node-bg));
+  stroke: var(--issues-graph-node);
   stroke-width: 1.5;
 }
 
 .graph-node:hover .graph-node-box {
-  fill: color-mix(in oklab, var(--node-colour) 20%, var(--ui-bg));
+  fill: color-mix(in oklab, var(--issues-graph-node) 20%, var(--issues-graph-node-bg));
 }
 
 .graph-node:focus-visible .graph-node-box {
-  stroke: var(--ui-primary);
+  stroke: var(--issues-graph-focus);
   stroke-width: 3;
 }
 
 .graph-node-closed .graph-node-title {
   text-decoration: line-through;
-  fill: var(--ui-text-muted);
+  fill: var(--issues-graph-text-muted);
 }
 
 .graph-node-id {
-  font-family: var(--font-mono, ui-monospace, monospace);
+  font-family: var(--issues-graph-font-mono);
   font-size: 11px;
-  fill: var(--ui-text-muted);
+  fill: var(--issues-graph-text-muted);
 }
 
 .graph-node-status {
   font-size: 11px;
-  fill: var(--node-colour);
+  fill: var(--issues-graph-node);
 }
 
 .graph-node-title {
   font-size: 12.5px;
   font-weight: 500;
-  fill: var(--ui-text-highlighted);
+  fill: var(--issues-graph-text);
 }
 </style>

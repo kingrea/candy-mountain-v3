@@ -4,7 +4,12 @@ import type { ProductConfig } from '@candy-mountain/platform-sdk'
 export const CANDY_MOUNTAIN_PRODUCT: Readonly<ProductConfig> = {
   name: 'Candy Mountain',
   description: 'Codebase management platform',
-  theme: { primary: 'pink', hex: '#ec4899' },
+  theme: {
+    colors: { primary: 'pink', neutral: 'neutral' },
+    hex: '#ec4899',
+    logo: { name: 'i-lucide-mountain-snow' },
+    colorMode: { default: 'system', switchable: true },
+  },
   scope: {
     label: { singular: 'project', plural: 'projects', singularTitle: 'Project', pluralTitle: 'Projects' },
     urlPrefix: 'p',

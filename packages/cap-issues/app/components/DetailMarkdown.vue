@@ -11,6 +11,18 @@ const html = computed(() => issuesRenderMarkdown(props.source))
 
 <style scoped>
 .issues-markdown {
+  --issues-markdown-highlighted: var(--ui-text-highlighted);
+  --issues-markdown-muted: var(--ui-text-muted);
+  --issues-markdown-link: var(--ui-primary);
+  --issues-markdown-border: var(--ui-border);
+  --issues-markdown-quote-border: var(--ui-border-accented);
+  --issues-markdown-pre-border: var(--ui-border-muted);
+  --issues-markdown-pre-bg: var(--ui-bg-muted);
+  --issues-markdown-code-bg: var(--ui-bg-elevated);
+  --issues-markdown-table-header-bg: var(--ui-bg-elevated);
+  --issues-markdown-radius: var(--ui-radius);
+  --issues-markdown-font-mono: var(--font-mono);
+
   overflow-wrap: anywhere;
   line-height: 1.6;
 }
@@ -25,7 +37,7 @@ const html = computed(() => issuesRenderMarkdown(props.source))
 .issues-markdown :deep(h4),
 .issues-markdown :deep(h5),
 .issues-markdown :deep(h6) {
-  color: var(--ui-text-highlighted);
+  color: var(--issues-markdown-highlighted);
   font-weight: 600;
 }
 
@@ -42,13 +54,13 @@ const html = computed(() => issuesRenderMarkdown(props.source))
 }
 
 .issues-markdown :deep(a) {
-  color: var(--ui-primary);
+  color: var(--issues-markdown-link);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
 .issues-markdown :deep(strong) {
-  color: var(--ui-text-highlighted);
+  color: var(--issues-markdown-highlighted);
   font-weight: 600;
 }
 
@@ -77,19 +89,19 @@ const html = computed(() => issuesRenderMarkdown(props.source))
 }
 
 .issues-markdown :deep(code) {
-  font-family: var(--font-mono);
+  font-family: var(--issues-markdown-font-mono);
   font-size: 0.8125rem;
   padding: 0.125rem 0.25rem;
-  border-radius: calc(var(--ui-radius) * 0.75);
-  background: var(--ui-bg-elevated);
+  border-radius: calc(var(--issues-markdown-radius) * 0.75);
+  background: var(--issues-markdown-code-bg);
 }
 
 .issues-markdown :deep(pre) {
   overflow-x: auto;
   padding: 0.75rem;
-  border: 1px solid var(--ui-border-muted);
-  border-radius: var(--ui-radius);
-  background: var(--ui-bg-muted);
+  border: 1px solid var(--issues-markdown-pre-border);
+  border-radius: var(--issues-markdown-radius);
+  background: var(--issues-markdown-pre-bg);
 }
 
 .issues-markdown :deep(pre code) {
@@ -99,12 +111,12 @@ const html = computed(() => issuesRenderMarkdown(props.source))
 
 .issues-markdown :deep(blockquote) {
   padding-left: 0.75rem;
-  border-left: 3px solid var(--ui-border-accented);
-  color: var(--ui-text-muted);
+  border-left: 3px solid var(--issues-markdown-quote-border);
+  color: var(--issues-markdown-muted);
 }
 
 .issues-markdown :deep(hr) {
-  border-color: var(--ui-border);
+  border-color: var(--issues-markdown-border);
 }
 
 .issues-markdown :deep(table) {
@@ -116,12 +128,12 @@ const html = computed(() => issuesRenderMarkdown(props.source))
 .issues-markdown :deep(th),
 .issues-markdown :deep(td) {
   padding: 0.25rem 0.5rem;
-  border: 1px solid var(--ui-border);
+  border: 1px solid var(--issues-markdown-border);
   text-align: left;
 }
 
 .issues-markdown :deep(th) {
-  background: var(--ui-bg-elevated);
+  background: var(--issues-markdown-table-header-bg);
   font-weight: 600;
 }
 

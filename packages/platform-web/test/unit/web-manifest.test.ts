@@ -3,7 +3,7 @@ import { webManifest } from '../../server/utils/web-manifest'
 
 describe('webManifest', () => {
   it('reproduces the hand-written Candy Mountain manifest from its product', () => {
-    expect(webManifest({ name: 'Candy Mountain', description: 'Codebase management platform', theme: { primary: 'pink', hex: '#ec4899' } })).toEqual({
+    expect(webManifest({ name: 'Candy Mountain', description: 'Codebase management platform', theme: { hex: '#ec4899' } })).toEqual({
       name: 'Candy Mountain',
       short_name: 'Candy Mountain',
       description: 'Codebase management platform',
@@ -22,7 +22,7 @@ describe('webManifest', () => {
   })
 
   it('follows the product configuration', () => {
-    const manifest = webManifest({ name: 'Acme', description: 'Acme ops', theme: { primary: 'blue', hex: '#3b82f6' } })
+    const manifest = webManifest({ name: 'Acme', description: 'Acme ops', theme: { hex: '#3b82f6' } })
     expect(manifest).toMatchObject({
       name: 'Acme',
       short_name: 'Acme',

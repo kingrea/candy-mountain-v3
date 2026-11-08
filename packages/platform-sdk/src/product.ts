@@ -6,11 +6,38 @@ export interface ScopeLabel {
   pluralTitle: string
 }
 
-export interface ProductTheme {
-  /** Nuxt UI colour name used as `primary`. */
+/** An icon name as UIcon takes it, or an image URL with optional classes for the `img` element. */
+export type IconSource = { name: string } | { src: string, class?: string }
+
+/**
+ * Nuxt UI's colour aliases. Each names a Tailwind palette or a colour scale the product's own stylesheet declares;
+ * an omitted optional alias keeps Nuxt UI's default.
+ */
+export interface ProductColors {
   primary: string
-  /** The same colour as `#rrggbb`, for the theme-color meta and the PWA manifest. */
+  neutral: string
+  secondary?: string
+  success?: string
+  info?: string
+  warning?: string
+  error?: string
+}
+
+export type ColorModePreference = 'light' | 'dark' | 'system'
+
+// Plain JSON only: the shell serialises the theme into a virtual module and the daemon reads it too.
+export interface ProductTheme {
+  colors: ProductColors
+  /** The primary colour as `#rrggbb`, for the theme-color meta and the PWA manifest. */
   hex: string
+  /** Shown wherever the shell prints the product name; an image URL is one the distribution serves from its public directory. */
+  logo: IconSource
+  colorMode: {
+    /** The mode a visitor gets before choosing one; `system` follows the operating system. */
+    default: ColorModePreference
+    /** Whether the user may switch modes; when false the default is the only mode. */
+    switchable: boolean
+  }
 }
 
 // Ids stay plain strings: the daemon and the web shell validate them against
