@@ -54,7 +54,8 @@ export interface AgentSession {
   workspaceId: string
   family: AgentSessionFamily
   actorId: string
-  cwd: string
+  /** Null for a session that runs without a checkout, such as a native family's. */
+  cwd: string | null
   /** The agent's own session id once the first live process started; what resumes the conversation. */
   upstreamSessionId: string | null
   status: AgentSessionStatus

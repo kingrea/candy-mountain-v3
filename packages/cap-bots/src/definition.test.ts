@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { existsSync, mkdtempSync, rmSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { existsSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { WORKSPACES_PATH, type ApiErrorBody } from '@candy-mountain/platform-sdk'
 import { eq } from 'drizzle-orm'
@@ -15,6 +14,7 @@ import { SLACK_CONNECTIONS, slackDefinition } from '@candy-mountain/plugin-slack
 import { teamDefinition } from '@candy-mountain/cap-team'
 import { createWorkspaceWithRepository, repositoryDefinition } from '@candy-mountain/plugin-repository'
 import { botSecretOwner } from './bots'
+import { createTempGitRepo } from './worktrees/test-repo'
 import { BOT_SESSIONS, BOT_SLACK_DECISIONS, BOT_SLACK_HANDOFFS, BOT_SLACK_ROUTER, BOT_WORKTREE_RECLAIMER, BOT_WORKTREES, botsDefinition } from './definition'
 
 const acp = { bins: fakeBins, killTimeoutMs: 1000 }
@@ -60,26 +60,31 @@ describe('the bots definition', () => {
     }
   })
 
-  it('removes a deleted project\'s bots, their secrets and its worktree leases through the deletion hook', async () => {
+  it('removes a deleted project\'s bots, their secrets, its worktree leases and, once committed, its worktree directories', async () => {
     const { platform, app } = start({ ...withAcp(), secretsKey: MasterKey.generate() })
-    const checkout = mkdtempSync(join(tmpdir(), 'cap-bots-'))
+    const repo = createTempGitRepo()
     try {
-      const project = await createWorkspaceWithRepository(platform.db, { name: 'alpha', path: checkout })
+      const project = await createWorkspaceWithRepository(platform.db, { name: 'alpha', path: repo.clone })
       const now = new Date().toISOString()
       const botId = randomUUID()
       platform.db.insert(bots).values({ id: botId, projectId: project.id, name: 'Ana', family: 'claude-code', writeScope: 'read-only', answersIn: { anywhere: true }, createdAt: now, updatedAt: now }).run()
       platform.secrets.set(botSecretOwner(botId), 'slackBotToken', 'xoxb-secret')
-      platform.db.insert(worktreeLeases).values({ id: randomUUID(), projectId: project.id, holderKind: 'session', holderId: 's1', path: join(checkout, 'wt'), branch: 'cm/bot/ana/s1', baseBranch: 'main', createdAt: now, updatedAt: now, lastUsedAt: now }).run()
+      const worktrees = platform.runtime.services('bots').get(BOT_WORKTREES)
+      const lease = await worktrees.acquire({ projectId: project.id, holder: { kind: 'session', id: 's1' }, baseBranch: 'main', installDependencies: false })
+      writeFileSync(join(lease.path, 'unsaved.txt'), 'gone with the project\n')
 
       expect((await app.request(`${WORKSPACES_PATH}/alpha`, { method: 'DELETE' })).status).toBe(204)
       expect(findWorkspaceBySlug(platform.db, 'alpha')).toBeNull()
       expect(platform.db.select().from(bots).where(eq(bots.projectId, project.id)).all()).toEqual([])
       expect(platform.secrets.isSet(botSecretOwner(botId), 'slackBotToken')).toBe(false)
-      expect(platform.runtime.services('bots').get(BOT_WORKTREES).list(project.id)).toEqual([])
+      expect(worktrees.list(project.id, { includeReleased: true })).toEqual([])
       expect(platform.db.select().from(worktreeLeases).where(eq(worktreeLeases.projectId, project.id)).all()).toEqual([])
+      expect(existsSync(join(platform.paths.worktrees, project.id))).toBe(false)
+      expect(repo.git(repo.clone, 'worktree', 'list', '--porcelain')).not.toContain(lease.path)
+      expect(repo.git(repo.clone, 'branch', '--list', lease.branch)).toContain(lease.branch)
     }
     finally {
-      rmSync(checkout, { recursive: true, force: true })
+      repo.cleanup()
     }
   })
 

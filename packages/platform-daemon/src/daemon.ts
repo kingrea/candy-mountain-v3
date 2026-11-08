@@ -34,7 +34,6 @@ export async function runDaemon(product: Product, env: NodeJS.ProcessEnv = proce
   const platform = startPlatform(config.dataDir, { secretsKey: config.secretsKey, product, notifications: config.notifications })
   const { name } = product.config
   console.log(`${name} data directory ${platform.paths.root}`)
-  if (platform.legacyCarryOver) console.log(`Database carried across from the numbered history in ${platform.legacyCarryOver.from} (${platform.legacyCarryOver.caughtUp} legacy migration(s) applied first) onto the per-set histories`)
   console.log(`${platform.migrationSets.length} migration set(s) applied: ${platform.migrationSets.map(set => `${set.id} (${set.applied} migration(s))`).join(', ')}`)
   if (!platform.secrets.unlocked) {
     console.warn(`${SECRETS_KEY_ENV} is not set: secrets are locked and cannot be saved or used until it is`)

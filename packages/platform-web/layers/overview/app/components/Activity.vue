@@ -49,7 +49,7 @@
       variant="naked"
       icon="i-lucide-history"
       title="Nothing has happened yet"
-      description="Agent sessions, bot runs, incidents and deploys will show up here."
+      :description="`What happens in this ${SCOPE.singular} will show up here.`"
       data-testid="overview-activity-empty"
     />
     <ul v-else class="divide-y divide-default" data-testid="overview-activity">

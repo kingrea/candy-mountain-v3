@@ -9,12 +9,14 @@ import {
   type PluginScope,
   type PluginSecretValues,
   type PluginTypeId,
+  type ScopeLabel,
 } from '@candy-mountain/platform-sdk'
+import type { WorkspaceDeletion } from '@candy-mountain/platform-sdk/daemon'
 import { and, eq, isNull, or } from 'drizzle-orm'
 import type { DataPaths } from '../../data-dir'
 import type { Db } from '../../db'
 import { pluginInstances, workspaces } from '../../db/schema'
-import { findWorkspaceById } from '../../workspaces/workspaces'
+import { findWorkspaceById, WORKSPACE_LABEL } from '../../workspaces/workspaces'
 import type { SecretsStore, SecretsWriter } from '../../secrets'
 import type { AnyPluginType } from '../definition'
 import { checkPluginHealth } from '../health'
@@ -166,16 +168,16 @@ function ownerTaken(db: Db, typeId: string, workspaceId: string | null): boolean
   return db.select({ id: pluginInstances.id }).from(pluginInstances).where(and(eq(pluginInstances.typeId, typeId), owner)).get() !== undefined
 }
 
-export function createPluginInstance(deps: PluginInstanceDeps, input: CreatePluginInstanceInput): PluginInstance {
+export function createPluginInstance(deps: PluginInstanceDeps, input: CreatePluginInstanceInput, label: ScopeLabel = WORKSPACE_LABEL): PluginInstance {
   const type = pluginTypeOf(deps, input.type)
   if (!type.scopes.includes(input.scope)) {
     throw new PluginInstanceError('unsupported_scope', `${type.name} supports ${type.scopes.join(' and ')} scope only, not ${input.scope}`)
   }
   if ((input.scope === 'workspace') !== (input.workspaceId !== null)) {
-    throw new PluginInstanceError('invalid_request', input.scope === 'workspace' ? 'A project instance needs a project' : 'A global instance cannot belong to a project')
+    throw new PluginInstanceError('invalid_request', input.scope === 'workspace' ? `A ${label.singular} instance needs a ${label.singular}` : `A global instance cannot belong to a ${label.singular}`)
   }
   if (input.workspaceId !== null && !findWorkspaceById(deps.db, input.workspaceId)) {
-    throw new PluginInstanceError('workspace_not_found', `No project with id "${input.workspaceId}"`)
+    throw new PluginInstanceError('workspace_not_found', `No ${label.singular} with id "${input.workspaceId}"`)
   }
   const config = validateConfig(type, input.config ?? {})
   const changes = secretChanges(type, input.secrets, true)
@@ -185,7 +187,7 @@ export function createPluginInstance(deps: PluginInstanceDeps, input: CreatePlug
   const now = new Date().toISOString()
   deps.db.transaction((tx) => {
     if (type.singleInstance && ownerTaken(tx, type.id, input.workspaceId)) {
-      throw new PluginInstanceError('instance_exists', `${input.workspaceId === null ? 'The platform' : 'This project'} already has a ${type.name} instance`)
+      throw new PluginInstanceError('instance_exists', `${input.workspaceId === null ? 'The platform' : `This ${label.singular}`} already has a ${type.name} instance`)
     }
     tx.insert(pluginInstances).values({ id, typeId: type.id, scope: input.scope, workspaceId: input.workspaceId, config, createdAt: now, updatedAt: now }).run()
   })
@@ -235,11 +237,13 @@ export async function deletePluginInstance(deps: PluginInstanceDeleteDeps, id: s
 }
 
 /** Call before deleting a workspace: the rows would cascade, but their secrets and agent homes live outside the database. */
-export async function deleteWorkspacePluginInstances(deps: PluginInstanceDeleteDeps, workspaceId: string): Promise<number> {
+export async function deleteWorkspacePluginInstances(deps: PluginInstanceDeleteDeps, workspaceId: string, deletion: WorkspaceDeletion): Promise<number> {
   const instances = selectInstances(deps.db).where(eq(pluginInstances.workspaceId, workspaceId)).all().map(({ row, workspaceSlug }) => toInstance(deps, row, workspaceSlug))
   for (const instance of instances) await runDeleteHook(deps, instance)
   deps.db.delete(pluginInstances).where(eq(pluginInstances.workspaceId, workspaceId)).run()
-  for (const { id } of instances) deps.secrets.deleteOwner(pluginSecretOwner(id))
+  deletion.afterCommit(() => {
+    for (const { id } of instances) deps.secrets.deleteOwner(pluginSecretOwner(id))
+  })
   return instances.length
 }
 

@@ -4,7 +4,7 @@ import { workspaceSessionsPath, sessionCancelPath, sessionDecisionPath, sessionD
 import { eq } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { FAKE_ACP_AGENT, fakeBins } from '../acp/test-support'
-import { addRole, type AuthStrategy, createPluginInstance, createTempDataDir, platformApp, pluginInstances, setEnabledModules, type TempDataDir } from '@candy-mountain/platform-daemon'
+import { addRole, agentSessions, type AuthStrategy, createPluginInstance, createTempDataDir, platformApp, pluginInstances, setEnabledModules, type TempDataDir } from '@candy-mountain/platform-daemon'
 import { startAcpPlatform, type AcpPlatform, type AcpPlatformOptions } from '../test-support'
 import { resolveSessionSettings } from './config'
 import type { SessionManager, SessionMessage } from './manager'
@@ -176,6 +176,16 @@ describe('agent sessions', () => {
     expect(await errorOf(await call(p, 'POST', workspaceSessionsPath('bare'), { family: 'codex' }))).toEqual({ status: 409, code: 'not_ready' })
     const session = p.sessions.create({ workspaceId: workspace.id, family: 'codex', actorId: 'someone', cwd: temp!.root })
     await expect(p.sessions.prompt(session.id, 'hello')).rejects.toMatchObject({ code: 'family_unavailable', status: 422 })
+    expect(p.sessions.events(session.id)).toEqual([])
+    expect(p.sessions.get(session.id)?.status).toBe('idle')
+  })
+
+  it('refuses to launch a session that has no checkout, without logging the prompt', async () => {
+    const p = boot()
+    await workspaceWithCodex(p)
+    const session = await createSession(p)
+    p.db.update(agentSessions).set({ cwd: null }).where(eq(agentSessions.id, session.id)).run()
+    await expect(p.sessions.prompt(session.id, 'hello')).rejects.toMatchObject({ code: 'family_unavailable', message: 'Codex sessions need a repository checkout to run in.' })
     expect(p.sessions.events(session.id)).toEqual([])
     expect(p.sessions.get(session.id)?.status).toBe('idle')
   })
@@ -416,7 +426,7 @@ describe('session access', () => {
     await workspaceWithCodex(p)
     await grantDeveloper(p, {})
     const adminOwned = await createSession(p)
-    const theirs = p.sessions.create({ workspaceId: adminOwned.workspaceId, family: 'codex', actorId: OTHER.id, cwd: adminOwned.cwd })
+    const theirs = p.sessions.create({ workspaceId: adminOwned.workspaceId, family: 'codex', actorId: OTHER.id, cwd: adminOwned.cwd! })
 
     for (const [method, path, body] of [...sessionRequests(adminOwned.id), ...sessionRequests(theirs.id)]) {
       expect(await errorOf(await call(p, method, path, body, DEVELOPER)), `${method} ${path}`).toEqual({ status: 404, code: 'not_found' })
@@ -450,7 +460,7 @@ describe('session access', () => {
     expect(res.status, await res.clone().text()).toBe(201)
     const own = ((await res.json()) as SessionResponse).session
     expect(own.actorId).toBe(DEVELOPER.id)
-    const bot = p.sessions.create({ workspaceId: own.workspaceId, family: 'codex', actorId: 'bot:reviewer', cwd: own.cwd })
+    const bot = p.sessions.create({ workspaceId: own.workspaceId, family: 'codex', actorId: 'bot:reviewer', cwd: own.cwd! })
 
     expect(await listed(p, DEVELOPER)).toEqual([own.id])
     expect((await listed(p, ADMIN)).sort()).toEqual([own.id, bot.id].sort())

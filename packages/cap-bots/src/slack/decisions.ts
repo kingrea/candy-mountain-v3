@@ -7,6 +7,7 @@ import { mayMemberTalkToBot, touchMemberActivity } from '@candy-mountain/cap-tea
 import { SLACK_DECISION_ACTION, parseSlackDecisionReply, slackAnswerFromText, slackDecisionChoices, slackDecisionMessage, slackDecisionShortId, type Parsed, type SlackDecisionReply } from './decision-message'
 import { slackActorId, type SlackReplyInterceptor } from './router'
 import { findSlackThread, findSlackThreadBySession, type SlackThread, type SlackThreadRef } from './threads'
+import { SLACK_DECISION_META_PREFIX, slackDecisionMetaKey } from './meta'
 
 export interface SlackDecisionsDeps {
   db: Db
@@ -36,10 +37,6 @@ interface PostedMessage {
   channel: string
   ts: string
 }
-
-/** Survives a restart so a message whose decision died with the daemon still gets its outcome. */
-const META_PREFIX = 'slack-decision:'
-const metaKey = (decisionId: string) => `${META_PREFIX}${decisionId}`
 
 export const SLACK_ANSWERED_REACTION = 'white_check_mark'
 
@@ -71,10 +68,10 @@ export function startSlackDecisions({ db, slack, decisions, sessions }: SlackDec
   function remember(decisionId: string, posted: PostedMessage): void {
     const value = JSON.stringify(posted)
     const updatedAt = new Date(now()).toISOString()
-    db.insert(platformMeta).values({ key: metaKey(decisionId), value, updatedAt }).onConflictDoUpdate({ target: platformMeta.key, set: { value, updatedAt } }).run()
+    db.insert(platformMeta).values({ key: slackDecisionMetaKey(decisionId), value, updatedAt }).onConflictDoUpdate({ target: platformMeta.key, set: { value, updatedAt } }).run()
   }
 
-  const forget = (decisionId: string) => void db.delete(platformMeta).where(eq(platformMeta.key, metaKey(decisionId))).run()
+  const forget = (decisionId: string) => void db.delete(platformMeta).where(eq(platformMeta.key, slackDecisionMetaKey(decisionId))).run()
 
   async function post(thread: SlackThread, decision: Decision): Promise<PostedMessage | null> {
     const client = clientFor(thread.botId)
@@ -222,9 +219,9 @@ export function startSlackDecisions({ db, slack, decisions, sessions }: SlackDec
   }, { kinds: ['interactive'] })
 
   function recover(): void {
-    const rows = db.select().from(platformMeta).where(like(platformMeta.key, `${META_PREFIX}%`)).all()
+    const rows = db.select().from(platformMeta).where(like(platformMeta.key, `${SLACK_DECISION_META_PREFIX}%`)).all()
     for (const row of rows) {
-      const decisionId = row.key.slice(META_PREFIX.length)
+      const decisionId = row.key.slice(SLACK_DECISION_META_PREFIX.length)
       let posted: PostedMessage
       try {
         posted = JSON.parse(row.value) as PostedMessage

@@ -15,7 +15,7 @@ export const canAccessSession = (actor: Actor, session: AgentSession): boolean =
 /** Another actor's session is reported missing rather than forbidden. */
 export function requireSessionAccess(sessions: SessionManager): MiddlewareHandler<AppEnv> {
   return async (c, next) => {
-    const workspace = getWorkspaceBySlug(c.var.db, c.req.param('slug')!)
+    const workspace = getWorkspaceBySlug(c.var.db, c.req.param('slug')!, c.var.scopeLabel)
     const id = c.req.param('id')!
     const session = sessions.get(id)
     if (!session || session.workspaceId !== workspace.id || !canAccessSession(c.var.actor, session)) throw new SessionError('not_found', `No session with id "${id}" in this project`)

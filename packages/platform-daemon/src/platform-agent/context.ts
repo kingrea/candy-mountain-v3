@@ -1,4 +1,4 @@
-import type { Actor, Workspace, RegistryResponse } from '@candy-mountain/platform-sdk'
+import type { Actor, Workspace, RegistryResponse, ScopeLabel } from '@candy-mountain/platform-sdk'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { CapabilityRegistry } from '../capabilities'
 import type { CapabilityAccess } from '../registry'
@@ -10,6 +10,7 @@ export interface PlatformTurnContext {
   capabilities: CapabilityRegistry
   registry: RegistryResponse
   scopeUrlPrefix: string
+  scopeLabel: ScopeLabel
   access(capabilityId: string): CapabilityAccess
   model: { baseUrl: string, modelId: string, apiKey: string }
 }

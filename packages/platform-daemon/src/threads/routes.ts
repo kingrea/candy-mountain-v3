@@ -75,13 +75,13 @@ export function threadRoutes(service: ThreadService) {
     throw error
   })
 
-  const workspaceOf = (c: Context<AppEnv>) => getWorkspaceBySlug(c.var.db, c.req.param('slug')!)
+  const workspaceOf = (c: Context<AppEnv>) => getWorkspaceBySlug(c.var.db, c.req.param('slug')!, c.var.scopeLabel)
 
   /** Another actor's thread is reported missing rather than forbidden. */
   function threadOf(c: Context<AppEnv>): ChatThread {
     const id = c.req.param('id')!
     const thread = service.get(id)
-    if (!thread || thread.workspaceId !== workspaceOf(c).id || thread.actorId !== c.var.actor.id) throw new ThreadError('not_found', `No thread with id "${id}" in this project`)
+    if (!thread || thread.workspaceId !== workspaceOf(c).id || thread.actorId !== c.var.actor.id) throw new ThreadError('not_found', `No thread with id "${id}" in this ${c.var.scopeLabel.singular}`)
     return thread
   }
 

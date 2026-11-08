@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { CHAT_THREAD_TITLE_MAX_LENGTH, chatThreadLink, type Actor, type AgentSession, type AgentSessionFamily, type AgentSessionStatus, type CapabilityId, type ChatThread, type ChatThreadCloseResponse, type ChatThreadPromptResponse, type ChatThreadResponse, type Workspace } from '@candy-mountain/platform-sdk'
+import { CHAT_THREAD_TITLE_MAX_LENGTH, chatThreadLink, type Actor, type AgentSession, type AgentSessionFamily, type AgentSessionStatus, type CapabilityId, type ChatThread, type ChatThreadCloseResponse, type ChatThreadPromptResponse, type ChatThreadResponse, type ScopeLabel, type Workspace } from '@candy-mountain/platform-sdk'
 import { appendActivityEvent } from '../activity'
 import type { CapabilityRegistry } from '../capabilities'
 import type { NativeFamilyRunner, NativeFamilyRunners, NativeFamilyTurn } from '@candy-mountain/platform-sdk/daemon'
@@ -94,6 +94,7 @@ export interface ThreadServiceOptions {
   agents: WorkspaceAgentRegistry
   /** The product's `scope.urlPrefix`, for the run.started link. */
   scopeUrlPrefix: string
+  scopeLabel: ScopeLabel
 }
 
 const BUSY: ReadonlySet<AgentSessionStatus> = new Set(['queued', 'starting', 'prompting'])
@@ -260,7 +261,7 @@ export function createThreadService(db: Db, sessions: ThreadSessions, options: T
         const source = options.agents.ownerOf(session)
         if (native) {
           const workspace = findWorkspaceById(db, thread.workspaceId)
-          if (!workspace) throw new ThreadError('not_found', `The project of thread '${thread.id}' is gone`)
+          if (!workspace) throw new ThreadError('not_found', `The ${options.scopeLabel.singular} of thread '${thread.id}' is gone`)
           await sessions.run(session.id, text, turn => native({ ...turn, workspace, actor, thread, session, text }))
         }
         else if (source) {

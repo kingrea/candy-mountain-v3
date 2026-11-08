@@ -4,7 +4,7 @@ import { registryNavGroups } from '../../app/utils/navigation'
 import { lockoutActions, projectRegistryKey, resolveViewAccess } from '../../app/utils/registry'
 import { PRODUCT } from '../../shared/utils/product'
 
-const SYSTEM_GROUP = registrySystemGroup(PRODUCT.scope.label)
+const SYSTEM_GROUP = registrySystemGroup(PRODUCT.scope.label, PRODUCT.scope.listPath)
 const PLUGIN_REASON = { kind: 'plugin', plugin: 'repository', message: 'No Repository plugin is configured for this project or the platform.' } as const
 
 function capability(id: RegistryCapability['id'], ready: boolean, admin = true): RegistryCapability {
@@ -88,8 +88,8 @@ describe('registryNavGroups', () => {
   })
 
   it('shows the system group as the daemon labels it', () => {
-    const apps = registry({ groups: [registrySystemGroup({ pluralTitle: 'Apps' })] })
-    expect(registryNavGroups(apps, 'acme', false).systemGroup.entries.map(entry => entry.label)).toEqual(['Apps', 'Activity', 'Settings'])
+    const apps = registry({ groups: [registrySystemGroup({ pluralTitle: 'Apps' }, 'apps')] })
+    expect(registryNavGroups(apps, 'acme', false).systemGroup.entries.map(entry => [entry.label, entry.to])).toEqual([['Apps', '/apps'], ['Activity', '/activity'], ['Settings', '/settings']])
   })
 
   it('shows only the system group when the project has no modules enabled', () => {

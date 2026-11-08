@@ -1,7 +1,7 @@
 import { join } from 'node:path'
 import type { ProductConfig } from '@candy-mountain/platform-sdk'
 import { addTemplate, defineNuxtModule } from 'nuxt/kit'
-import { scopeRoutes } from '../scope-routes.mjs'
+import { scopeListRoute, scopeRoutes } from '../scope-routes.mjs'
 
 export interface PlatformWebOptions {
   /** The distribution's product configuration; the shell reads it as PRODUCT and never imports a product itself. */
@@ -43,6 +43,9 @@ export default defineNuxtModule<PlatformWebOptions>({
     nuxt.options.app.head.meta ||= []
     nuxt.options.app.head.meta.push({ name: 'theme-color', content: product.theme.hex })
 
-    nuxt.hook('pages:extend', pages => scopeRoutes(pages, product.scope.urlPrefix))
+    nuxt.hook('pages:extend', (pages) => {
+      scopeRoutes(pages, product.scope.urlPrefix)
+      scopeListRoute(pages, product.scope.listPath)
+    })
   },
 })

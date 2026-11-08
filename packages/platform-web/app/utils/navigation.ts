@@ -1,5 +1,6 @@
 import { registrySystemGroup, type RegistryResponse } from '@candy-mountain/platform-sdk'
 import { projectPath } from './project-scope'
+import { PRODUCT } from '../../shared/utils/product'
 import { SCOPE } from './scope-label'
 
 export interface NavEntry {
@@ -66,7 +67,7 @@ export function registryNavGroups(
       warning: group.degraded ? degradedWarning(registry!, group.id) : undefined,
     }))
 
-  const system = registry?.groups.find(group => group.kind === 'system') ?? registrySystemGroup(SCOPE)
+  const system = registry?.groups.find(group => group.kind === 'system') ?? registrySystemGroup(SCOPE, PRODUCT.scope.listPath)
   return {
     capabilityGroups,
     systemGroup: {

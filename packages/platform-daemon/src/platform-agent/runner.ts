@@ -52,6 +52,7 @@ export function createPlatformAgentRunner(deps: PlatformAgentDeps, options: Plat
       capabilities: deps.capabilities,
       registry: loadRegistry(deps, actor, workspace),
       scopeUrlPrefix: deps.scopeUrlPrefix,
+      scopeLabel: deps.scopeLabel,
       access(capabilityId) {
         let access = accessed.get(capabilityId)
         if (!access) accessed.set(capabilityId, access = resolveCapabilityAccess(deps, actor, workspace, capabilityId))

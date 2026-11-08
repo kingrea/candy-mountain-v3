@@ -22,7 +22,7 @@ describe('info route', () => {
 
   it('reads the name and scope label from the product it is given', async () => {
     const label = { singular: 'home', plural: 'homes', singularTitle: 'Home', pluralTitle: 'Homes' }
-    const product = testProduct({}, { name: 'Home Dashboard', scope: { label, urlPrefix: 'h' } })
+    const product = testProduct({}, { name: 'Home Dashboard', scope: { label, urlPrefix: 'h', listPath: 'homes' } })
     const res = await createTestApp({ db: database.db, paths: dataPaths('/tmp/cm-info'), product }).request(INFO_PATH)
     expect(await res.json()).toMatchObject({ productName: 'Home Dashboard', scopeLabel: label })
   })

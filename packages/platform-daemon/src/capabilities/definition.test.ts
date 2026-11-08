@@ -308,7 +308,7 @@ describe('a definition for an existing capability', () => {
     expect(runtimes.flatMap(r => r.mcpServers ?? []).map(s => s.name)).toEqual(['slack'])
     expect(runtimes.flatMap(r => r.notificationChannels ?? []).map(c => c.id)).toEqual(['slack'])
     await runtimes[1]!.chatFamilies!.platform!({} as never)
-    for (const runtime of [...runtimes].reverse()) await runtime.onWorkspaceDeleted?.({ id: 'w1' } as never)
+    for (const runtime of [...runtimes].reverse()) await runtime.onWorkspaceDeleted?.({ id: 'w1' } as never, { afterCommit: () => {} })
     expect(deleted).toEqual(['w1'])
     for (const runtime of [...runtimes].reverse()) await runtime.close?.()
     expect(closed).toEqual(['bots', 'slack'])

@@ -18,7 +18,7 @@ export const TEST_PRODUCT_CONFIG: Readonly<ProductConfig> = Object.freeze({
   name: 'Test Product',
   description: 'A product for platform tests.',
   theme: { primary: 'sky', hex: '#0ea5e9' },
-  scope: { label: { singular: 'workspace', plural: 'workspaces', singularTitle: 'Workspace', pluralTitle: 'Workspaces' }, urlPrefix: 'w' },
+  scope: { label: { singular: 'workspace', plural: 'workspaces', singularTitle: 'Workspace', pluralTitle: 'Workspaces' }, urlPrefix: 'w', listPath: 'workspaces' },
   capabilities: [],
   modules: [],
   pluginTypes: [],

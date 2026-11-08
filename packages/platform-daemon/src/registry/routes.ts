@@ -13,7 +13,7 @@ export function registryRoutes() {
   })
 
   app.get('/:slug/registry', (c) => {
-    const workspace = getWorkspaceBySlug(c.var.db, c.req.param('slug'))
+    const workspace = getWorkspaceBySlug(c.var.db, c.req.param('slug'), c.var.scopeLabel)
     return c.json<RegistryResponse>(loadRegistry(c.var, c.var.actor, workspace))
   })
 

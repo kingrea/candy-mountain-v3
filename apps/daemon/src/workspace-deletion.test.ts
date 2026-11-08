@@ -1,7 +1,11 @@
+import { randomUUID } from 'node:crypto'
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { WORKSPACES_PATH, type Workspace } from '@candy-mountain/platform-sdk'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
-import { createPluginInstance, createWorkspace, findWorkspaceBySlug, fixtureDefinition, isCapabilityDefinition, notificationDeliveredKey, notificationRulesKey, platformApp, type CapabilityDefinition, type Db, type Platform } from '@candy-mountain/platform-daemon'
+import { botSecretOwner, slackDecisionMetaKey, slackHandoffMetaKey } from '@candy-mountain/cap-bots'
+import { createPluginInstance, createWorkspace, findWorkspaceBySlug, fixtureDefinition, isCapabilityDefinition, MasterKey, notificationDeliveredKey, notificationRulesKey, platformApp, type CapabilityDefinition, type Db, type Platform } from '@candy-mountain/platform-daemon'
 import { CAPABILITY_DEFINITIONS, createTempDataDir, startTestPlatform, type TempDataDir } from './testing'
 
 /** Tables no workspace owns a row of; the workspace's own row is checked by id. */
@@ -49,7 +53,7 @@ function keyedTables(db: Db): { table: string, foreignKeys: ForeignKey[] }[] {
 }
 
 /** One row per keyed table, every value tagged so a later scan can find anything left over. */
-function seedEveryTable(db: Db, workspace: Workspace, tag: string): void {
+function seedEveryTable(db: Db, workspace: Workspace, tag: string): { botId: string } {
   const seeded = new Map<string, Record<string, unknown>>([['workspaces', { id: workspace.id }]])
   for (const { table, foreignKeys } of keyedTables(db)) {
     if (SEEDED_BY_SERVICE.has(table)) continue
@@ -71,9 +75,18 @@ function seedEveryTable(db: Db, workspace: Workspace, tag: string): void {
     db.run(sql`INSERT INTO ${sql.identifier(table)} (${sql.join(names.map(n => sql.identifier(n)), sql`, `)}) VALUES (${sql.join(names.map(n => sql`${row[n]}`), sql`, `)})`)
     seeded.set(table, row)
   }
-  for (const key of [notificationRulesKey(workspace.id), notificationDeliveredKey(workspace.id)]) {
-    db.run(sql`INSERT INTO platform_meta (key, value, updated_at) VALUES (${key}, '{}', '2026-01-01T00:00:00.000Z')`)
+  const botId = String(seeded.get('bots')?.id)
+  const meta = [
+    [notificationRulesKey(workspace.id), '{}'],
+    [notificationDeliveredKey(workspace.id), '{}'],
+    // Keyed by decision and turn; only the bot in the value, or the turn's thread, leads back to the workspace.
+    [slackDecisionMetaKey(randomUUID()), JSON.stringify({ botId, channel: 'C1', ts: '1.1' })],
+    [slackHandoffMetaKey(String(seeded.get('slack_turns')?.id)), '1'],
+  ]
+  for (const [key, value] of meta) {
+    db.run(sql`INSERT INTO platform_meta (key, value, updated_at) VALUES (${key}, ${value}, '2026-01-01T00:00:00.000Z')`)
   }
+  return { botId }
 }
 
 /** Every table holding a row that mentions any of the needles. */
@@ -95,18 +108,24 @@ describe('deleting a workspace', () => {
   function start(options: Parameters<typeof startTestPlatform>[1] = {}) {
     const temp = createTempDataDir()
     temps.push(temp)
-    const platform = startTestPlatform(temp.root, options)
+    const platform = startTestPlatform(temp.root, { secretsKey: MasterKey.generate(), ...options })
     open.push(platform)
     const workspaces = ['Doomed', 'Kept'].map((name) => {
       const workspace = createWorkspace(platform.db, { name })
-      seedEveryTable(platform.db, workspace, `w-${workspace.slug}`)
-      createPluginInstance({ db: platform.db, pluginTypes: platform.pluginTypes, secrets: platform.secrets.writeOnly }, { type: 'claude-code', scope: 'workspace', workspaceId: workspace.id, config: {} })
-      return workspace
+      const { botId } = seedEveryTable(platform.db, workspace, `w-${workspace.slug}`)
+      const instance = createPluginInstance({ db: platform.db, pluginTypes: platform.pluginTypes, secrets: platform.secrets.writeOnly }, { type: 'claude-code', scope: 'workspace', workspaceId: workspace.id, config: {} })
+      const secretOwners = [botSecretOwner(botId), `plugin:${instance.id}`]
+      for (const owner of secretOwners) platform.secrets.set(owner, 'token', 'kept until the deletion commits')
+      const worktree = join(platform.paths.worktrees, workspace.id, 'lease')
+      mkdirSync(worktree, { recursive: true })
+      writeFileSync(join(worktree, 'work.txt'), 'uncommitted\n')
+      return { ...workspace, secretOwners, worktrees: join(platform.paths.worktrees, workspace.id) }
     })
     return { platform, app: platformApp(platform), doomed: workspaces[0]!, kept: workspaces[1]! }
   }
 
   const keyed = (platform: Platform) => keyedTables(platform.db).map(({ table }) => table)
+  const secretsLeft = (platform: Platform, owners: string[]) => owners.filter(owner => platform.secrets.isSet(owner, 'token'))
 
   it('leaves no row of any capability or the platform referring to it, and keeps every other workspace\'s', async () => {
     const { platform, app, doomed, kept } = start()
@@ -117,15 +136,19 @@ describe('deleting a workspace', () => {
     expect(findWorkspaceBySlug(platform.db, doomed.slug)).toBeNull()
     expect(tablesMentioning(platform.db, doomed.id, 'w-doomed')).toEqual([])
     expect(tablesMentioning(platform.db, kept.id, 'w-kept')).toEqual(expect.arrayContaining([...keyed(platform), 'platform_meta', 'workspaces']))
+    expect(secretsLeft(platform, doomed.secretOwners)).toEqual([])
+    expect(secretsLeft(platform, kept.secretOwners)).toEqual(kept.secretOwners)
+    expect(existsSync(doomed.worktrees)).toBe(false)
+    expect(existsSync(kept.worktrees)).toBe(true)
   })
 
-  it('keeps the workspace and every row when a deletion hook throws after others have run', async () => {
+  it('keeps the workspace, every row, its secrets and its worktrees when a deletion hook throws after others have run', async () => {
     const order: string[] = []
     const bots = CAPABILITY_DEFINITIONS.filter(isCapabilityDefinition).find(d => d.id === 'bots')!
     const tracedBots: CapabilityDefinition = { ...bots, start: (context) => {
       const runtime = bots.start!(context)
-      return { ...runtime, onWorkspaceDeleted: async (workspace) => {
-        await runtime.onWorkspaceDeleted?.(workspace)
+      return { ...runtime, onWorkspaceDeleted: async (workspace, deletion) => {
+        await runtime.onWorkspaceDeleted?.(workspace, deletion)
         order.push('bots')
       } }
     } }
@@ -142,5 +165,7 @@ describe('deleting a workspace', () => {
     expect(order).toEqual(['bots', 'wrecker'])
     expect(findWorkspaceBySlug(platform.db, doomed.slug)).not.toBeNull()
     expect(tablesMentioning(platform.db, doomed.id, 'w-doomed')).toEqual(before)
+    expect(secretsLeft(platform, doomed.secretOwners)).toEqual(doomed.secretOwners)
+    expect(existsSync(doomed.worktrees)).toBe(true)
   })
 })

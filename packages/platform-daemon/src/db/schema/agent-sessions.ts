@@ -7,7 +7,7 @@ export const agentSessions = sqliteTable('agent_sessions', {
   workspaceId: text('workspace_id').notNull().references(() => workspaces.id, { onDelete: 'cascade' }),
   family: text('family').$type<AgentSessionFamily>().notNull(),
   actorId: text('actor_id').notNull(),
-  cwd: text('cwd').notNull(),
+  cwd: text('cwd'),
   upstreamSessionId: text('upstream_session_id'),
   status: text('status').$type<AgentSessionStatus>().notNull().default('idle'),
   posture: text('posture', { mode: 'json' }).$type<AgentSessionPosture>(),

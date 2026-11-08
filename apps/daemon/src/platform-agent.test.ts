@@ -134,7 +134,7 @@ describe('platform agent tools', () => {
   function turnFor(actor: Actor, workspace: Workspace): PlatformTurnContext {
     const p = { ...platform!, scopeLabel: platform!.product.config.scope.label }
     const registry = { workspace: { id: workspace.id, slug: workspace.slug, name: workspace.name }, admin: actor.roles.includes('admin'), modules: [], groups: [], views: [], agents: [], capabilities: [], degraded: [] }
-    return { actor, workspace, capabilities: p.capabilities, registry, scopeUrlPrefix: p.product.config.scope.urlPrefix, access: id => resolveCapabilityAccess(p, actor, workspace, id), model: { baseUrl: 'http://stub', modelId: 'm', apiKey: 'k' } }
+    return { actor, workspace, capabilities: p.capabilities, registry, scopeUrlPrefix: p.product.config.scope.urlPrefix, scopeLabel: p.product.config.scope.label, access: id => resolveCapabilityAccess(p, actor, workspace, id), model: { baseUrl: 'http://stub', modelId: 'm', apiKey: 'k' } }
   }
 
   it('returns typed actions for the admin and refusals as values for everyone else', async () => {
@@ -169,7 +169,7 @@ describe('start_chat with bots', () => {
     const p = { ...platform!, scopeLabel: platform!.product.config.scope.label }
     const registry = { workspace: { id: alpha.id, slug: 'alpha', name: 'Alpha' }, admin: actor.roles.includes('admin'), modules: [], groups: [], views: [], agents, capabilities: [], degraded: [] } as unknown as RegistryResponse
     const usable = (id: string) => ({ ...resolveCapabilityAccess(p, actor, alpha, id), enabled: true, reasons: [], rung: { name: 'chat', chat: true } as never })
-    return { actor, workspace: alpha, capabilities: p.capabilities, registry, scopeUrlPrefix: p.product.config.scope.urlPrefix, access: id => (botsUsable && id === BOTS_CAPABILITY_ID ? usable(id) : resolveCapabilityAccess(p, actor, alpha, id)), model: { baseUrl: 'http://stub', modelId: 'm', apiKey: 'k' } }
+    return { actor, workspace: alpha, capabilities: p.capabilities, registry, scopeUrlPrefix: p.product.config.scope.urlPrefix, scopeLabel: p.product.config.scope.label, access: id => (botsUsable && id === BOTS_CAPABILITY_ID ? usable(id) : resolveCapabilityAccess(p, actor, alpha, id)), model: { baseUrl: 'http://stub', modelId: 'm', apiKey: 'k' } }
   }
 
   it('opens a bot thread by agent id or case-insensitive name, with the id unchanged', async () => {

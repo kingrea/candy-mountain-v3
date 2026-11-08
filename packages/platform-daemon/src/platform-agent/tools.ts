@@ -81,19 +81,19 @@ export function platformTools(turn: PlatformTurnContext) {
   return {
     open_view: createTool({
       id: 'open_view',
-      description: 'Open one of the views listed in your instructions for the current project. Returns a navigate action the browser applies, or a refusal to relay.',
+      description: `Open one of the views listed in your instructions for the current ${turn.scopeLabel.singular}. Returns a navigate action the browser applies, or a refusal to relay.`,
       inputSchema: z.object({ viewId: z.string().describe('The view id from the list in your instructions.') }),
       execute: async ({ viewId }) => openView(turn, viewId),
     }),
     start_chat: createTool({
       id: 'start_chat',
-      description: 'Start a new chat thread with one of the chat agents listed in your instructions, including the agents the project itself adds. Returns an open_thread action the browser applies, or a refusal to relay.',
-      inputSchema: z.object({ agentId: z.string().describe('The agent id from the list in your instructions, or the name of an agent the project adds.') }),
+      description: `Start a new chat thread with one of the chat agents listed in your instructions, including the agents the ${turn.scopeLabel.singular} itself adds. Returns an open_thread action the browser applies, or a refusal to relay.`,
+      inputSchema: z.object({ agentId: z.string().describe(`The agent id from the list in your instructions, or the name of an agent the ${turn.scopeLabel.singular} adds.`) }),
       execute: async ({ agentId }) => startChat(turn, agentId),
     }),
     describe_platform: createTool({
       id: 'describe_platform',
-      description: 'What this person may use in the current project: enabled modules, views they can open, agents they can chat with, and their rung on each capability.',
+      description: `What this person may use in the current ${turn.scopeLabel.singular}: enabled modules, views they can open, agents they can chat with, and their rung on each capability.`,
       inputSchema: z.object({}),
       execute: async () => describePlatform(turn),
     }),

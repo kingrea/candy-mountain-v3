@@ -67,7 +67,7 @@ describe('GET /workspaces/:slug/registry', () => {
   it('links views under the product\'s scope prefix', async () => {
     const alpha = await harness.createWorkspace('alpha')
     setEnabledModules(harness.database.db, alpha.id, ['agent-hub'])
-    const res = await app(['admin'], testProduct({}, { scope: { label: testProduct().config.scope.label, urlPrefix: 'p' } })).request(workspaceRegistryPath('alpha'))
+    const res = await app(['admin'], testProduct({}, { scope: { ...testProduct().config.scope, urlPrefix: 'p' } })).request(workspaceRegistryPath('alpha'))
     const body = await res.json() as RegistryResponse
     expect(body.groups[0]!.entries.map(e => e.to)).toEqual(['/p/alpha/chat-codex', '/p/alpha/chat-codex/admin'])
     expect(body.views.map(v => v.to)).toEqual(['/p/alpha/chat-codex', '/p/alpha/chat-codex/admin'])
@@ -136,6 +136,6 @@ describe('GET /workspaces/:slug/registry', () => {
   it('is 404 for an unknown workspace', async () => {
     const res = await app().request(workspaceRegistryPath('ghost'))
     expect(res.status).toBe(404)
-    expect(await res.json()).toEqual({ error: { code: 'not_found', message: 'No project with slug "ghost"' } })
+    expect(await res.json()).toEqual({ error: { code: 'not_found', message: `No ${testProduct().config.scope.label.singular} with slug "ghost"` } })
   })
 })

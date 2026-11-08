@@ -68,9 +68,17 @@ export interface CapabilityContext {
   agentMcp: Pick<AgentMcpHost, 'serversFor'>
   /** The product's `scope.urlPrefix`, for links into the web app. */
   scopeUrlPrefix: string
+  /** The product's `scope.listPath`, for the system nav entry. */
+  scopeListPath: string
   /** The product's `scope.label`, for daemon-written text that names a workspace. */
   scopeLabel: ScopeLabel
   service<T>(key: ServiceKey<T>): T
+}
+
+/** A workspace deletion in progress, as its hooks see it. */
+export interface WorkspaceDeletion {
+  /** For state a rollback cannot restore (files): runs only once the deletion has committed, and a failure is logged rather than undoing it. */
+  afterCommit(task: () => void | Promise<void>): void
 }
 
 /** Everything a started definition hands the daemon; every field is optional so a manifest-only definition starts to nothing. */
@@ -87,7 +95,7 @@ export interface CapabilityRuntime {
   /** Agents this capability adds per workspace; the registry lists them and the thread service runs their threads through it. */
   workspaceAgents?: WorkspaceAgentSource
   /** Runs in the deletion's transaction before the platform deletes the workspace row, dependents first; a throw rolls every row back. */
-  onWorkspaceDeleted?(workspace: Workspace): void | Promise<void>
+  onWorkspaceDeleted?(workspace: Workspace, deletion: WorkspaceDeletion): void | Promise<void>
   /** Called in reverse start order. */
   close?(): void | Promise<void>
 }

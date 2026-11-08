@@ -17,7 +17,7 @@ export function slackRoutes(connections: Pick<SlackConnections, 'status'>) {
   })
 
   app.get('/:slug/bots/:id/slack', requireAdmin(), (c) => {
-    const project = getWorkspaceBySlug(c.var.db, c.req.param('slug'))
+    const project = getWorkspaceBySlug(c.var.db, c.req.param('slug'), c.var.scopeLabel)
     const id = c.req.param('id')
     if (botProjectId(c.var.db, id) !== project.id) throw new BotError('not_found', `No bot with id "${id}" in this project`)
     return c.json<BotSlackConnectionResponse>({ connection: connections.status(id) })

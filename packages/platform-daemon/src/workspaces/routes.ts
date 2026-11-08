@@ -2,10 +2,12 @@ import type {
   ApiErrorBody,
   OrganisationListResponse,
   OrganisationResponse,
+  ScopeLabel,
   Workspace,
   WorkspaceListResponse,
   WorkspaceResponse,
 } from '@candy-mountain/platform-sdk'
+import type { WorkspaceDeletion } from '@candy-mountain/platform-sdk/daemon'
 import { sql } from 'drizzle-orm'
 import { Hono, type Context } from 'hono'
 import type { AppEnv } from '../app'
@@ -53,28 +55,39 @@ function onWorkspaceError(error: Error, c: Context) {
 
 export interface WorkspaceRouteHooks {
   /** The definitions' deletion hooks, dependents first; a throw leaves the workspace and every row in place. */
-  onWorkspaceDeleted?(workspace: Workspace): Promise<void>
+  onWorkspaceDeleted?(workspace: Workspace, deletion: WorkspaceDeletion): Promise<void>
 }
 
 const deletions = new WeakMap<Db, Promise<void>>()
 
 /**
- * One transaction across the hooks and the platform's deletes, so a throw anywhere rolls every row back.
+ * One transaction across the hooks and the platform's deletes, so a throw anywhere rolls every row back; files go after COMMIT.
  * Writes other requests make while a hook awaits I/O land in it too; deletions queue because transactions cannot nest.
  */
-function removeWorkspace(deps: PluginInstanceDeleteDeps, workspace: Workspace, hooks: WorkspaceRouteHooks): Promise<void> {
+function removeWorkspace(deps: PluginInstanceDeleteDeps & { scopeLabel: ScopeLabel }, workspace: Workspace, hooks: WorkspaceRouteHooks): Promise<void> {
   const { db } = deps
   const run = (deletions.get(db) ?? Promise.resolve()).catch(() => {}).then(async () => {
+    const cleanups: (() => void | Promise<void>)[] = []
+    const deletion: WorkspaceDeletion = { afterCommit: task => void cleanups.push(task) }
     db.run(sql`BEGIN IMMEDIATE`)
     try {
-      await hooks.onWorkspaceDeleted?.(workspace)
-      await deleteWorkspacePluginInstances(deps, workspace.id)
-      deleteWorkspace(db, workspace.slug)
+      await hooks.onWorkspaceDeleted?.(workspace, deletion)
+      await deleteWorkspacePluginInstances(deps, workspace.id, deletion)
+      deleteWorkspace(db, workspace.slug, deps.scopeLabel)
       db.run(sql`COMMIT`)
     }
     catch (error) {
       db.run(sql`ROLLBACK`)
       throw error
+    }
+    // The workspace is gone by now, so a failed cleanup leaves an orphan to log rather than an error to answer.
+    for (const task of cleanups) {
+      try {
+        await task()
+      }
+      catch (error) {
+        console.error(`Cleanup after deleting workspace ${workspace.slug} failed:`, error)
+      }
     }
   })
   deletions.set(db, run)
@@ -91,23 +104,23 @@ export function workspaceRoutes(secretsReader: SecretsReader, hooks: WorkspaceRo
   })
 
   app.post('/', async (c) => {
-    const workspace = createWorkspace(c.var.db, parseCreateWorkspace(await readJson(c)))
+    const workspace = createWorkspace(c.var.db, parseCreateWorkspace(await readJson(c)), c.var.scopeLabel)
     return c.json<WorkspaceResponse>({ workspace }, 201)
   })
 
-  app.get('/:slug', c => c.json<WorkspaceResponse>({ workspace: getWorkspaceBySlug(c.var.db, c.req.param('slug')) }))
+  app.get('/:slug', c => c.json<WorkspaceResponse>({ workspace: getWorkspaceBySlug(c.var.db, c.req.param('slug'), c.var.scopeLabel) }))
 
   app.patch('/:slug', async (c) => {
-    const workspace = updateWorkspace(c.var.db, c.req.param('slug'), parseUpdateWorkspace(await readJson(c)))
+    const workspace = updateWorkspace(c.var.db, c.req.param('slug'), parseUpdateWorkspace(await readJson(c)), c.var.scopeLabel)
     return c.json<WorkspaceResponse>({ workspace })
   })
 
-  app.post('/:slug/archive', c => c.json<WorkspaceResponse>({ workspace: archiveWorkspace(c.var.db, c.req.param('slug')) }))
+  app.post('/:slug/archive', c => c.json<WorkspaceResponse>({ workspace: archiveWorkspace(c.var.db, c.req.param('slug'), c.var.scopeLabel) }))
 
-  app.post('/:slug/unarchive', c => c.json<WorkspaceResponse>({ workspace: unarchiveWorkspace(c.var.db, c.req.param('slug')) }))
+  app.post('/:slug/unarchive', c => c.json<WorkspaceResponse>({ workspace: unarchiveWorkspace(c.var.db, c.req.param('slug'), c.var.scopeLabel) }))
 
   app.delete('/:slug', async (c) => {
-    const workspace = getWorkspaceBySlug(c.var.db, c.req.param('slug'))
+    const workspace = getWorkspaceBySlug(c.var.db, c.req.param('slug'), c.var.scopeLabel)
     await removeWorkspace({ ...c.var, secretsReader }, workspace, hooks)
     return c.body(null, 204)
   })

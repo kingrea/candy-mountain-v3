@@ -25,6 +25,8 @@ export interface ProductConfig {
     label: ScopeLabel
     /** Single path segment in front of the workspace slug, as in `/p/<slug>`. */
     urlPrefix: string
+    /** Single path segment of the page that lists every workspace, as in `/projects`; also its nav entry's id. */
+    listPath: string
   }
   capabilities: readonly string[]
   modules: readonly string[]

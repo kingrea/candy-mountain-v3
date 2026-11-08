@@ -26,7 +26,7 @@ export function issueEventRoutes(watcher: IssueWatcher, options: IssueEventRoute
   app.onError(onWorkspaceError)
 
   app.get('/:slug/issues/events', (c) => {
-    const project = getWorkspaceBySlug(c.var.db, c.req.param('slug'))
+    const project = getWorkspaceBySlug(c.var.db, c.req.param('slug'), c.var.scopeLabel)
     const data = JSON.stringify({ projectId: project.id } satisfies IssueChangedEvent)
 
     return streamSSE(c, async (stream) => {

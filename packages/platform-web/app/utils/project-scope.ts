@@ -3,7 +3,7 @@ import { PRODUCT } from '../../shared/utils/product'
 
 export const PROJECT_ROUTE_PREFIX = `/${PRODUCT.scope.urlPrefix}`
 export const PROJECT_ROUTE_PARAM = 'project'
-export const PROJECTS_PAGE_PATH = '/projects'
+export const PROJECTS_PAGE_PATH = `/${PRODUCT.scope.listPath}`
 export const LAST_PROJECT_COOKIE = 'cm-last-project'
 export const PROJECT_PICKER_SEARCH_THRESHOLD = 8
 export const UNGROUPED_LABEL = 'Ungrouped'

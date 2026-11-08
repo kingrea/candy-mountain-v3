@@ -26,7 +26,7 @@ export function teamMemberRoutes() {
     throw error
   })
 
-  const projectIdOf = (c: Context<AppEnv>) => getWorkspaceBySlug(c.var.db, c.req.param('slug')!).id
+  const projectIdOf = (c: Context<AppEnv>) => getWorkspaceBySlug(c.var.db, c.req.param('slug')!, c.var.scopeLabel).id
 
   app.get('/:slug/team', admin, c =>
     c.json<TeamMemberListResponse>({ members: listTeamMembers(c.var.db, projectIdOf(c)) }),

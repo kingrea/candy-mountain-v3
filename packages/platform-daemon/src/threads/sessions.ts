@@ -157,7 +157,7 @@ export function createSessionStore({ db, families }: SessionStoreDeps, options: 
     create(input) {
       if (input.posture) driver?.assertPosture(input.family, input.posture)
       // Native families run in-process and need no directory, so a workspace without a checkout still gets a session.
-      const cwd = input.cwd ?? driver?.workingDirectory(input.workspaceId, input.family) ?? ''
+      const cwd = input.cwd ?? driver?.workingDirectory(input.workspaceId, input.family) ?? null
       const at = new Date(now()).toISOString()
       const session = insertSession(db, {
         id: input.id ?? randomUUID(),

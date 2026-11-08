@@ -25,7 +25,7 @@ export function repositoryRoutes() {
     throw error
   })
 
-  const workspaceOf = (c: Context<AppEnv>) => getWorkspaceBySlug(c.var.db, c.req.param('slug')!)
+  const workspaceOf = (c: Context<AppEnv>) => getWorkspaceBySlug(c.var.db, c.req.param('slug')!, c.var.scopeLabel)
 
   app.post('/repository/check', async (c) => {
     const { path } = parseCheckRepositoryPath(await readJson(c))

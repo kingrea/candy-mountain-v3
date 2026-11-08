@@ -45,6 +45,17 @@ describe('workspaces', () => {
     expectWorkspaceError(() => createWorkspace(database.db, { name: '!!!' }), 'invalid_request')
   })
 
+  it('names the workspace with the given scope label, else the platform word', () => {
+    const project = { singular: 'project', plural: 'projects', singularTitle: 'Project', pluralTitle: 'Projects' }
+    createWorkspace(database.db, { name: 'Alpha' })
+    createWorkspace(database.db, { name: 'Beta' })
+    expect(() => createWorkspace(database.db, { name: 'Other', slug: 'alpha' }, project)).toThrow('Project slug "alpha" is already in use')
+    expect(() => updateWorkspace(database.db, 'beta', { slug: 'alpha' }, project)).toThrow('Project slug "alpha" is already in use')
+    expect(() => getWorkspaceBySlug(database.db, 'gone', project)).toThrow('No project with slug "gone"')
+    expect(() => createWorkspace(database.db, { name: 'Other', slug: 'alpha' })).toThrow('Workspace slug "alpha" is already in use')
+    expect(() => getWorkspaceBySlug(database.db, 'gone')).toThrow('No workspace with slug "gone"')
+  })
+
   it('keeps the slug when the name changes', () => {
     createWorkspace(database.db, { name: 'Before' })
     const updated = updateWorkspace(database.db, 'before', { name: 'After', color: '#ABCDEF' })

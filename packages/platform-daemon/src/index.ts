@@ -9,7 +9,7 @@ export { MasterKey, SECRETS_KEY_ENV } from './secrets'
 export { resolveNotificationSettings, type NotificationSettings } from './notifications/config'
 export type { NotificationDispatcherOptions } from './notifications/dispatcher'
 export { dataPaths, ensureDataDir, type DataPaths } from './data-dir'
-export { assertMigrationSets, LEGACY_MIGRATIONS_DIR, LEGACY_MIGRATIONS_TABLE, LegacyHistoryError, MIGRATIONS_DIR, migrationsTableFor, MigrationSetError, openDatabase, PLATFORM_MIGRATION_SET, PLATFORM_MIGRATION_SET_ID, type AppliedMigrationSet, type Db, type LegacyCarryOver, type MigrationSet, type PlatformDatabase } from './db'
+export { assertMigrationSets, MIGRATIONS_DIR, migrationsTableFor, MigrationSetError, openDatabase, PLATFORM_MIGRATION_SET, PLATFORM_MIGRATION_SET_ID, type AppliedMigrationSet, type Db, type MigrationSet, type PlatformDatabase } from './db'
 export { migrationSets } from './capabilities/migration-sets'
 
 // Definitions and registries a product composes from.
@@ -80,5 +80,4 @@ export { cloneManifest, fixtureCapability, fixtureCapabilityContext, fixtureDefi
 export { clonePluginType, fixturePluginType, globalPluginType } from './plugins/fixtures'
 export { instanceHarness, multiPluginType, type InstanceHarness, type InstanceHarnessOptions } from './plugins/instances/test-support'
 export { addRole, testAccess, TEST_CAPABILITIES, TEST_MODULES } from './grants/test-access'
-export { migrationsBefore, schemaShape } from './db/test-support'
 export { scriptedReply, startStubGateway, type StubGateway, type StubGatewayReply, type StubGatewayRequest } from './platform-agent/test-support'

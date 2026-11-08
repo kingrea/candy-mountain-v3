@@ -31,7 +31,7 @@ export function decisionRoutes(sessions: SessionManager, decisions: DecisionServ
   function sessionIdOf(c: Context<AppEnv>): string {
     const id = c.req.param('id')!
     const session = sessions.get(id)
-    if (!session || session.workspaceId !== getWorkspaceBySlug(c.var.db, c.req.param('slug')!).id) throw new SessionError('not_found', `No session with id "${id}" in this project`)
+    if (!session || session.workspaceId !== getWorkspaceBySlug(c.var.db, c.req.param('slug')!, c.var.scopeLabel).id) throw new SessionError('not_found', `No session with id "${id}" in this project`)
     return id
   }
 

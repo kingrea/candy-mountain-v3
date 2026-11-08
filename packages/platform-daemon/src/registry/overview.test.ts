@@ -11,7 +11,7 @@ let h: InstanceHarness
 afterEach(() => h.close())
 
 const issues = { id: 'issues', label: 'Issues', description: 'Issues.', icon: 'i-lucide-list-todo', capabilities: [{ capabilityId: 'issues', defaultRung: 'read' }] }
-const product = testProduct({ capabilities: [overviewDefinition(), fixtureCapability('issues')], modules: [issues] }, { scope: { label: testProduct().config.scope.label, urlPrefix: 'p' } })
+const product = testProduct({ capabilities: [overviewDefinition(), fixtureCapability('issues')], modules: [issues] }, { scope: { ...testProduct().config.scope, urlPrefix: 'p' } })
 
 async function registry(roles?: string[]): Promise<RegistryResponse> {
   const res = await h.app(roles, undefined, product).request(workspaceRegistryPath('alpha'))

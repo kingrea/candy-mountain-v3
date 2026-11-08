@@ -12,8 +12,8 @@ import { assessPluginInstance, requiredPluginTypes, type PlatformFacts, type Plu
 /** `c.var` satisfies this; readiness messages name the workspace with the product's `scope.label`, facts come from the registered declarations and workspace agents from the started definitions. */
 export type RegistryDeps = AccessDeps & PluginInstanceDeps & { scopeLabel: ScopeLabel, workspaceFacts: WorkspaceFactRegistry, workspaceAgents?: WorkspaceAgentRegistry }
 
-/** Building view links also needs the product's `scope.urlPrefix`. */
-export type RegistryLoadDeps = RegistryDeps & { scopeUrlPrefix: string }
+/** Building view links also needs the product's `scope.urlPrefix`, and the system group its `scope.listPath`. */
+export type RegistryLoadDeps = RegistryDeps & { scopeUrlPrefix: string, scopeListPath: string }
 
 /** Each declared fact asked of the definition that declares it; the platform knows no fact of its own here. */
 export const workspaceFacts = (deps: Pick<RegistryDeps, 'db' | 'workspaceFacts'>, workspace: Pick<Workspace, 'id'>): WorkspaceFacts => deps.workspaceFacts.compute(deps.db, workspace)
@@ -38,6 +38,7 @@ export function loadRegistryInput(deps: RegistryLoadDeps, actor: Actor, workspac
   return {
     workspace: { id: workspace.id, slug: workspace.slug, name: workspace.name },
     scopeUrlPrefix: deps.scopeUrlPrefix,
+    scopeListPath: deps.scopeListPath,
     scopeLabel: deps.scopeLabel,
     capabilities,
     modules: deps.modules.list(),

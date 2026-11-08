@@ -16,12 +16,12 @@ export function assigneeRoutes() {
   })
 
   app.get('/:slug/assignees', gate, (c) => {
-    const project = getWorkspaceBySlug(c.var.db, c.req.param('slug'))
+    const project = getWorkspaceBySlug(c.var.db, c.req.param('slug'), c.var.scopeLabel)
     return c.json<ProjectAssigneesResponse>({ assignees: listAssignees(c.var.db, project.id) })
   })
 
   app.post('/:slug/assignees', gate, async (c) => {
-    const project = getWorkspaceBySlug(c.var.db, c.req.param('slug'))
+    const project = getWorkspaceBySlug(c.var.db, c.req.param('slug'), c.var.scopeLabel)
     const body = await c.req.json().catch(() => {
       throw new AssigneeError('invalid_request', 'Request body must be valid JSON')
     })

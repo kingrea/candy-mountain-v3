@@ -1,4 +1,4 @@
-import { chatThreadLink, MANIFEST_ID_PATTERN, workspaceViewRoute } from '@candy-mountain/platform-sdk'
+import { chatThreadLink, MANIFEST_ID_PATTERN, registrySystemGroup, workspaceViewRoute } from '@candy-mountain/platform-sdk'
 import { describe, expect, it } from 'vitest'
 import { MODULES } from './modules'
 import { CANDY_MOUNTAIN_PRODUCT as product } from './product'
@@ -17,13 +17,15 @@ describe('CANDY_MOUNTAIN_PRODUCT', () => {
     expect(product.theme.hex).toMatch(/^#[0-9a-f]{6}$/)
   })
 
-  it('prefixes workspaces with a single lowercase path segment', () => {
+  it('prefixes workspaces and names their list page with single lowercase path segments', () => {
     expect(product.scope.urlPrefix).toMatch(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+    expect(product.scope.listPath).toMatch(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
   })
 
-  it('keeps project links under /p/', () => {
+  it('keeps project links under /p/ and the project list at /projects', () => {
     expect(workspaceViewRoute(product.scope.urlPrefix, 'acme', '')).toBe('/p/acme')
     expect(chatThreadLink(product.scope.urlPrefix, 'acme', 't1')).toBe('/p/acme?thread=t1')
+    expect(registrySystemGroup(product.scope.label, product.scope.listPath).entries[0]).toMatchObject({ id: 'projects', label: 'Projects', to: '/projects' })
   })
 
   it.each(['capabilities', 'modules', 'pluginTypes', 'layers'] as const)('lists valid, unique %s ids', (key) => {

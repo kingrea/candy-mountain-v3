@@ -31,14 +31,14 @@ export interface RegistryNavGroup {
   degraded: boolean
 }
 
-// A function of the label so the daemon's group and the web shell's fallback without a registry title the workspace list alike.
-export const registrySystemGroup = (label: Pick<ScopeLabel, 'pluralTitle'>): RegistryNavGroup => ({
+// A function of the product's scope so the daemon's group and the web shell's fallback without a registry name and route the workspace list alike.
+export const registrySystemGroup = (label: Pick<ScopeLabel, 'pluralTitle'>, listPath: string): RegistryNavGroup => ({
   id: 'system',
   label: 'System',
   icon: 'i-lucide-settings',
   kind: 'system',
   entries: [
-    { id: 'projects', label: label.pluralTitle, icon: 'i-lucide-folder-git-2', to: '/projects' },
+    { id: listPath, label: label.pluralTitle, icon: 'i-lucide-folder-git-2', to: `/${listPath}` },
     { id: 'activity', label: 'Activity', icon: 'i-lucide-history', to: '/activity' },
     { id: 'settings', label: 'Settings', icon: 'i-lucide-settings', to: '/settings' },
   ],

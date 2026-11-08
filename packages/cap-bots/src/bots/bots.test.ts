@@ -1,13 +1,19 @@
+import { randomUUID } from 'node:crypto'
 import type { PluginHealth, Workspace } from '@candy-mountain/platform-sdk'
+import { eq, inArray } from 'drizzle-orm'
 import { workspaceBotsPath, type Bot, type BotListResponse, type BotResponse } from '../wire'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createPluginInstance, createSecretsStore, type DataPaths, fixturePluginType, type InstanceHarness, resolvePluginInstance, testPluginInstance, updatePluginInstance, createTestApp } from '@candy-mountain/platform-daemon'
+import { agentSessions, createPluginInstance, createSecretsStore, platformMeta, type DataPaths, fixturePluginType, type InstanceHarness, resolvePluginInstance, testPluginInstance, updatePluginInstance, createTestApp } from '@candy-mountain/platform-daemon'
 import { instanceHarness } from '../test-support'
 import type { Actor } from '@candy-mountain/platform-sdk'
 import { GOOD_TOKEN, stubHosts } from '../test-support'
 import { repositoryPluginType } from '@candy-mountain/plugin-repository'
 import { botSecretOwner, getBot, listBots, recordBotPersonaCheck } from './bots'
 import { botsRoutes } from '../definition'
+import { slackDeliveries } from '../schema'
+import { claimSlackDelivery, insertSlackThread } from '../slack/threads'
+import { openSlackTurn } from '../slack/turns'
+import { slackDecisionMetaKey, slackHandoffMetaKey } from '../slack/meta'
 
 const BOT_TOKEN = 'xoxb-bot-secret-111'
 const APP_TOKEN = 'xapp-app-secret-222'
@@ -237,6 +243,38 @@ describe('bot routes', () => {
     expect((await app().request('/workspaces/alpha', { method: 'DELETE' })).status).toBe(204)
     expect(h.store.isSet(botSecretOwner(two.id), 'slackAppToken')).toBe(false)
     expect(await listBots(h.deps)).toEqual([])
+  })
+
+  it('deletes a bot\'s Slack deliveries and its decision and handoff keys, keeping another bot\'s', async () => {
+    const project = await setup()
+    const db = h.database.db
+    const at = new Date().toISOString()
+    const seed = (botId: string) => {
+      const sessionId = randomUUID()
+      db.insert(agentSessions).values({ id: sessionId, workspaceId: project.id, family: 'claude-code', actorId: 'u1', cwd: '/tmp', createdAt: at, lastActivityAt: at }).run()
+      const thread = insertSlackThread(db, { botId, projectId: project.id, teamId: null, channelId: 'C1', threadTs: `${botId}.1`, sessionId, slackMemberId: 'U1', at })
+      const turn = openSlackTurn(db, { threadId: thread.id, sessionId, slackMemberId: 'U1', promptSeq: 1, at })
+      claimSlackDelivery(db, { botId, eventId: 'E1', channelId: 'C1', ts: '1.1' }, at)
+      db.insert(platformMeta).values([
+        { key: slackHandoffMetaKey(turn.id), value: '1', updatedAt: at },
+        { key: slackDecisionMetaKey(`decision-of-${botId}`), value: JSON.stringify({ botId, channel: 'C1', ts: '1.2' }), updatedAt: at },
+      ]).run()
+      return [slackHandoffMetaKey(turn.id), slackDecisionMetaKey(`decision-of-${botId}`)]
+    }
+    const one = await created({ name: 'One', family: 'claude-code' })
+    const two = await created({ name: 'Two', family: 'claude-code' })
+    const keysOf = { [one.id]: seed(one.id), [two.id]: seed(two.id) }
+    const left = (botId: string) => ({
+      deliveries: db.select().from(slackDeliveries).where(eq(slackDeliveries.botId, botId)).all().length,
+      keys: db.select().from(platformMeta).where(inArray(platformMeta.key, keysOf[botId]!)).all().length,
+    })
+
+    expect((await call('DELETE', `/${one.id}`)).status).toBe(204)
+    expect(left(one.id)).toEqual({ deliveries: 0, keys: 0 })
+    expect(left(two.id)).toEqual({ deliveries: 1, keys: 2 })
+
+    expect((await app().request('/workspaces/alpha', { method: 'DELETE' })).status).toBe(204)
+    expect(left(two.id)).toEqual({ deliveries: 0, keys: 0 })
   })
 
   it('hides bots from other projects and from non-admins', async () => {

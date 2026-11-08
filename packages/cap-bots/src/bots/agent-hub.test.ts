@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { workspaceRegistryPath, type Workspace, type RegistryResponse } from '@candy-mountain/platform-sdk'
 import { afterEach, describe, expect, it } from 'vitest'
 import { bots } from '../schema'
-import { addRole, createPluginInstance, fixturePluginType, type InstanceHarness, setEnabledModules, testPluginInstance } from '@candy-mountain/platform-daemon'
+import { addRole, createPluginInstance, fixturePluginType, type InstanceHarness, setEnabledModules, TEST_PRODUCT_CONFIG, testPluginInstance } from '@candy-mountain/platform-daemon'
 import { instanceHarness } from '../test-support'
 
 let h: InstanceHarness
@@ -75,7 +75,7 @@ describe('Agent Hub bots and team', () => {
 
     const result = await registry(['developer'])
     expect(result.capabilities.map(c => [c.id, c.rung, c.ready])).toEqual([['bots', 'manage', true], ['team', 'manage', false]])
-    expect(result.groups.map(g => [g.id, g.entries.map(e => e.id)])).toEqual([['overview', ['overview']], ['agent-hub', ['bots']], ['system', ['projects', 'activity', 'settings']]])
+    expect(result.groups.map(g => [g.id, g.entries.map(e => e.id)])).toEqual([['overview', ['overview']], ['agent-hub', ['bots']], ['system', [TEST_PRODUCT_CONFIG.scope.listPath, 'activity', 'settings']]])
     expect(result.views.find(v => v.id === 'team')).toMatchObject({ ready: false })
   })
 })

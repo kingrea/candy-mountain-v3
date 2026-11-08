@@ -26,6 +26,7 @@ function input(overrides: Partial<RegistryInput> = {}): RegistryInput {
   return {
     workspace: { id: 'p1', slug: 'alpha', name: 'Alpha' },
     scopeUrlPrefix: 'p',
+    scopeListPath: 'projects',
     scopeLabel: PROJECT_LABEL,
     capabilities: CAPABILITIES,
     modules: MODULES,
@@ -69,10 +70,11 @@ describe('computeRegistry', () => {
 
   it('names the workspace with the given scope label in readiness messages and the system group', () => {
     const scopeLabel: ScopeLabel = { singular: 'app', plural: 'apps', singularTitle: 'App', pluralTitle: 'Apps' }
-    const registry = computeRegistry(admin({ scopeLabel, plugins: {}, facts: { hasBeads: false, isGitRepo: true, hasRemote: true, hasBots: true } }))
+    const registry = computeRegistry(admin({ scopeLabel, scopeListPath: 'apps', plugins: {}, facts: { hasBeads: false, isGitRepo: true, hasRemote: true, hasBots: true } }))
     expect(registry.capabilities.find(c => c.id === 'uptime')!.reasons.map(r => r.message)).toEqual(['No repository plugin is configured for this app or the platform.'])
     expect(registry.capabilities.find(c => c.id === 'team')!.reasons.map(r => r.message)).toEqual(['The app has no .beads directory.'])
     expect(registry.groups.at(-1)!.entries.map(e => e.label)).toEqual(['Apps', 'Activity', 'Settings'])
+    expect(registry.groups.at(-1)!.entries[0]).toMatchObject({ id: 'apps', to: '/apps' })
   })
 
   it('marks a capability with an unhealthy required plugin not ready and degrades its module naming the plugin', () => {

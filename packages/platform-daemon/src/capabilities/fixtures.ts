@@ -61,6 +61,7 @@ export function fixtureCapabilityContext(db: Db, overrides: Partial<CapabilityCo
     workspaceFacts: createWorkspaceFactRegistry(declaredWorkspaceFacts(capabilities.definitions())),
     agentMcp: { serversFor: async () => [] },
     scopeUrlPrefix: TEST_PRODUCT_CONFIG.scope.urlPrefix,
+    scopeListPath: TEST_PRODUCT_CONFIG.scope.listPath,
     scopeLabel: TEST_PRODUCT_CONFIG.scope.label,
     service(key: ServiceKey<unknown>): never {
       throw new CapabilityDefinitionError(`Fixture context has no service '${key.name}'.`)

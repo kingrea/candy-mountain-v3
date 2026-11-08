@@ -1,4 +1,4 @@
-import type { ApiErrorBody } from '@candy-mountain/platform-sdk'
+import type { ApiErrorBody, ScopeLabel } from '@candy-mountain/platform-sdk'
 import {
   ISSUE_ID_PATTERN,
   MAX_DEPENDENCY_IDS,
@@ -21,8 +21,8 @@ export function onIssueError(error: Error, c: Context) {
 }
 
 /** The workspace and its checkout; a workspace without a repository is a not_found RepositoryError. */
-export function issueProject(db: Db, repository: RepositoryPaths, slug: string): IssueProject {
-  const project = getWorkspaceBySlug(db, slug)
+export function issueProject(db: Db, repository: RepositoryPaths, slug: string, label?: ScopeLabel): IssueProject {
+  const project = getWorkspaceBySlug(db, slug, label)
   return { id: project.id, path: repository.get(project.id) }
 }
 
@@ -44,7 +44,7 @@ export function issueRoutes(repository: RepositoryPaths, service: IssuesService 
   const app = new Hono<AppEnv>()
   app.onError(onIssueError)
 
-  const project = (c: Context<AppEnv>) => issueProject(c.var.db, repository, c.req.param('slug') ?? '')
+  const project = (c: Context<AppEnv>) => issueProject(c.var.db, repository, c.req.param('slug') ?? '', c.var.scopeLabel)
 
   app.get('/:slug/issues', async c =>
     c.json<IssueListResponse>({ issues: await service.list(project(c)) }),

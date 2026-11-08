@@ -18,12 +18,12 @@ export function workspaceModuleRoutes() {
   })
 
   app.get('/:slug/modules', admin, (c) => {
-    const workspace = getWorkspaceBySlug(c.var.db, c.req.param('slug'))
+    const workspace = getWorkspaceBySlug(c.var.db, c.req.param('slug'), c.var.scopeLabel)
     return c.json<WorkspaceModulesResponse>({ modules: listEnabledModules(c.var.db, workspace.id, c.var.modules) })
   })
 
   app.put('/:slug/modules', admin, async (c) => {
-    const workspace = getWorkspaceBySlug(c.var.db, c.req.param('slug'))
+    const workspace = getWorkspaceBySlug(c.var.db, c.req.param('slug'), c.var.scopeLabel)
     const body = await c.req.json().catch(() => {
       throw new WorkspaceModulesError('invalid_request', 'Request body must be valid JSON')
     })

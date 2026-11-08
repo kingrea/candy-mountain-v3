@@ -1,7 +1,7 @@
 import type { Workspace } from '@candy-mountain/platform-sdk'
 import { BOT_FAMILIES } from './wire'
 import { REPOSITORY_CAPABILITY_ID, REPOSITORY_PATHS } from '@candy-mountain/plugin-repository'
-import { bindService, CapabilityDefinitionError, defineCapabilityDefinition, serviceKey, type ActivityEventTypeDeclaration, type CapabilityDefinition, type CapabilityRuntime, type WorkspaceFactDeclaration } from '@candy-mountain/platform-sdk/daemon'
+import { bindService, CapabilityDefinitionError, defineCapabilityDefinition, serviceKey, type ActivityEventTypeDeclaration, type CapabilityDefinition, type CapabilityRuntime, type WorkspaceDeletion, type WorkspaceFactDeclaration } from '@candy-mountain/platform-sdk/daemon'
 import { botSessionRoutes, botWorkspaceAgents, createBotSessionService, type BotSessionService } from './bot-sessions'
 import { teamCapability } from '@candy-mountain/cap-team'
 import { ACP_CAPABILITY_ID, ACP_DECISIONS, ACP_SESSIONS } from '@candy-mountain/cap-acp'
@@ -54,11 +54,11 @@ export interface BotsRoutesDeps {
 }
 
 /** The routes and the deletion hook without the services; without a session service only the bot routes are answered. */
-export function botsRoutes({ db, secrets }: BotsRoutesDeps, sessions?: BotSessionService): Pick<CapabilityRuntime, 'workspaceRoutes'> & { onWorkspaceDeleted(workspace: Workspace): Promise<void> } {
+export function botsRoutes({ db, secrets }: BotsRoutesDeps, sessions?: BotSessionService): Pick<CapabilityRuntime, 'workspaceRoutes'> & { onWorkspaceDeleted(workspace: Workspace, deletion: WorkspaceDeletion): Promise<void> } {
   return {
     workspaceRoutes: sessions ? [botRoutes(secrets), botSessionRoutes(sessions)] : [botRoutes(secrets)],
-    async onWorkspaceDeleted(workspace) {
-      deleteProjectBots({ db, secrets: secrets.writeOnly }, workspace.id)
+    async onWorkspaceDeleted(workspace, deletion) {
+      deleteProjectBots({ db, secrets: secrets.writeOnly }, workspace.id, deletion)
     },
   }
 }
@@ -104,6 +104,12 @@ export function botsDefinition(options: BotsOptions = {}): CapabilityDefinition 
           bindService(BOT_SLACK_HANDOFFS, slackHandoffs),
         ],
         ...routes,
+        async onWorkspaceDeleted(workspace, deletion) {
+          // Read now: the repository row goes with the workspace.
+          const clone = repository.find(workspace.id)
+          await routes.onWorkspaceDeleted(workspace, deletion)
+          deletion.afterCommit(() => worktrees.removeProject(workspace.id, clone))
+        },
         workspaceAgents: botWorkspaceAgents({ db, pluginTypes, secrets: secrets.writeOnly }, botSessions),
         // Ahead of the bot routes, as when the slack definition mounted it.
         workspaceRoutes: [slackRoutes(slack), ...routes.workspaceRoutes ?? []],

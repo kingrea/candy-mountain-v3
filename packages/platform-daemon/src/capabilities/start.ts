@@ -1,4 +1,5 @@
 import type { Workspace } from '@candy-mountain/platform-sdk'
+import type { WorkspaceDeletion } from '@candy-mountain/platform-sdk/daemon'
 import type { Hono } from 'hono'
 import type { AgentMcpServerDefinition } from '../agent-mcp/host'
 import type { AppEnv } from '../app'
@@ -28,7 +29,7 @@ export interface StartedCapabilities {
   /** A service by key from whichever capability binds it (the list refuses two), or undefined when none in the list does. */
   service<T>(key: ServiceKey<T>): T | undefined
   /** Dependents first; a throw stops the caller's delete. */
-  onWorkspaceDeleted(workspace: Workspace): Promise<void>
+  onWorkspaceDeleted(workspace: Workspace, deletion: WorkspaceDeletion): Promise<void>
   /** Reverse start order; every runtime is closed even when one throws, and the first error is rethrown. Later calls return the first run. */
   close(): Promise<void>
 }
@@ -93,8 +94,8 @@ export function startCapabilities(context: CapabilityStartContext): StartedCapab
       const owner = [...bound.values()].find(services => services.has(key))
       return owner?.get(key)
     },
-    async onWorkspaceDeleted(workspace) {
-      for (const { runtime } of [...started].reverse()) await runtime.onWorkspaceDeleted?.(workspace)
+    async onWorkspaceDeleted(workspace, deletion) {
+      for (const { runtime } of [...started].reverse()) await runtime.onWorkspaceDeleted?.(workspace, deletion)
     },
     close: () => (closing ??= closeInReverse(started)),
   }

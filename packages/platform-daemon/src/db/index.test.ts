@@ -1,10 +1,9 @@
 import { existsSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import Database from 'better-sqlite3'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
-import { assertMigrationSets, LegacyHistoryError, MigrationSetError, migrationsTableFor, openDatabase, PLATFORM_MIGRATION_SET, type MigrationSet, type PlatformDatabase } from '.'
+import { assertMigrationSets, MigrationSetError, migrationsTableFor, openDatabase, PLATFORM_MIGRATION_SET, type MigrationSet, type PlatformDatabase } from '.'
 import { ALPHA_MIGRATION_SET, alpha, BETA_MIGRATION_SET, beta, FIXTURE_MIGRATION_SETS } from './fixtures'
 
 const tableNames = (db: PlatformDatabase['db']) => db.all<{ name: string }>(sql`SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name`).map(r => r.name)
@@ -103,20 +102,5 @@ describe('openDatabase with migration sets', () => {
     expect(() => openAt([ALPHA_MIGRATION_SET, ALPHA_MIGRATION_SET])).toThrow("Migration set 'fixture-alpha' is listed more than once.")
     expect(() => openAt([{ ...ALPHA_MIGRATION_SET, migrationsFolder: join(dir, 'missing') }])).toThrow(`Migration set 'fixture-alpha' has no migrations folder at ${join(dir, 'missing')}`)
     expect(existsSync(file())).toBe(false)
-  })
-
-  it('refuses a database whose history is the numbered one in the default Drizzle table, leaving it as it was', () => {
-    dir = mkdtempSync(join(tmpdir(), 'cm-db-'))
-    openAt().close()
-    const sqlite = new Database(file())
-    sqlite.exec('ALTER TABLE "__drizzle_migrations_platform" RENAME TO "__drizzle_migrations"')
-    sqlite.close()
-
-    expect(() => openAt()).toThrow(LegacyHistoryError)
-    const after = new Database(file(), { readonly: true })
-    const names = (after.prepare(`SELECT name FROM sqlite_master WHERE type = 'table'`).all() as { name: string }[]).map(r => r.name)
-    after.close()
-    expect(names).toContain('__drizzle_migrations')
-    expect(names).not.toContain('__drizzle_migrations_platform')
   })
 })

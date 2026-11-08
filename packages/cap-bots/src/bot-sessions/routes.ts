@@ -57,7 +57,7 @@ export function botSessionRoutes(service: BotSessionService) {
 
   function botIdOf(c: Context<AppEnv>): string {
     const id = c.req.param('id')!
-    if (botProjectId(c.var.db, id) !== getWorkspaceBySlug(c.var.db, c.req.param('slug')!).id) throw new BotError('not_found', `No bot with id "${id}" in this project`)
+    if (botProjectId(c.var.db, id) !== getWorkspaceBySlug(c.var.db, c.req.param('slug')!, c.var.scopeLabel).id) throw new BotError('not_found', `No bot with id "${id}" in this project`)
     return id
   }
 

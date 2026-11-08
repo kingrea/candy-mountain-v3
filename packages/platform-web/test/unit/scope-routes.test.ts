@@ -8,7 +8,7 @@ import type { NuxtApp, NuxtPage } from 'nuxt/schema'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter, type RouteRecordRaw } from 'vue-router'
 import { PLAYGROUND_PRODUCT } from '../../playground/product'
-import { SCOPE_PAGES_DIR, scopeRoutes } from '../../scope-routes.mjs'
+import { SCOPE_PAGES_DIR, scopeListRoute, scopeRoutes } from '../../scope-routes.mjs'
 
 const { PREFIX } = vi.hoisted(() => ({ PREFIX: 'w' }))
 
@@ -112,5 +112,19 @@ describe('scopeRoutes', () => {
 
   it.each(['', 'a/b', 'W', '-p', 'p q'])('rejects the prefix %j', (prefix) => {
     expect(() => scopeRoutes(tree(), prefix)).toThrow('one lowercase path segment')
+  })
+})
+
+describe('scopeListRoute', () => {
+  const tree = () => [{ path: '/p/:project()' }, { path: '/projects' }, { path: '/activity' }]
+
+  it('moves only the workspace list page', () => {
+    const pages = tree()
+    scopeListRoute(pages, 'apps')
+    expect(pages).toEqual([{ path: '/p/:project()' }, { path: '/apps' }, { path: '/activity' }])
+  })
+
+  it.each(['', 'a/b', 'Apps'])('rejects the list path %j', (listPath) => {
+    expect(() => scopeListRoute(tree(), listPath)).toThrow('one lowercase path segment')
   })
 })

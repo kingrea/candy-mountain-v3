@@ -82,6 +82,8 @@ export interface WorktreePool {
   installDependencies(leaseId: string, options?: InstallDependenciesOptions): Promise<WorktreeLease>
   /** Every git command that touches a project's clone or one of its worktrees must run inside this. */
   withProjectLock<T>(projectId: string, fn: () => Promise<T>): Promise<T>
+  /** For a deleted project, whose leases went with it: removes every worktree directory whatever it holds, keeping the branches in `clone`. */
+  removeProject(projectId: string, clone: string | null): Promise<void>
   git: GitRunner
 }
 
@@ -281,7 +283,13 @@ export function createWorktreePool({ db, paths, repository, git = createGitRunne
     })
   }
 
-  return { acquire, resume, release, list, get, installDependencies, withProjectLock, git }
+  const removeProject: WorktreePool['removeProject'] = (projectId, clone) => withProjectLock(projectId, async () => {
+    rmSync(join(paths.worktrees, projectId), { recursive: true, force: true })
+    // As in release: a clone git cannot prune now drops the stale entries at its next gc.
+    if (clone !== null) await git(clone, ['worktree', 'prune']).catch(() => undefined)
+  })
+
+  return { acquire, resume, release, list, get, installDependencies, withProjectLock, removeProject, git }
 }
 
 function toLease(row: LeaseRow): WorktreeLease {

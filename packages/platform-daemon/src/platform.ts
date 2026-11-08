@@ -3,7 +3,7 @@ import { startAgentMcpHost, type AgentMcpHost } from './agent-mcp'
 import { seedAuth } from './auth/seed'
 import { createCapabilityRegistry, migrationSets, startCapabilities, type CapabilityRegistry, type StartedCapabilities } from './capabilities'
 import { ensureDataDir, type DataPaths } from './data-dir'
-import { assertMigrationSets, openDatabase, PLATFORM_MIGRATION_SET, type AppliedMigrationSet, type Db, type LegacyCarryOver } from './db'
+import { assertMigrationSets, openDatabase, PLATFORM_MIGRATION_SET, type AppliedMigrationSet, type Db } from './db'
 import { seedAdminGrants } from './grants/seed'
 import { createModuleRegistry, type ModuleRegistry } from './modules/registry'
 import { startNotificationDispatcher, type NotificationDispatcher, type NotificationDispatcherOptions } from './notifications'
@@ -20,7 +20,6 @@ export interface Platform {
   db: Db
   migrationSets: readonly AppliedMigrationSet[]
   appliedMigrations: number
-  legacyCarryOver: LegacyCarryOver | null
   secrets: SecretsStore
   capabilities: CapabilityRegistry
   /** The started definition list; the app mounts its routes and runs its chat families. */
@@ -72,9 +71,9 @@ export function startPlatform(dataDir: string, { secretsKey, product, families =
   seedAdminGrants({ db: database.db, capabilities: registry, modules: moduleRegistry })
   const secrets = createSecretsStore(paths.secrets, secretsKey)
   // Definitions start before the host that serves their MCP servers, so they get a facade that resolves once it exists.
-  const runtime = startCapabilities({ db: database.db, paths, secrets, capabilities: registry, modules: moduleRegistry, pluginTypes: pluginTypeRegistry, families: familyRegistry, workspaceFacts, agentMcp: { serversFor: session => agentMcp.serversFor(session) }, scopeUrlPrefix: product.config.scope.urlPrefix, scopeLabel: product.config.scope.label })
+  const runtime = startCapabilities({ db: database.db, paths, secrets, capabilities: registry, modules: moduleRegistry, pluginTypes: pluginTypeRegistry, families: familyRegistry, workspaceFacts, agentMcp: { serversFor: session => agentMcp.serversFor(session) }, scopeUrlPrefix: product.config.scope.urlPrefix, scopeListPath: product.config.scope.listPath, scopeLabel: product.config.scope.label })
   const agentMcp = startAgentMcpHost({ db: database.db, servers: runtime.mcpServers })
-  const notifications = startNotificationDispatcher({ db: database.db, channels: runtime.notificationChannels, scopeUrlPrefix: product.config.scope.urlPrefix }, notificationOptions)
+  const notifications = startNotificationDispatcher({ db: database.db, channels: runtime.notificationChannels, scopeUrlPrefix: product.config.scope.urlPrefix, scopeLabel: product.config.scope.label }, notificationOptions)
   const close = async () => {
     notifications.close()
     void agentMcp.close()
@@ -86,5 +85,5 @@ export function startPlatform(dataDir: string, { secretsKey, product, families =
       database.close()
     }
   }
-  return { product, paths, db: database.db, migrationSets: database.migrationSets, appliedMigrations: database.appliedMigrations, legacyCarryOver: database.legacyCarryOver, secrets, capabilities: registry, runtime, modules: moduleRegistry, pluginTypes: pluginTypeRegistry, families: familyRegistry, activityEventTypes: activityTypes, workspaceFacts, agentMcp, notifications, close }
+  return { product, paths, db: database.db, migrationSets: database.migrationSets, appliedMigrations: database.appliedMigrations, secrets, capabilities: registry, runtime, modules: moduleRegistry, pluginTypes: pluginTypeRegistry, families: familyRegistry, activityEventTypes: activityTypes, workspaceFacts, agentMcp, notifications, close }
 }

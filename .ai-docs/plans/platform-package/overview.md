@@ -4,7 +4,7 @@
 
 The platform packages leave the Candy Mountain repository, get a name and a version, and are consumed from a private registry by Candy Mountain, a new home dashboard and later the digital hub. The base is proven by a product that is not Candy Mountain, including the single-scope mode the home dashboard needs. At the end, starting a new product or a client-specific capability means a new repo with two short files and a template to copy.
 
-This plan starts where `.ai-docs/plans/platform-extraction/` ends: the repo already has platform packages, capability packages and thin apps, and nothing is published.
+This plan starts where `.ai-docs/plans/platform-extraction/` ends: the repo already has platform packages, capability packages and thin apps, and nothing is published. `.ai-docs/plans/product-theme/` (product-defined look, capability-scoped styling) lands before phase 1 so the base ships with its theme contract.
 
 ## Explicit requirements
 

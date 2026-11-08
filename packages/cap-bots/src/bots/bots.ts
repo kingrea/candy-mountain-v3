@@ -1,8 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import { BOT_FAMILY_NAMES, BOT_SECRET_NAMES, type Bot, type BotFamily, type BotPersonaStatus, type BotSecretName, type BotSecretValues } from '../wire'
-import { and, eq, inArray, ne, sql } from 'drizzle-orm'
+import { and, eq, ne, sql } from 'drizzle-orm'
 import { createPluginSecrets, type Db, type PluginInstanceDeps, resolvePluginInstance, type SecretsReader } from '@candy-mountain/platform-daemon'
-import { bots, slackDeliveries } from '../schema'
+import type { WorkspaceDeletion } from '@candy-mountain/platform-sdk/daemon'
+import { bots } from '../schema'
+import { deleteBotSlackState } from '../slack/meta'
 import { createRepositoryOperations, repositoryConfig, repositoryPluginType } from '@candy-mountain/plugin-repository'
 import { BotError } from './errors'
 import { botUsableWithoutSlack, computeBotStatus } from './status'
@@ -252,17 +254,22 @@ export async function updateBot(deps: BotReadDeps, id: string, input: UpdateBotI
 }
 
 export function deleteBot(deps: Pick<BotDeps, 'db' | 'secrets'>, id: string): void {
-  const removed = deps.db.delete(bots).where(eq(bots.id, id)).run()
-  if (removed.changes === 0) throw new BotError('not_found', `No bot with id "${id}"`)
+  deps.db.transaction((tx) => {
+    deleteBotSlackState(tx, [id])
+    const removed = tx.delete(bots).where(eq(bots.id, id)).run()
+    if (removed.changes === 0) throw new BotError('not_found', `No bot with id "${id}"`)
+  })
   deps.secrets.deleteOwner(botSecretOwner(id))
 }
 
-/** Call before deleting a project: the rows would cascade, but their secrets live outside the database and their Slack deliveries have no foreign key. */
-export function deleteProjectBots(deps: Pick<BotDeps, 'db' | 'secrets'>, projectId: string): number {
+/** Call before deleting a project: the rows would cascade, but their secrets live outside the database and their Slack state has no foreign key. */
+export function deleteProjectBots(deps: Pick<BotDeps, 'db' | 'secrets'>, projectId: string, deletion: WorkspaceDeletion): number {
   const ids = deps.db.select({ id: bots.id }).from(bots).where(eq(bots.projectId, projectId)).all().map(r => r.id)
-  if (ids.length) deps.db.delete(slackDeliveries).where(inArray(slackDeliveries.botId, ids)).run()
+  deleteBotSlackState(deps.db, ids)
   deps.db.delete(bots).where(eq(bots.projectId, projectId)).run()
-  for (const id of ids) deps.secrets.deleteOwner(botSecretOwner(id))
+  deletion.afterCommit(() => {
+    for (const id of ids) deps.secrets.deleteOwner(botSecretOwner(id))
+  })
   return ids.length
 }
 

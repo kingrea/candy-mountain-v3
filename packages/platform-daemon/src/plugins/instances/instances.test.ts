@@ -37,6 +37,14 @@ const code = (fn: () => unknown) => {
   throw new Error('expected a PluginInstanceError')
 }
 
+/** Commits at once: the after-commit work runs as soon as the rows are gone. */
+async function deleteCommitted(deps: InstanceHarness['deps'], workspaceId: string): Promise<number> {
+  const cleanups: (() => void | Promise<void>)[] = []
+  const removed = await deleteWorkspacePluginInstances(deps, workspaceId, { afterCommit: task => void cleanups.push(task) })
+  for (const task of cleanups) await task()
+  return removed
+}
+
 describe('creating plugin instances', () => {
   it('stores secrets encrypted and only ever reports them as set', async () => {
     h = instanceHarness([fixturePluginType('repository')])
@@ -68,6 +76,9 @@ describe('creating plugin instances', () => {
     const repo = (workspaceId: string) => createPluginInstance(h.deps, { type: 'repository', scope: 'workspace', workspaceId, config, secrets: { token: 't' } })
     repo(alpha.id)
     expect(code(() => repo(alpha.id))).toBe('instance_exists')
+    expect(() => repo(alpha.id)).toThrow('This workspace already has a Fixture repository instance')
+    const project = { singular: 'project', plural: 'projects', singularTitle: 'Project', pluralTitle: 'Projects' }
+    expect(() => createPluginInstance(h.deps, { type: 'repository', scope: 'workspace', workspaceId: alpha.id, config, secrets: { token: 't' } }, project)).toThrow('This project already has a Fixture repository instance')
     expect(repo(beta.id).workspaceId).toBe(beta.id)
 
     createPluginInstance(h.deps, { type: 'pager', scope: 'global', workspaceId: null, secrets: { botToken: 'x' } })
@@ -202,9 +213,21 @@ describe('deleting plugin instances', () => {
     const workspace = await h.createWorkspace('alpha')
     const own = createPluginInstance(h.deps, { type: 'codex', scope: 'workspace', workspaceId: workspace.id, secrets: { apiKey: 'a' } }).id
     const global = createPluginInstance(h.deps, { type: 'codex', scope: 'global', workspaceId: null, secrets: { apiKey: 'g' } }).id
-    expect(await deleteWorkspacePluginInstances(h.deps, workspace.id)).toBe(1)
+    expect(await deleteCommitted(h.deps, workspace.id)).toBe(1)
     expect(h.store.isSet(pluginSecretOwner(own), 'apiKey')).toBe(false)
     expect(h.store.get(pluginSecretOwner(global), 'apiKey')).toBe('g')
+  })
+
+  it('leaves a workspace\'s secrets until the deletion commits, since a rollback cannot restore files', async () => {
+    h = instanceHarness([multiPluginType()])
+    const workspace = await h.createWorkspace('alpha')
+    const id = createPluginInstance(h.deps, { type: 'codex', scope: 'workspace', workspaceId: workspace.id, secrets: { apiKey: 'a' } }).id
+    const cleanups: (() => void | Promise<void>)[] = []
+    await deleteWorkspacePluginInstances(h.deps, workspace.id, { afterCommit: task => void cleanups.push(task) })
+    expect(findPluginInstance(h.deps, id)).toBeNull()
+    expect(h.store.get(pluginSecretOwner(id), 'apiKey')).toBe('a')
+    for (const task of cleanups) await task()
+    expect(h.store.isSet(pluginSecretOwner(id), 'apiKey')).toBe(false)
   })
 
   it('runs the type\'s onDelete hook first, with the instance, paths and secrets', async () => {
@@ -219,7 +242,7 @@ describe('deleting plugin instances', () => {
     const one = createPluginInstance(h.deps, { type: 'codex', scope: 'global', workspaceId: null, secrets: { apiKey: 'k' } }).id
     const two = createPluginInstance(h.deps, { type: 'codex', scope: 'workspace', workspaceId: workspace.id, secrets: { apiKey: 'p' } }).id
     await deletePluginInstance(h.deps, one)
-    await deleteWorkspacePluginInstances(h.deps, workspace.id)
+    await deleteCommitted(h.deps, workspace.id)
     expect(seen).toEqual([
       { id: one, apiKey: 'k', rowExists: true, paths: h.deps.paths },
       { id: two, apiKey: 'p', rowExists: true, paths: h.deps.paths },
@@ -231,7 +254,7 @@ describe('deleting plugin instances', () => {
     const workspace = await h.createWorkspace('alpha')
     const id = createPluginInstance(h.deps, { type: 'codex', scope: 'workspace', workspaceId: workspace.id, secrets: { apiKey: 'k' } }).id
     await expect(deletePluginInstance(h.deps, id)).rejects.toThrow('disk says no')
-    await expect(deleteWorkspacePluginInstances(h.deps, workspace.id)).rejects.toThrow('disk says no')
+    await expect(deleteCommitted(h.deps, workspace.id)).rejects.toThrow('disk says no')
     expect(getPluginInstance(h.deps, id).secrets).toEqual({ apiKey: 'set' })
   })
 })

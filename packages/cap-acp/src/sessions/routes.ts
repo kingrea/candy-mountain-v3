@@ -78,7 +78,7 @@ export function sessionRoutes(sessions: SessionManager, options: SessionRoutesOp
     throw error
   })
 
-  const workspaceOf = (c: Context<AppEnv>) => getWorkspaceBySlug(c.var.db, c.req.param('slug')!)
+  const workspaceOf = (c: Context<AppEnv>) => getWorkspaceBySlug(c.var.db, c.req.param('slug')!, c.var.scopeLabel)
 
   function sessionOf(c: Context<AppEnv>): AgentSession {
     const id = c.req.param('id')!

@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs'
 import { WORKSPACES_PATH } from '@candy-mountain/platform-sdk'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Platform } from '../platform'
 import { createTempDataDir, createTestApp, platformApp, startTestPlatform, type TempDataDir } from '../testing'
 import { createWorkspace, findWorkspaceBySlug } from '../workspaces/workspaces'
@@ -87,6 +87,7 @@ describe('daemon boot from the capability definition list', () => {
 
   it('runs deletion hooks dependents first before deleting a workspace, and keeps the workspace when one throws', async () => {
     const order: string[] = []
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
     const team = fixtureDefinition('team', {
       start: () => ({
         onWorkspaceDeleted(workspace) {
@@ -95,17 +96,30 @@ describe('daemon boot from the capability definition list', () => {
         },
       }),
     })
-    const bots = fixtureDefinition('bots', { dependsOn: ['team'], start: () => ({ onWorkspaceDeleted: async workspace => void order.push(`bots ${workspace.slug}`) }) })
+    const bots = fixtureDefinition('bots', {
+      dependsOn: ['team'],
+      start: () => ({
+        async onWorkspaceDeleted(workspace, deletion) {
+          order.push(`bots ${workspace.slug}`)
+          deletion.afterCommit(() => {
+            throw new Error('disk says no')
+          })
+          deletion.afterCommit(() => void order.push(`after commit ${workspace.slug}, row gone: ${findWorkspaceBySlug(platform.db, workspace.slug) === null}`))
+        },
+      }),
+    })
     const { platform, app } = start({ capabilities: [team, bots], modules: [] })
     // No repository capability is booted, so the workspaces have no repository record.
     for (const name of ['alpha', 'beta']) createWorkspace(platform.db, { name })
 
     expect((await app.request(`${WORKSPACES_PATH}/alpha`, { method: 'DELETE' })).status).toBe(204)
-    expect(order).toEqual(['bots alpha', 'team alpha'])
+    expect(order).toEqual(['bots alpha', 'team alpha', 'after commit alpha, row gone: true'])
     expect(findWorkspaceBySlug(platform.db, 'alpha')).toBeNull()
+    expect(errors).toHaveBeenCalledWith('Cleanup after deleting workspace alpha failed:', expect.objectContaining({ message: 'disk says no' }))
 
     expect((await app.request(`${WORKSPACES_PATH}/beta`, { method: 'DELETE' })).status).toBe(500)
-    expect(order).toEqual(['bots alpha', 'team alpha', 'bots beta'])
+    expect(order).toEqual(['bots alpha', 'team alpha', 'after commit alpha, row gone: true', 'bots beta'])
     expect(findWorkspaceBySlug(platform.db, 'beta')).not.toBeNull()
+    errors.mockRestore()
   })
 })

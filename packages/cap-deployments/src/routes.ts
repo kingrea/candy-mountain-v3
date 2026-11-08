@@ -33,7 +33,7 @@ export function environmentRoutes(secretsReader: SecretsReader, { sources = LIVE
     throw error
   })
 
-  const projectOf = (c: Context<AppEnv>) => getWorkspaceBySlug(c.var.db, c.req.param('slug')!)
+  const projectOf = (c: Context<AppEnv>) => getWorkspaceBySlug(c.var.db, c.req.param('slug')!, c.var.scopeLabel)
 
   app.get('/:slug/environments', c =>
     c.json<EnvironmentListResponse>({ environments: listEnvironments(c.var.db, projectOf(c).id) }),

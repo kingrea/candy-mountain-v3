@@ -17,7 +17,7 @@ export function activityRoutes() {
   })
 
   app.get('/:slug/activity', (c) => {
-    const workspace = getWorkspaceBySlug(c.var.db, c.req.param('slug'))
+    const workspace = getWorkspaceBySlug(c.var.db, c.req.param('slug'), c.var.scopeLabel)
     return c.json<ActivityListResponse>(listActivityEvents(c.var.db, workspace.id, parseListQuery(c.req.query(), activityEventTypesFor(c.var.db))))
   })
 

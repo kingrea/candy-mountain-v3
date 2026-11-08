@@ -11,7 +11,4 @@ export const ALPHA_MIGRATION_SET: MigrationSet = Object.freeze({ id: 'fixture-al
 export const BETA_MIGRATION_SET: MigrationSet = Object.freeze({ id: 'fixture-beta', schema: beta, migrationsFolder: join(FIXTURES_DIR, 'beta', 'migrations') })
 export const FIXTURE_MIGRATION_SETS: readonly MigrationSet[] = Object.freeze([ALPHA_MIGRATION_SET, BETA_MIGRATION_SET])
 
-/** The numbered history every table lived in before per-set migrations; the opener carries an old database across from it and tests build pre-phase databases with it. */
-export { LEGACY_MIGRATIONS_DIR } from '../legacy-carry-over'
-
 export { alpha, beta }

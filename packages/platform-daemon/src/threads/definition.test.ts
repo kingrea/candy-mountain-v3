@@ -25,7 +25,7 @@ describe('the threads definition', () => {
   function session(platform: Platform) {
     const workspace = createWorkspace(platform.db, { name: 'alpha', slug: 'alpha' })
     const store = platform.runtime.service(THREAD_SESSIONS)!
-    return { store, row: store.create({ workspaceId: workspace.id, family: 'platform', actorId: 'actor', cwd: platform.paths.root }) }
+    return { store, row: store.create({ workspaceId: workspace.id, family: 'platform', actorId: 'actor' }) }
   }
 
   it('is the platform\'s own, started first whatever the product lists, and is not a capability of the product', () => {
@@ -53,5 +53,16 @@ describe('the threads definition', () => {
     const driver = { assertPosture: () => {}, prompt: async () => row, cancel: async () => row, configOptions: () => [], workingDirectory: () => null }
     store.attach(driver)
     expect(() => store.attach(driver)).toThrow('The session store already has a driver.')
+  })
+
+  it('stores no cwd for a session the driver names no checkout for', () => {
+    const platform = start({ capabilities: [], modules: [] })
+    const { store, row } = session(platform)
+    expect(row.cwd).toBeNull()
+
+    const driver = { assertPosture: () => {}, prompt: async () => row, cancel: async () => row, configOptions: () => [], workingDirectory: () => null }
+    store.attach(driver)
+    expect(store.create({ workspaceId: row.workspaceId, family: 'platform', actorId: 'actor' }).cwd).toBeNull()
+    expect(store.get(row.id)?.cwd).toBeNull()
   })
 })

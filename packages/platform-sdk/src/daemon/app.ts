@@ -23,6 +23,8 @@ export interface AppVariables {
   secrets: SecretsWriter
   /** The product's `scope.urlPrefix`, for links into the web app. */
   scopeUrlPrefix: string
+  /** The product's `scope.listPath`, for the system nav entry. */
+  scopeListPath: string
   /** The product's `scope.label`, for daemon-written text that names a workspace. */
   scopeLabel: ScopeLabel
   /** Set by the auth middleware on every non-public route; public routes must not read it. */

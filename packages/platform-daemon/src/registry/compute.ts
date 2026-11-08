@@ -26,6 +26,7 @@ import { capabilityReadiness, type PlatformFacts, type PluginReadiness, type Wor
 export interface RegistryInput {
   workspace: { id: string, slug: string, name: string }
   scopeUrlPrefix: string
+  scopeListPath: string
   scopeLabel: ScopeLabel
   capabilities: readonly AnyCapabilityManifest[]
   modules: readonly ModuleDefinition[]
@@ -98,7 +99,7 @@ export function computeRegistry(input: RegistryInput): RegistryResponse {
     const target = a.cap.views.some(view => view.path === '' && a.rung.views.includes(view.id)) ? homeGroups : standaloneGroups
     target.push({ id: a.cap.id, label: a.cap.label, icon: entries[0]!.icon, kind: 'capability', entries, degraded: admin && !a.ready })
   }
-  const groups = [...homeGroups, ...moduleGroups, ...standaloneGroups, registrySystemGroup(input.scopeLabel)]
+  const groups = [...homeGroups, ...moduleGroups, ...standaloneGroups, registrySystemGroup(input.scopeLabel, input.scopeListPath)]
 
   const views: RegistryView[] = held.flatMap(a =>
     a.cap.views.filter(view => a.rung.views.includes(view.id)).map(view => ({ id: view.id, capabilityId: a.cap.id, label: view.label, icon: view.icon, path: view.path, to: workspaceViewRoute(input.scopeUrlPrefix, workspace.slug, view.path), ready: a.ready })),

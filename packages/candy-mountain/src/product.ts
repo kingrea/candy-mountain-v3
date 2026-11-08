@@ -7,6 +7,7 @@ export const CANDY_MOUNTAIN_PRODUCT: Readonly<ProductConfig> = {
   scope: {
     label: { singular: 'project', plural: 'projects', singularTitle: 'Project', pluralTitle: 'Projects' },
     urlPrefix: 'p',
+    listPath: 'projects',
   },
   capabilities: [
     'overview',

@@ -1,4 +1,4 @@
-import { workspaceViewRoute, type ActivityEvent, type NotificationDeliveryResponse, type NotificationKind, type Workspace } from '@candy-mountain/platform-sdk'
+import { workspaceViewRoute, type ActivityEvent, type NotificationDeliveryResponse, type NotificationKind, type ScopeLabel, type Workspace } from '@candy-mountain/platform-sdk'
 import { subscribeActivityEvents } from '../activity/events'
 import { activityEventTypesFor } from '../activity/types'
 import type { NotificationChannel, NotificationDelivery } from '../capabilities/definition'
@@ -12,6 +12,7 @@ export interface NotificationDispatcherDeps {
   /** Tried in order; the first to accept wins, and a delivery none accepts is recorded as a failure. */
   channels: readonly NotificationChannel[]
   scopeUrlPrefix: string
+  scopeLabel: ScopeLabel
 }
 
 export interface NotificationDispatcherOptions {
@@ -35,9 +36,9 @@ export function absoluteLink(webUrl: string, path: string): string {
   return `${webUrl.replace(/\/+$/, '')}${path.startsWith('/') ? path : `/${path}`}`
 }
 
-export function noDeliveryChannel(channels: readonly NotificationChannel[]): string {
+export function noDeliveryChannel(channels: readonly NotificationChannel[], scopeLabel: ScopeLabel): string {
   if (!channels.length) return 'No delivery channel: no capability offers one.'
-  return `No delivery channel: ${channels.map(c => c.id).join(', ')} ${channels.length > 1 ? 'have' : 'has'} no identity for this project.`
+  return `No delivery channel: ${channels.map(c => c.id).join(', ')} ${channels.length > 1 ? 'have' : 'has'} no identity for this ${scopeLabel.singular}.`
 }
 
 export function describeDelivery(channels: readonly NotificationChannel[], workspace: Workspace): NotificationDeliveryResponse {
@@ -56,7 +57,7 @@ export function startNotificationDispatcher(deps: NotificationDispatcherDeps, { 
     for (const channel of deps.channels) {
       if (await channel.deliver(delivery, signal)) return
     }
-    throw new Error(noDeliveryChannel(deps.channels))
+    throw new Error(noDeliveryChannel(deps.channels, deps.scopeLabel))
   }
 
   async function deliver(event: ActivityEvent, kind: NotificationKind, destination: { channelId: string } | { memberId: string }) {

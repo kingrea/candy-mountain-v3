@@ -30,7 +30,7 @@ export function issueWriteRoutes(repository: RepositoryPaths, writer: IssueWrite
   const app = new Hono<AppEnv>()
   app.onError(onIssueError)
 
-  const project = (c: Context<AppEnv>) => issueProject(c.var.db, repository, c.req.param('slug') ?? '')
+  const project = (c: Context<AppEnv>) => issueProject(c.var.db, repository, c.req.param('slug') ?? '', c.var.scopeLabel)
   const actor = (c: Context<AppEnv>) => c.var.actor.username
   const id = (c: Context<AppEnv>) => issueId(c.req.param('id'))
   const write = requireCapability({ capability: 'issues', tool: 'issues.write' })

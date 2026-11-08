@@ -73,7 +73,7 @@ function slackChannel(scopeUrlPrefix = 'p') {
 
 /** The dispatcher over the Slack channel the slack definition offers, after any channels given, the way the platform wires it. */
 function start(options: NotificationDispatcherOptions = {}, channels: NotificationChannel[] = [], scopeUrlPrefix = 'p') {
-  dispatcher = startNotificationDispatcher({ db: h.database.db, channels: [...channels, slackChannel(scopeUrlPrefix)], scopeUrlPrefix }, { webUrl: WEB_URL, log: { error: () => {} }, ...options })
+  dispatcher = startNotificationDispatcher({ db: h.database.db, channels: [...channels, slackChannel(scopeUrlPrefix)], scopeUrlPrefix, scopeLabel: CANDY_MOUNTAIN_PRODUCT.scope.label }, { webUrl: WEB_URL, log: { error: () => {} }, ...options })
   return dispatcher
 }
 

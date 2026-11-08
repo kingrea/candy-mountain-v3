@@ -10,10 +10,10 @@
     </template>
 
     <p v-if="!admin" class="text-sm text-muted">
-      Only an admin can see the project's plugins.
+      Only an admin can see the {{ SCOPE.singular }}'s plugins.
     </p>
     <p v-else-if="error" class="text-sm text-error">
-      Couldn't load the project's plugins.
+      Couldn't load the {{ SCOPE.singular }}'s plugins.
     </p>
     <ul v-else-if="instances.length" class="flex flex-col gap-3" data-testid="overview-plugins">
       <li v-for="instance in instances" :key="instance.id" class="flex flex-col gap-1 text-sm">
@@ -36,7 +36,7 @@
       </li>
     </ul>
     <p v-else-if="status === 'success'" class="text-sm text-muted">
-      No plugins are configured for this project.
+      No plugins are configured for this {{ SCOPE.singular }}.
     </p>
   </UCard>
 </template>

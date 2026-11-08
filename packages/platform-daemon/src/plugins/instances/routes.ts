@@ -31,7 +31,7 @@ import { pluginTypeUsers } from './users'
 
 function workspaceIdOf(c: Context<AppEnv>, slug: string): string {
   const workspace = findWorkspaceBySlug(c.var.db, slug)
-  if (!workspace) throw new PluginInstanceError('workspace_not_found', `No project with slug "${slug}"`)
+  if (!workspace) throw new PluginInstanceError('workspace_not_found', `No ${c.var.scopeLabel.singular} with slug "${slug}"`)
   return workspace.id
 }
 
@@ -88,7 +88,7 @@ export function pluginInstanceRoutes(secretsReader: SecretsReader) {
 
   app.post('/', async (c) => {
     const { workspace, ...request } = parseCreatePluginInstance(await readJson(c), c.var.pluginTypes)
-    const instance = createPluginInstance(c.var, { ...request, workspaceId: workspace ? workspaceIdOf(c, workspace) : null })
+    const instance = createPluginInstance(c.var, { ...request, workspaceId: workspace ? workspaceIdOf(c, workspace) : null }, c.var.scopeLabel)
     return c.json<PluginInstanceResponse>({ instance }, 201)
   })
 

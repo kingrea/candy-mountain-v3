@@ -146,7 +146,7 @@ describe('startCapabilities', () => {
     })
     const started = startCapabilities(context([team, bots]))
 
-    await started.onWorkspaceDeleted({ id: 'w1' } as never)
+    await started.onWorkspaceDeleted({ id: 'w1' } as never, { afterCommit: () => {} })
     expect(order).toEqual(['bots w1', 'team w1'])
     await expect(started.close()).rejects.toThrow('bots would not close')
     expect(order.slice(2)).toEqual(['close bots', 'close team'])

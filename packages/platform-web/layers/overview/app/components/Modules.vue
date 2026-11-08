@@ -25,7 +25,7 @@
       </li>
     </ul>
     <p v-else class="text-sm text-muted">
-      No modules are enabled for this project.
+      No modules are enabled for this {{ SCOPE.singular }}.
     </p>
   </UCard>
 </template>

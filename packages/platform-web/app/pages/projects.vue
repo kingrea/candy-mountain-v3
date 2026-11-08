@@ -160,7 +160,7 @@ async function remove(project: Workspace) {
             v-else
             icon="i-lucide-folder-git-2"
             :title="projects.length ? `All ${SCOPE.plural} are archived` : `No ${SCOPE.plural} yet`"
-            description="Register a local codebase to start working on it."
+            :description="`Add ${SCOPE.aSingular} to start working on it.`"
             :actions="[{ label: newLabel, icon: 'i-lucide-plus', onClick: openCreate }]"
           />
         </div>

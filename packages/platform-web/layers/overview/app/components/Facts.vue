@@ -2,7 +2,7 @@
   <UCard v-if="project">
     <template #header>
       <h2 class="font-semibold text-highlighted">
-        Project
+        {{ SCOPE.singularTitle }}
       </h2>
     </template>
 

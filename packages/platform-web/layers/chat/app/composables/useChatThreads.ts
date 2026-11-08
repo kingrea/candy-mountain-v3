@@ -39,7 +39,7 @@ export function useChatThreads(slug: MaybeRefOrGetter<string | null | undefined>
 
   function path(): string {
     const current = toValue(slug)
-    if (!current) throw new Error('No project selected')
+    if (!current) throw new Error(`No ${SCOPE.singular} selected`)
     return current
   }
 

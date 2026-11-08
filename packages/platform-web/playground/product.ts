@@ -8,6 +8,7 @@ export const PLAYGROUND_PRODUCT: Readonly<ProductConfig> = {
   scope: {
     label: { singular: 'project', plural: 'projects', singularTitle: 'Project', pluralTitle: 'Projects' },
     urlPrefix: 'p',
+    listPath: 'projects',
   },
   capabilities: ['overview', 'platform-agent'],
   modules: [],

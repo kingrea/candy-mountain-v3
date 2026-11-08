@@ -29,7 +29,7 @@ export function botRoutes(secretsReader: SecretsReader) {
   })
 
   const deps = (c: Context<AppEnv>): BotReadDeps => ({ ...c.var, secretsReader })
-  const projectIdOf = (c: Context<AppEnv>) => getWorkspaceBySlug(c.var.db, c.req.param('slug')!).id
+  const projectIdOf = (c: Context<AppEnv>) => getWorkspaceBySlug(c.var.db, c.req.param('slug')!, c.var.scopeLabel).id
   const signal = (c: Context) => ({ signal: c.req.raw.signal })
 
   function botIdOf(c: Context<AppEnv>): string {

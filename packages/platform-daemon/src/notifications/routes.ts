@@ -22,17 +22,17 @@ export function notificationRoutes(channels: readonly NotificationChannel[]) {
   })
 
   app.get('/:slug/notifications', requireAdmin(), (c) => {
-    const workspace = getWorkspaceBySlug(c.var.db, c.req.param('slug'))
+    const workspace = getWorkspaceBySlug(c.var.db, c.req.param('slug'), c.var.scopeLabel)
     return c.json<NotificationRulesResponse>({ kinds: kindsOf(c.var.db), rules: readNotificationRules(c.var.db, workspace.id) })
   })
 
   app.get('/:slug/notifications/delivery', requireAdmin(), (c) => {
-    const workspace = getWorkspaceBySlug(c.var.db, c.req.param('slug'))
+    const workspace = getWorkspaceBySlug(c.var.db, c.req.param('slug'), c.var.scopeLabel)
     return c.json<NotificationDeliveryResponse>(describeDelivery(channels, workspace))
   })
 
   app.put('/:slug/notifications', requireAdmin(), async (c) => {
-    const workspace = getWorkspaceBySlug(c.var.db, c.req.param('slug'))
+    const workspace = getWorkspaceBySlug(c.var.db, c.req.param('slug'), c.var.scopeLabel)
     const body = await c.req.json().catch(() => {
       throw new NotificationError('invalid_request', 'Request body must be valid JSON')
     })

@@ -125,7 +125,7 @@ export function createSessionManager(deps: SessionManagerDeps, options: SessionM
     if (row.family === 'platform') throw new SessionError('family_unavailable', 'Platform agent sessions run in-process; prompt them through their chat thread.')
     const launcher = launchers.get(row.family)
     if (!launcher || !isAgentFamily(row.family)) throw new SessionError('family_unavailable', `No agent harness launches ${families.nameOf(row.family)} sessions.`)
-    if (row.cwd === '') throw new SessionError('family_unavailable', `${families.nameOf(row.family)} sessions need a repository checkout to run in.`)
+    if (row.cwd === null) throw new SessionError('family_unavailable', `${families.nameOf(row.family)} sessions need a repository checkout to run in.`)
     return launcher.launch(row, { family: row.family, cwd: row.cwd, upstreamSessionId: row.upstreamSessionId ?? undefined }, deps)
   }
 

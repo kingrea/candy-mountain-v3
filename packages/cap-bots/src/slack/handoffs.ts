@@ -12,6 +12,7 @@ import { SLACK_HANDOFF_DONE_ACTION, slackHandoffMessage } from './handoff-messag
 import type { SlackTurnEnd, SlackTurnEndHook } from './router'
 import { findSlackThreadById, type SlackThread } from './threads'
 import { findSlackTurn, type SlackTurn } from './turns'
+import { slackHandoffMetaKey } from './meta'
 
 export interface SlackHandoffsDeps {
   db: Db
@@ -37,9 +38,6 @@ export interface SlackHandoffs {
 
 const TITLE_MAX = 200
 const clip = (value: string, max: number) => (value.length > max ? `${value.slice(0, max - 1)}…` : value)
-
-/** Only for the card a turn without a message had to post; a message that exists is edited instead. */
-const postedKey = (turnId: string) => `slack-handoff:${turnId}`
 
 const agentText = (events: AgentSessionEvent[]) => events.map(event => (event.kind === 'text' && event.role === 'agent' ? event.text : '')).join('')
 
@@ -85,7 +83,7 @@ export function startSlackHandoffs({ db, slack, botSessions, sessions, scopeUrlP
   const isOpen = (thread: SlackThread | null, sessionId: string) => thread !== null && thread.state === 'open' && thread.sessionId === sessionId
 
   function claimPost(turnId: string): boolean {
-    return db.insert(platformMeta).values({ key: postedKey(turnId), value: '1', updatedAt: at() }).onConflictDoNothing().run().changes > 0
+    return db.insert(platformMeta).values({ key: slackHandoffMetaKey(turnId), value: '1', updatedAt: at() }).onConflictDoNothing().run().changes > 0
   }
 
   async function showCard(end: SlackTurnEnd, handoff: Handoff): Promise<{ channel: string, ts: string } | null> {

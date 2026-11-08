@@ -6,12 +6,10 @@ import Database from 'better-sqlite3'
 import { drizzle } from 'drizzle-orm/better-sqlite3'
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
 import { srcPath } from '../package-root'
-import { carryLegacyHistory, type LegacyCarryOver } from './legacy-carry-over'
 import * as schema from './schema'
 
 export { schema }
 export type { Db, MigrationSchema, MigrationSet } from '@candy-mountain/platform-sdk/daemon'
-export { LEGACY_MIGRATIONS_DIR, type LegacyCarryOver } from './legacy-carry-over'
 
 export class MigrationSetError extends Error {
   constructor(message: string) {
@@ -42,8 +40,6 @@ export interface PlatformDatabase {
   db: Db
   migrationSets: readonly AppliedMigrationSet[]
   appliedMigrations: number
-  /** Set on the one open that carried a database across from the numbered history. */
-  legacyCarryOver: LegacyCarryOver | null
   close(): void
 }
 
@@ -76,7 +72,6 @@ export function openDatabase(file: string, { sets = [PLATFORM_MIGRATION_SET] }: 
     sqlite.pragma('busy_timeout = 5000')
 
     const db: Db = drizzle({ client: sqlite, schema: Object.assign({}, ...sets.map(set => set.schema)) as Record<string, unknown> })
-    const legacyCarryOver = carryLegacyHistory(sqlite, sets)
     const migrationSets = sets.map((set) => {
       const table = migrationsTableFor(set.id)
       const before = countMigrations(sqlite, table)
@@ -88,24 +83,12 @@ export function openDatabase(file: string, { sets = [PLATFORM_MIGRATION_SET] }: 
       db,
       migrationSets,
       appliedMigrations: migrationSets.reduce((sum, set) => sum + set.applied, 0),
-      legacyCarryOver,
       close: () => sqlite.close(),
     }
   }
   catch (error) {
     sqlite.close()
     throw error
-  }
-}
-
-/** Drizzle's default table, where the numbered history before migration sets was recorded. */
-export const LEGACY_MIGRATIONS_TABLE = '__drizzle_migrations'
-
-/** A database from the numbered history that cannot be carried onto the per-set histories; nothing in it was changed. */
-export class LegacyHistoryError extends MigrationSetError {
-  constructor(reason: string) {
-    super(`This database was created by the numbered migration history and cannot be carried across onto the per-set histories: ${reason}.`)
-    this.name = 'LegacyHistoryError'
   }
 }
 
