@@ -10,21 +10,22 @@ describe('pluginTypeUsers', () => {
     bots.requiresAnyPlugins = [['claude-code', 'codex']]
     return createCapabilityRegistry([
       fixtureDefinition('repository', { manifest: null, pluginTypes: [fixturePluginType('repository')] }),
-      fixtureDefinition('chat-codex', { pluginTypes: [fixturePluginType('codex')] }),
+      fixtureDefinition('codex', { manifest: null, pluginTypes: [fixturePluginType('codex')] }),
+      fixtureCapability('chat-codex', ['codex']),
       fixtureCapability('deployments', ['repository']),
       bots,
       fixtureCapability('issues'),
     ], { pluginTypeIds: ['claude-code'] })
   }
 
-  it('names the owner first, then the capabilities that require the type', () => {
+  it('lists the capabilities that require the type, any-of groups included, in registration order', () => {
     expect(pluginTypeUsers('codex', registry())).toEqual([
       { id: 'chat-codex', label: 'Fixture chat-codex' },
       { id: 'bots', label: 'Fixture bots' },
     ])
   })
 
-  it('leaves out a service-only owner and lists requirers in registration order', () => {
+  it('leaves out the service-only owner', () => {
     expect(pluginTypeUsers('repository', registry()).map(user => user.id)).toEqual(['deployments', 'bots'])
   })
 

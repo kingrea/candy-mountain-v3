@@ -8,7 +8,7 @@
 
 The daemon platform package owns its own schema and migrations folder from phase 2, and its migrations run first.
 
-**Capability packages.** One package per capability, holding its daemon definition (phase 1), its schema and migrations (phase 2) and its Nuxt layer (phase 3) behind two entry points, one for each app. Chat for Claude Code and chat for Codex are small; keep them as capabilities but let them share the ACP session service through the definition's dependency declaration rather than merging them. Plugin types live in the capability package that needs them, except plugin types no capability owns, which get a small package of their own.
+**Capability packages.** One package per capability, holding its daemon definition (phase 1), its schema and migrations (phase 2) and its Nuxt layer (phase 3) behind two entry points, one for each app. Chat for Claude Code and chat for Codex are small; keep them as capabilities but let them share the ACP session service through the definition's dependency declaration rather than merging them. Plugin types live in the capability package that needs them, except plugin types no capability owns, which get a small package of their own. (Later decision: every plugin type moves into a `plugin-<id>` connection package; see `.ai-docs/plans/connection-packages/overview.md`.)
 
 Where a capability's web layer and daemon code share types today through the shared package, those types move into the capability package and the SDK keeps only what crosses the platform line.
 

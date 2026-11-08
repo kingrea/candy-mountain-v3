@@ -1,17 +1,18 @@
 import type { ModuleDefinition } from '@candy-mountain/platform-sdk'
 import { vi } from 'vitest'
-import { ACP_DECISIONS, ACP_HARNESS, ACP_SESSIONS, chatClaudeCodeDefinition, type AcpHarness, type ChatClaudeCodeOptions, type DecisionService, type SessionManager } from '@candy-mountain/cap-chat-claude-code'
-import { chatCodexDefinition } from '@candy-mountain/cap-chat-codex'
-import { createWorkspaceWithRepository, fakeHosts, repositoryDefinition, type FakeHandler } from '@candy-mountain/cap-repository'
-import { slackDefinition, type SlackOptions } from '@candy-mountain/cap-slack'
+import { ACP_DECISIONS, ACP_HARNESS, ACP_SESSIONS, acpDefinition, type AcpHarness, type AcpOptions, type DecisionService, type SessionManager } from '@candy-mountain/cap-acp'
+import { claudeCodeDefinition } from '@candy-mountain/plugin-claude-code'
+import { codexDefinition } from '@candy-mountain/plugin-codex'
+import { createWorkspaceWithRepository, fakeHosts, repositoryDefinition, type FakeHandler } from '@candy-mountain/plugin-repository'
+import { slackDefinition, type SlackOptions } from '@candy-mountain/plugin-slack'
 import { teamDefinition } from '@candy-mountain/cap-team'
-import type { CapabilityDefinition } from '@candy-mountain/platform-sdk/daemon'
+import { defineCapability, defineCapabilityDefinition, type CapabilityDefinition } from '@candy-mountain/platform-sdk/daemon'
 import { createActivityEventTypeRegistry, declaredActivityEventTypes, instanceHarness as platformInstanceHarness, openTestDatabase, overviewDefinition, platformDefinitions, startPlatform, testProduct, type AnyPluginType, type InstanceHarness, type InstanceHarnessOptions, type Platform, type PlatformDatabase, type PlatformOptions, type Product } from '@candy-mountain/platform-daemon'
 import { BOT_SESSIONS, BOT_WORKTREES, botsDefinition, type BotsOptions } from './definition'
 import type { BotSessionService } from './bot-sessions'
 import type { WorktreePool } from './worktrees'
 
-export { GOOD_TOKEN, hostJson as json } from '@candy-mountain/cap-repository'
+export { GOOD_TOKEN, hostJson as json } from '@candy-mountain/plugin-repository'
 
 /** Stubs global fetch with the repository package's fake GitHub and Bitbucket; tests restore it with vi.unstubAllGlobals(). */
 export function stubHosts(override?: FakeHandler) {
@@ -19,6 +20,26 @@ export function stubHosts(override?: FakeHandler) {
   const fetchMock = vi.fn(fetch)
   vi.stubGlobal('fetch', fetchMock)
   return { requests, fetchMock }
+}
+
+/** What chat-claude-code contributes without importing it: the agent whose family gates a Claude Code bot's threads. */
+const chatClaudeCodeStandInCapability = defineCapability({
+  id: 'chat-claude-code',
+  label: 'Chat with Claude Code',
+  description: 'Stands in for chat-claude-code, registered the way it shows Claude Code in the chat rail.',
+  views: [],
+  agents: [{ id: 'claude-code', label: 'Claude Code', description: 'Claude Code over the fake claude.', family: 'claude-code', avatar: 'i-lucide-sparkles' }],
+  jobs: [],
+  requiresPlugins: ['claude-code'],
+  tools: [],
+  ladder: [
+    { name: 'none', label: 'None', description: 'Claude Code does not appear in the chat rail.', views: [], chat: false, tools: {} },
+    { name: 'chat', label: 'Chat', description: 'Start and continue threads with Claude Code.', views: [], chat: true, tools: {} },
+  ],
+})
+
+export function chatClaudeCodeStandInDefinition(): CapabilityDefinition {
+  return defineCapabilityDefinition({ id: chatClaudeCodeStandInCapability.id, manifest: chatClaudeCodeStandInCapability, dependsOn: ['acp', 'claude-code'] })
 }
 
 /** The module bots and team sit in under a product, with the chat capabilities the bot families need. */
@@ -31,17 +52,16 @@ export const AGENT_HUB_MODULE: ModuleDefinition = {
     { capabilityId: 'bots', defaultRung: 'manage' },
     { capabilityId: 'team', defaultRung: 'manage' },
     { capabilityId: 'chat-claude-code', defaultRung: 'chat' },
-    { capabilityId: 'chat-codex', defaultRung: 'chat' },
   ],
 }
 
-export interface BotsTestOptions extends ChatClaudeCodeOptions, BotsOptions {
+export interface BotsTestOptions extends AcpOptions, BotsOptions {
   slack?: SlackOptions
 }
 
 /** Everything bots depends on, in the order a product lists them; the overview is included so the registry's view order is a product's. */
 export function botsTestCapabilities({ acp, sessions, decisions, worktrees, slackRouter, slackDecisions, slackHandoffs, slack }: BotsTestOptions = {}): CapabilityDefinition[] {
-  return [overviewDefinition(), repositoryDefinition(), slackDefinition(slack), botsDefinition({ worktrees, slackRouter, slackDecisions, slackHandoffs }), teamDefinition(), chatClaudeCodeDefinition({ acp, sessions, decisions }), chatCodexDefinition()]
+  return [overviewDefinition(), repositoryDefinition(), slackDefinition(slack), botsDefinition({ worktrees, slackRouter, slackDecisions, slackHandoffs }), teamDefinition(), acpDefinition({ acp, sessions, decisions }), claudeCodeDefinition(), chatClaudeCodeStandInDefinition(), codexDefinition()]
 }
 
 /** The product the tests boot, without the capability ids in `without` (and with the module trimmed to match). */
@@ -70,12 +90,12 @@ export interface BotsServices {
   worktrees: WorktreePool
 }
 
-/** The services the chat-claude-code and bots definitions offer; throws when the platform started without either. */
+/** The services the acp and bots definitions offer; throws when the platform started without either. */
 export function botsServices(platform: Pick<Platform, 'runtime'>): BotsServices {
   const sessions = platform.runtime.service(ACP_SESSIONS)
   const decisions = platform.runtime.service(ACP_DECISIONS)
   const acpHarness = platform.runtime.service(ACP_HARNESS)
-  if (!sessions || !decisions || !acpHarness) throw new Error('The platform started without the chat-claude-code definition.')
+  if (!sessions || !decisions || !acpHarness) throw new Error('The platform started without the acp definition.')
   const botSessions = platform.runtime.service(BOT_SESSIONS)
   const worktrees = platform.runtime.service(BOT_WORKTREES)
   if (!botSessions || !worktrees) throw new Error('The platform started without the bots definition.')

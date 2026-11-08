@@ -1,5 +1,7 @@
 # Phase 4 decisions from landed beads (hand to later agents)
 
+Note: this is a historical log. cap-repository and cap-slack are now `plugin-repository` and `plugin-slack`, and the plugin types of chat-claude-code, chat-codex and deployments moved to `plugin-*` connection packages; see `.ai-docs/plans/connection-packages/overview.md`.
+
 ## ncj.4.2 platform-config (done)
 - packages/config is now packages/platform-config, @candy-mountain/platform-config.
 - resolveDataDir(product: { name }, env?) ; dataDirName(productName) exported; daemon loadConfig(product, env) takes the product first; CLI resolveSettings passes product from apps/cli/src/product.ts.

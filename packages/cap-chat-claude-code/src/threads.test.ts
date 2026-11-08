@@ -3,12 +3,10 @@ import { join } from 'node:path'
 import { chatAgentOptionsPath, workspaceRegistryPath, workspaceThreadPath, workspaceThreadsPath, threadCancelPath, threadPromptPath, threadReadPath, type Actor, type AgentSessionEvent, type AgentSessionEventKind, type ApiErrorBody, type ChatAgentOptionsResponse, type ChatThread, type ChatThreadListResponse, type ChatThreadPromptResponse, type ChatThreadResponse, type PluginTypeId, type Workspace, type RegistryResponse } from '@candy-mountain/platform-sdk'
 import { eq } from 'drizzle-orm'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { FAKE_ACP_AGENT, fakeBins, fakeClaude } from './acp/test-support'
 import { addRole, type AuthStrategy, createPluginInstance, createTempDataDir, listActivityEvents, type Platform, platformApp, pluginInstances, setEnabledModules, startTestPlatform, type TempDataDir, THREAD_SESSIONS, threadTitle } from '@candy-mountain/platform-daemon'
-import { createWorkspaceWithRepository, repositoryPaths } from '@candy-mountain/cap-repository'
+import { createWorkspaceWithRepository, repositoryPaths } from '@candy-mountain/plugin-repository'
+import { ACP_SESSIONS, FAKE_ACP_AGENT, fakeBins, fakeClaude, type SessionManager, type SessionMessage } from '@candy-mountain/cap-acp'
 import { acpTestProduct, startAcpPlatform, type AcpPlatform } from './test-support'
-import type { SessionManager, SessionMessage } from './sessions'
-import { ACP_SESSIONS } from './definition'
 
 let temp: TempDataDir | undefined
 let platform: AcpPlatform | undefined

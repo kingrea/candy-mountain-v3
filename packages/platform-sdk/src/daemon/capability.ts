@@ -151,6 +151,8 @@ export function assertCapabilityDefinition(definition: CapabilityDefinition): vo
   }
   const dupTypes = duplicates((definition.pluginTypes ?? []).map(t => t.id))
   if (dupTypes.length) fail(`brings plugin type ${quoted(dupTypes)} more than once.`)
+  // Two features bringing the same connection would collide at boot; only a service-only connection package may own one.
+  if (definition.manifest !== undefined && definition.pluginTypes?.length) fail(`has a manifest and brings plugin type ${quoted(definition.pluginTypes.map(t => t.id))}; plugin types belong to a service-only plugin-* package that the capability depends on.`)
 
   const families = definition.sessionFamilies ?? []
   const badFamilies = families.filter(f => !isId(f?.id) || typeof f.name !== 'string' || f.name.trim() === '')

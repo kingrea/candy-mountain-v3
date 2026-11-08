@@ -1,5 +1,5 @@
 import type { BotWriteScope } from '../wire'
-import type { CodexAgentMode, CodexLaunchOptions } from '@candy-mountain/cap-chat-claude-code'
+import type { CodexAgentMode, CodexLaunchOptions } from '@candy-mountain/cap-acp'
 
 /** Codex has no confirm-each-edit mode: the workspace-write sandbox never asks inside the worktree. */
 export const CODEX_MODES = {

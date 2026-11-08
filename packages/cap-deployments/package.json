@@ -17,6 +17,8 @@
   "dependencies": {
     "@candy-mountain/platform-daemon": "workspace:*",
     "@candy-mountain/platform-sdk": "workspace:*",
+    "@candy-mountain/plugin-heroku": "workspace:*",
+    "@candy-mountain/plugin-netlify": "workspace:*",
     "@nuxt/ui": "^4.12.0",
     "drizzle-orm": "^0.45.4",
     "hono": "^4.13.14",

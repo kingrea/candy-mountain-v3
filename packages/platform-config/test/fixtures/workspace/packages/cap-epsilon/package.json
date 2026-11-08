@@ -1,0 +1,12 @@
+{
+  "name": "@candy-mountain/cap-epsilon",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@candy-mountain/platform-core": "workspace:*",
+    "@candy-mountain/plugin-delta": "workspace:*"
+  }
+}

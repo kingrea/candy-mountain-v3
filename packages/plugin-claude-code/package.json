@@ -1,0 +1,26 @@
+{
+  "name": "@candy-mountain/plugin-claude-code",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "webLayer": "claude-code",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@candy-mountain/cap-acp": "workspace:*",
+    "@candy-mountain/platform-daemon": "workspace:*",
+    "@candy-mountain/platform-sdk": "workspace:*",
+    "vue": "^3.5.44"
+  },
+  "devDependencies": {
+    "@candy-mountain/platform-config": "workspace:*",
+    "@candy-mountain/platform-web": "workspace:*",
+    "@types/better-sqlite3": "^9.6.0"
+  }
+}

@@ -3,7 +3,7 @@ import { statSync, watch, type FSWatcher } from 'node:fs'
 import { readdir, readFile, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import { type Db, listWorkspaces } from '@candy-mountain/platform-daemon'
-import type { RepositoryPaths } from '@candy-mountain/cap-repository'
+import type { RepositoryPaths } from '@candy-mountain/plugin-repository'
 import { invalidateIssueList } from './service'
 
 export const ISSUE_WATCH_DEBOUNCE_MS = 250

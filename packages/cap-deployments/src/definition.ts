@@ -1,16 +1,14 @@
 import { DEPLOY_OUTCOMES, LIVE_VERSION_SOURCES_PATH } from './wire'
-import { defineCapabilityDefinition, type ActivityEventTypeDeclaration, type AnyPluginType, type CapabilityDefinition, type CapabilityRuntime } from '@candy-mountain/platform-sdk/daemon'
+import { defineCapabilityDefinition, type ActivityEventTypeDeclaration, type CapabilityDefinition, type CapabilityRuntime } from '@candy-mountain/platform-sdk/daemon'
 import { LIVE_VERSION_SOURCE_REGISTRY, LIVE_VERSION_SOURCES } from './builtin-sources'
 import { environmentRoutes, liveVersionSourceRoutes, type EnvironmentRouteOptions } from './routes'
 import { createLiveVersionSourceRegistry, LiveVersionSourceError, type LiveVersionSource, type LiveVersionSourceRegistry } from './sources'
 import { type PluginTypeRegistry, type SecretsReader } from '@candy-mountain/platform-daemon'
-import { herokuPluginType } from './heroku/definition'
-import { netlifyPluginType } from './netlify/definition'
+import { HEROKU_CAPABILITY_ID } from '@candy-mountain/plugin-heroku'
+import { NETLIFY_CAPABILITY_ID } from '@candy-mountain/plugin-netlify'
 import { deploymentsCapability } from './manifest'
 import { srcPath } from './package-root'
 import * as deploymentsSchema from './schema'
-
-export const DEPLOYMENTS_PLUGIN_TYPES: readonly AnyPluginType[] = [herokuPluginType, netlifyPluginType]
 
 /** One type for every attempt; the payload's `outcome` says which notification it raises, and an attempt without one raises none. */
 export const DEPLOYMENT_ACTIVITY_EVENT_TYPES: readonly ActivityEventTypeDeclaration[] = [
@@ -52,8 +50,8 @@ export function deploymentsDefinition({ sources = LIVE_VERSION_SOURCES, fetch }:
   return defineCapabilityDefinition({
     id: deploymentsCapability.id,
     manifest: deploymentsCapability,
+    dependsOn: [HEROKU_CAPABILITY_ID, NETLIFY_CAPABILITY_ID],
     schema: { schema: deploymentsSchema, migrationsFolder: srcPath('migrations') },
-    pluginTypes: DEPLOYMENTS_PLUGIN_TYPES,
     activityEventTypes: DEPLOYMENT_ACTIVITY_EVENT_TYPES,
     start: ({ secrets, pluginTypes }) => deploymentsRoutes(secrets, { sources: liveVersionSourceRegistryFor(sources, pluginTypes), fetch }),
   })

@@ -6,7 +6,7 @@ import { createLiveVersionSourceRegistry, defineLiveVersionSource, LiveVersionSo
 import { LIVE_VERSION_SOURCES } from './builtin-sources'
 import { createTempDataDir, createWorkspace, type Platform, platformApp, startTestPlatform, type TempDataDir, type TestPlatformOptions } from '@candy-mountain/platform-daemon'
 import { deploymentsDefinition } from './definition'
-import { REPOSITORY_STAND_IN, startDeploymentsPlatform } from './test-support'
+import { deploymentsConnections, REPOSITORY_STAND_IN, startDeploymentsPlatform } from './test-support'
 
 const pinned = defineLiveVersionSource({
   id: 'pinned',
@@ -36,10 +36,11 @@ describe('the deployments definition', () => {
     return { platform, app, project }
   }
 
-  it('serves the environment and live version source routes and brings the netlify and heroku plugin types', async () => {
-    const { platform, app } = start()
+  it('serves the environment and live version source routes, starting after the heroku and netlify connections that bring their plugin types', async () => {
+    const { platform, app } = start({ capabilities: [deploymentsDefinition(), ...deploymentsConnections()] })
 
-    expect(platform.runtime.started.map(s => s.definition.id)).toContain('deployments')
+    expect(deploymentsDefinition().pluginTypes ?? []).toEqual([])
+    expect(platform.runtime.started.map(s => s.definition.id).filter(id => ['heroku', 'netlify', 'deployments'].includes(id))).toEqual(['heroku', 'netlify', 'deployments'])
     expect(platform.migrationSets.map(set => set.id)).toContain('deployments')
     expect(platform.pluginTypes.has('netlify')).toBe(true)
     expect(platform.pluginTypes.has('heroku')).toBe(true)
@@ -54,7 +55,7 @@ describe('the deployments definition', () => {
   it('reads live versions through the sources and fetch it is given', async () => {
     const fetch = vi.fn(async () => new Response('v42'))
     const deployments = deploymentsDefinition({ sources: [pinned], fetch })
-    const { platform, app, project } = start({ capabilities: [deployments] })
+    const { platform, app, project } = start({ capabilities: [...deploymentsConnections(), deployments] })
     createEnvironment({ db: platform.db, pluginTypes: platform.pluginTypes, secrets: platform.secrets.writeOnly }, project.id, { name: 'Production', liveSourceKind: 'pinned' }, createLiveVersionSourceRegistry([pinned]))
 
     const sources = (await (await app.request(LIVE_VERSION_SOURCES_PATH)).json()) as LiveVersionSourceListResponse
@@ -83,7 +84,7 @@ describe('the deployments definition', () => {
   it('refuses boot when a source reads a plugin type nothing registers', () => {
     temp = createTempDataDir()
     const render = defineLiveVersionSource({ ...pinned, id: 'render-deploy', plugin: 'render' })
-    const boot = () => startTestPlatform(temp.root, { capabilities: [deploymentsDefinition({ sources: [...LIVE_VERSION_SOURCES, render] })], pluginTypes: [REPOSITORY_STAND_IN] })
+    const boot = () => startTestPlatform(temp.root, { capabilities: [...deploymentsConnections(), deploymentsDefinition({ sources: [...LIVE_VERSION_SOURCES, render] })], pluginTypes: [REPOSITORY_STAND_IN] })
 
     expect(boot).toThrow(LiveVersionSourceError)
     expect(boot).toThrow("Live-version source 'render-deploy': plugin type 'render' is not registered.")

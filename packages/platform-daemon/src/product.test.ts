@@ -8,7 +8,7 @@ import { assertProduct, ProductError, type Product } from './product'
 import { createTempDataDir, testProduct, type TempDataDir } from './testing'
 
 const operations: ModuleDefinition = { id: 'operations', label: 'Operations', description: 'Ops.', icon: 'i-lucide-activity', capabilities: [{ capabilityId: 'widgets', defaultRung: 'read' }] }
-const WIDGETS = testProduct({ capabilities: [fixtureDefinition('widgets'), fixtureDefinition('gadgets', { pluginTypes: [fixturePluginType('gizmo')] })], modules: [operations], pluginTypes: [fixturePluginType('jira')] }, { name: 'Widgets' })
+const WIDGETS = testProduct({ capabilities: [fixtureDefinition('widgets'), fixtureDefinition('gadgets', { manifest: null, pluginTypes: [fixturePluginType('gizmo')] })], modules: [operations], pluginTypes: [fixturePluginType('jira')] }, { name: 'Widgets' })
 const configured = (config: Partial<Product['config']>): Product => ({ ...WIDGETS, config: { ...WIDGETS.config, ...config } })
 
 describe('product configuration at boot', () => {

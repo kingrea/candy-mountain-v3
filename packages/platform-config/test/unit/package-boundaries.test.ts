@@ -2,15 +2,18 @@ import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { ESLint } from 'eslint'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { capabilityDependencyDrift, capabilityId, kindOf, workspacePackages, workspaceRoot } from '../../eslint/package-boundaries.mjs'
+import { capabilityDependencyDrift, capabilityId, capabilityKindProblems, kindOf, workspacePackages, workspaceRoot } from '../../eslint/package-boundaries.mjs'
 import { alphaDefinition } from '../fixtures/workspace/packages/cap-alpha/src/index'
 import { betaDefinition } from '../fixtures/workspace/packages/cap-beta/src/index'
+import { epsilonDefinition } from '../fixtures/workspace/packages/cap-epsilon/src/index'
 import { gammaDefinition } from '../fixtures/workspace/packages/cap-gamma/src/index'
+import { deltaDefinition } from '../fixtures/workspace/packages/plugin-delta/src/index'
 
 const packageRoot = fileURLToPath(new URL('../..', import.meta.url))
 const fixtureRoot = fileURLToPath(new URL('../fixtures/workspace', import.meta.url))
+const duplicateRoot = fileURLToPath(new URL('../fixtures/duplicate-id', import.meta.url))
 
-const DIRECTIONS = 'Allowed: a capability or distribution -> a platform package\'s declared entries; a capability -> a dependency capability\'s root entry; never the reverse, never a relative path across package roots.'
+const DIRECTIONS = 'Allowed: a capability (cap-* or plugin-*) or distribution -> a platform package\'s declared entries; a capability -> a dependency capability\'s root entry; never the reverse, never a relative path across package roots. Only a plugin-* package brings plugin types: its definition has no manifest and brings the plugin type named by its id, and a cap-* package brings none.'
 
 interface Finding {
   rule: string
@@ -56,6 +59,10 @@ describe('package boundary lint', () => {
     'packages/cap-alpha/eslint.config.js',
     'packages/cap-alpha/vitest.config.ts',
     'packages/cap-beta/src/ok.ts',
+    'packages/cap-epsilon/src/index.ts',
+    'packages/cap-epsilon/src/ok.ts',
+    'packages/plugin-delta/src/index.ts',
+    'packages/plugin-delta/src/ok.ts',
     'apps/daemon/src/index.ts',
   ])('passes %s, which uses declared entries, declared capabilities and its own files', (file) => {
     expect(findings(file)).toEqual([])
@@ -70,6 +77,59 @@ describe('package boundary lint', () => {
       {
         rule: 'cm-packages/no-subpath-import',
         message: `Capability package @candy-mountain/cap-alpha may not import '@candy-mountain/platform-core/eslint' here: the preset entries of @candy-mountain/platform-core are for config files (*.config.*) only. ${DIRECTIONS}`,
+      },
+    ])
+  })
+
+  it('rejects a plugin package importing a platform internal path as it does a cap package', () => {
+    expect(findings('packages/plugin-delta/src/bad-platform-subpath.ts')).toEqual([
+      {
+        rule: 'cm-packages/no-subpath-import',
+        message: `Capability package @candy-mountain/plugin-delta may not import '@candy-mountain/platform-core/src/internal': @candy-mountain/platform-core declares no './src/internal' entry. ${DIRECTIONS}`,
+      },
+    ])
+  })
+
+  it('holds a plugin package to the capability directions toward cap packages and the platform', () => {
+    expect(findings('packages/plugin-delta/src/bad-capability.ts')).toEqual([
+      {
+        rule: 'cm-packages/no-subpath-import',
+        message: `Capability package @candy-mountain/plugin-delta may not import '@candy-mountain/cap-alpha/src/index': a capability package is reachable only through its root entry '@candy-mountain/cap-alpha'. ${DIRECTIONS}`,
+      },
+      {
+        rule: 'cm-packages/no-undeclared-capability-import',
+        message: `Capability package @candy-mountain/plugin-delta may not import '@candy-mountain/cap-beta': @candy-mountain/cap-beta is not in its package.json dependencies, so its definition cannot name 'beta' in dependsOn either. ${DIRECTIONS}`,
+      },
+      {
+        rule: 'cm-packages/no-unlisted-dependency',
+        message: `Capability package @candy-mountain/plugin-delta may not import '@candy-mountain/cap-beta': @candy-mountain/cap-beta is not in its package.json dependencies or devDependencies. ${DIRECTIONS}`,
+      },
+      {
+        rule: 'cm-packages/no-relative-cross-package',
+        message: `Capability package @candy-mountain/plugin-delta may not import '../../platform-core/src/daemon/index': the path leaves the package. Import @candy-mountain/platform-core through its root entry. ${DIRECTIONS}`,
+      },
+    ])
+  })
+
+  it('holds a cap package to the capability directions toward a plugin package', () => {
+    expect(findings('packages/cap-alpha/src/bad-undeclared-plugin.ts')).toEqual([
+      {
+        rule: 'cm-packages/no-undeclared-capability-import',
+        message: `Capability package @candy-mountain/cap-alpha may not import '@candy-mountain/plugin-delta': @candy-mountain/plugin-delta is not in its package.json dependencies, so its definition cannot name 'delta' in dependsOn either. ${DIRECTIONS}`,
+      },
+      {
+        rule: 'cm-packages/no-unlisted-dependency',
+        message: `Capability package @candy-mountain/cap-alpha may not import '@candy-mountain/plugin-delta': @candy-mountain/plugin-delta is not in its package.json dependencies or devDependencies. ${DIRECTIONS}`,
+      },
+    ])
+    expect(findings('packages/cap-epsilon/src/bad-plugin.ts')).toEqual([
+      {
+        rule: 'cm-packages/no-subpath-import',
+        message: `Capability package @candy-mountain/cap-epsilon may not import '@candy-mountain/plugin-delta/src/index': a capability package is reachable only through its root entry '@candy-mountain/plugin-delta'. ${DIRECTIONS}`,
+      },
+      {
+        rule: 'cm-packages/no-relative-cross-package',
+        message: `Capability package @candy-mountain/cap-epsilon may not import '../../plugin-delta/src/ok': the path leaves the package. Import @candy-mountain/plugin-delta through its root entry. ${DIRECTIONS}`,
       },
     ])
   })
@@ -140,6 +200,32 @@ describe('package boundary lint', () => {
     )
   })
 
+  it('rejects a platform package importing a plugin package', () => {
+    expect(findings('packages/platform-core/src/uses-plugin.ts')).toEqual([
+      {
+        rule: 'cm-packages/no-capability-import-from-platform',
+        message: `Platform package @candy-mountain/platform-core may not import '@candy-mountain/plugin-delta': the platform never depends on a capability (@candy-mountain/plugin-delta). ${DIRECTIONS}`,
+      },
+      {
+        rule: 'cm-packages/no-unlisted-dependency',
+        message: `Platform package @candy-mountain/platform-core may not import '@candy-mountain/plugin-delta': @candy-mountain/plugin-delta is not in its package.json dependencies or devDependencies. ${DIRECTIONS}`,
+      },
+    ])
+  })
+
+  it('holds a distribution to a plugin package\'s root entry', () => {
+    expect(findings('apps/daemon/src/bad-plugin.ts')).toEqual([
+      {
+        rule: 'cm-packages/no-subpath-import',
+        message: `Package @fixture/daemon may not import '@candy-mountain/plugin-delta/src/index': a capability package is reachable only through its root entry '@candy-mountain/plugin-delta'. ${DIRECTIONS}`,
+      },
+      {
+        rule: 'cm-packages/no-unlisted-dependency',
+        message: `Package @fixture/daemon may not import '@candy-mountain/plugin-delta/src/index': @candy-mountain/plugin-delta is not in its package.json dependencies or devDependencies. ${DIRECTIONS}`,
+      },
+    ])
+  })
+
   it('holds a distribution to root entries and its own dependency list', () => {
     expect(findings('apps/daemon/src/bad.ts')).toEqual([
       {
@@ -164,8 +250,10 @@ describe('workspace packages', () => {
     expect([...packages.keys()].sort()).toEqual([
       '@candy-mountain/cap-alpha',
       '@candy-mountain/cap-beta',
+      '@candy-mountain/cap-epsilon',
       '@candy-mountain/cap-gamma',
       '@candy-mountain/platform-core',
+      '@candy-mountain/plugin-delta',
       '@fixture/daemon',
     ])
     expect(packages.get('@candy-mountain/platform-core')).toMatchObject({
@@ -181,9 +269,24 @@ describe('workspace packages', () => {
       entries: ['.'],
       dependencies: ['@candy-mountain/cap-alpha', '@candy-mountain/platform-core'],
     })
+    expect(packages.get('@candy-mountain/plugin-delta')).toMatchObject({
+      kind: 'capability',
+      capabilityId: 'delta',
+      entries: ['.'],
+      dependencies: ['@candy-mountain/cap-alpha', '@candy-mountain/platform-core'],
+    })
     expect(packages.get('@fixture/daemon')).toMatchObject({ kind: 'other', entries: ['.'], presets: [] })
     expect(kindOf('@candy-mountain/claude-acp')).toBe('other')
+    expect(kindOf('@candy-mountain/plugin-claude-code')).toBe('capability')
     expect(capabilityId('@candy-mountain/cap-chat-claude-code')).toBe('chat-claude-code')
+    expect(capabilityId('@candy-mountain/plugin-claude-code')).toBe('claude-code')
+    expect(capabilityId('@candy-mountain/platform-plugin-x')).toBeUndefined()
+  })
+
+  it('refuses a cap package and a plugin package that share an id, naming both', () => {
+    expect(() => workspacePackages(duplicateRoot)).toThrow(
+      '@candy-mountain/cap-alpha and @candy-mountain/plugin-alpha both carry capability id \'alpha\'; a cap- and a plugin- package may not share an id.',
+    )
   })
 
   it('finds the workspace root above a file', () => {
@@ -194,24 +297,77 @@ describe('workspace packages', () => {
 
 describe('capability dependency drift', () => {
   const packages = workspacePackages(fixtureRoot)
-  const pkg = (name: string) => packages.get(`@candy-mountain/cap-${name}`)!
+  const pkg = (name: string) => packages.get(`@candy-mountain/${name}`)!
 
   it('is empty when package.json dependencies and dependsOn agree, ignoring platform ids', () => {
-    expect(capabilityDependencyDrift(pkg('alpha'), alphaDefinition(), packages)).toEqual([])
-    expect(capabilityDependencyDrift(pkg('beta'), betaDefinition(), packages)).toEqual([])
+    expect(capabilityDependencyDrift(pkg('cap-alpha'), alphaDefinition(), packages)).toEqual([])
+    expect(capabilityDependencyDrift(pkg('cap-beta'), betaDefinition(), packages)).toEqual([])
   })
 
   it('names a dependency the definition omits and a dependsOn the package omits', () => {
-    expect(capabilityDependencyDrift(pkg('gamma'), gammaDefinition(), packages)).toEqual([
+    expect(capabilityDependencyDrift(pkg('cap-gamma'), gammaDefinition(), packages)).toEqual([
       '@candy-mountain/cap-gamma lists @candy-mountain/cap-alpha in its dependencies but its definition\'s dependsOn omits \'alpha\'',
       '@candy-mountain/cap-gamma\'s definition depends on \'beta\' but its package.json dependencies omit @candy-mountain/cap-beta',
     ])
   })
 
+  it('is empty for a plugin package whose dependsOn matches, and for a cap package depending on a plugin package', () => {
+    expect(capabilityDependencyDrift(pkg('plugin-delta'), deltaDefinition(), packages)).toEqual([])
+    expect(capabilityDependencyDrift(pkg('cap-epsilon'), { id: 'epsilon', dependsOn: ['delta'] }, packages)).toEqual([])
+  })
+
+  it('names both packages when a cap package and a plugin package\'s dependsOn disagree with its package.json', () => {
+    expect(capabilityDependencyDrift(pkg('cap-epsilon'), epsilonDefinition(), packages)).toEqual([
+      '@candy-mountain/cap-epsilon lists @candy-mountain/plugin-delta in its dependencies but its definition\'s dependsOn omits \'delta\'',
+    ])
+    expect(capabilityDependencyDrift(pkg('cap-alpha'), { id: 'alpha', dependsOn: ['delta'] }, packages)).toEqual([
+      '@candy-mountain/cap-alpha\'s definition depends on \'delta\' but its package.json dependencies omit @candy-mountain/plugin-delta',
+    ])
+    expect(capabilityDependencyDrift(pkg('plugin-delta'), { id: 'delta', dependsOn: ['beta'] }, packages)).toEqual([
+      '@candy-mountain/plugin-delta lists @candy-mountain/cap-alpha in its dependencies but its definition\'s dependsOn omits \'alpha\'',
+      '@candy-mountain/plugin-delta\'s definition depends on \'beta\' but its package.json dependencies omit @candy-mountain/cap-beta',
+    ])
+  })
+
   it('names a definition whose id is not the package\'s', () => {
-    expect(capabilityDependencyDrift(pkg('alpha'), betaDefinition(), packages)).toEqual([
+    expect(capabilityDependencyDrift(pkg('cap-alpha'), betaDefinition(), packages)).toEqual([
       '@candy-mountain/cap-alpha exports the definition of \'beta\', not \'alpha\'',
       '@candy-mountain/cap-alpha\'s definition depends on \'alpha\' but its package.json dependencies omit @candy-mountain/cap-alpha',
+    ])
+    expect(capabilityDependencyDrift(pkg('plugin-delta'), { id: 'epsilon', dependsOn: ['alpha'] }, packages)).toEqual([
+      '@candy-mountain/plugin-delta exports the definition of \'epsilon\', not \'delta\'',
+    ])
+  })
+})
+
+describe('capability kind', () => {
+  const packages = workspacePackages(fixtureRoot)
+  const pkg = (name: string) => packages.get(`@candy-mountain/${name}`)!
+
+  it('is empty for a plugin package bringing its own plugin type without a manifest, and for cap packages with or without a manifest', () => {
+    expect(capabilityKindProblems(pkg('plugin-delta'), deltaDefinition())).toEqual([])
+    expect(capabilityKindProblems(pkg('cap-alpha'), alphaDefinition())).toEqual([])
+    expect(capabilityKindProblems(pkg('cap-beta'), betaDefinition())).toEqual([])
+  })
+
+  it('names a plugin package whose definition has a manifest', () => {
+    expect(capabilityKindProblems(pkg('plugin-delta'), { ...deltaDefinition(), manifest: { id: 'delta' } })).toEqual([
+      '@candy-mountain/plugin-delta is a plugin- package, so its definition may not have a manifest',
+    ])
+  })
+
+  it('names a plugin package whose definition brings no plugin types, or none with its id', () => {
+    expect(capabilityKindProblems(pkg('plugin-delta'), { id: 'delta' })).toEqual([
+      '@candy-mountain/plugin-delta is a plugin- package, so its definition must bring plugin type \'delta\'',
+    ])
+    expect(capabilityKindProblems(pkg('plugin-delta'), { id: 'delta', pluginTypes: [{ id: 'other' }] })).toEqual([
+      '@candy-mountain/plugin-delta is a plugin- package, so its definition must bring plugin type \'delta\'',
+    ])
+  })
+
+  it('names a cap package whose definition brings plugin types', () => {
+    expect(capabilityKindProblems(pkg('cap-epsilon'), { ...epsilonDefinition(), pluginTypes: [{ id: 'delta' }, { id: 'zeta' }] })).toEqual([
+      '@candy-mountain/cap-epsilon is a cap- package, so its definition may not bring plugin types, but it brings \'delta\', \'zeta\'; move them to a plugin- package',
     ])
   })
 })

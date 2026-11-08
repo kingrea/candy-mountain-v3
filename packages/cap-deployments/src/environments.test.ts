@@ -4,7 +4,9 @@ import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { type AuthStrategy, createPluginTypeRegistry, createTestApp, createWorkspace, dataPaths, deleteWorkspace, lockedSecretsStore, type PlatformDatabase } from '@candy-mountain/platform-daemon'
 import { environments } from './schema'
-import { DEPLOYMENTS_PLUGIN_TYPES, deploymentsRoutes } from './definition'
+import { herokuPluginType } from '@candy-mountain/plugin-heroku'
+import { netlifyPluginType } from '@candy-mountain/plugin-netlify'
+import { deploymentsRoutes } from './definition'
 import { openDeploymentsTestDatabase, REPOSITORY_STAND_IN } from './test-support'
 import { CUSTOM_ENDPOINT_SOURCE } from './custom-endpoint'
 import { json, startFakeEndpoint, unreachableUrl, type FakeEndpoint } from './fake-endpoint'
@@ -27,7 +29,7 @@ afterEach(() => {
   database.close()
 })
 
-const instanceDeps = () => ({ db: database.db, pluginTypes: createPluginTypeRegistry([REPOSITORY_STAND_IN, ...DEPLOYMENTS_PLUGIN_TYPES]), secrets: lockedSecretsStore().writeOnly })
+const instanceDeps = () => ({ db: database.db, pluginTypes: createPluginTypeRegistry([REPOSITORY_STAND_IN, herokuPluginType, netlifyPluginType]), secrets: lockedSecretsStore().writeOnly })
 const project = async (name: string): Promise<Workspace> => createWorkspace(database.db, { name })
 
 function app(roles = ['admin']) {

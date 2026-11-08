@@ -1,14 +1,15 @@
 import type { Workspace } from '@candy-mountain/platform-sdk'
 import { BOT_FAMILIES } from './wire'
-import { REPOSITORY_CAPABILITY_ID, REPOSITORY_PATHS } from '@candy-mountain/cap-repository'
+import { REPOSITORY_CAPABILITY_ID, REPOSITORY_PATHS } from '@candy-mountain/plugin-repository'
 import { bindService, CapabilityDefinitionError, defineCapabilityDefinition, serviceKey, type ActivityEventTypeDeclaration, type CapabilityDefinition, type CapabilityRuntime, type WorkspaceFactDeclaration } from '@candy-mountain/platform-sdk/daemon'
 import { botSessionRoutes, botWorkspaceAgents, createBotSessionService, type BotSessionService } from './bot-sessions'
 import { teamCapability } from '@candy-mountain/cap-team'
-import { ACP_DECISIONS, ACP_SESSIONS } from '@candy-mountain/cap-chat-claude-code'
-import { chatCodexCapability } from '@candy-mountain/cap-chat-codex'
+import { ACP_CAPABILITY_ID, ACP_DECISIONS, ACP_SESSIONS } from '@candy-mountain/cap-acp'
+import { CLAUDE_CODE_CAPABILITY_ID } from '@candy-mountain/plugin-claude-code'
+import { CODEX_CAPABILITY_ID } from '@candy-mountain/plugin-codex'
 import type { Db, SecretsStore } from '@candy-mountain/platform-daemon'
 import { startSlackDecisions, type SlackDecisions, type SlackDecisionsOptions } from './slack/decisions'
-import { SLACK_CAPABILITY_ID, SLACK_CONNECTIONS } from '@candy-mountain/cap-slack'
+import { SLACK_CAPABILITY_ID, SLACK_CONNECTIONS } from '@candy-mountain/plugin-slack'
 import { slackBotSource } from './slack/bot-source'
 import { startSlackHandoffs, type SlackHandoffs, type SlackHandoffsOptions } from './slack/handoffs'
 import { startSlackRouter, type SlackRouter, type SlackRouterOptions, type SlackTurnEnd } from './slack/router'
@@ -67,8 +68,8 @@ export function botsDefinition(options: BotsOptions = {}): CapabilityDefinition 
     id: botsCapability.id,
     manifest: botsCapability,
     schema: { schema: botsSchema, migrationsFolder: srcPath('migrations') },
-    // No codex service is read, but codex bots need the family and plugin type chat-codex brings; the Slack router reads the team roster.
-    dependsOn: [REPOSITORY_CAPABILITY_ID, 'chat-claude-code', chatCodexCapability.id, SLACK_CAPABILITY_ID, teamCapability.id],
+    // No claude-code or codex service is read, but bots of each family need the family and plugin type its connection package brings; the Slack router reads the team roster.
+    dependsOn: [REPOSITORY_CAPABILITY_ID, ACP_CAPABILITY_ID, CLAUDE_CODE_CAPABILITY_ID, CODEX_CAPABILITY_ID, SLACK_CAPABILITY_ID, teamCapability.id],
     provides: [BOT_SESSIONS, BOT_WORKTREES, BOT_WORKTREE_RECLAIMER, BOT_SLACK_ROUTER, BOT_SLACK_DECISIONS, BOT_SLACK_HANDOFFS],
     activityEventTypes: BOT_ACTIVITY_EVENT_TYPES,
     workspaceFacts: BOT_WORKSPACE_FACTS,

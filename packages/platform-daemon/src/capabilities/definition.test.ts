@@ -127,6 +127,11 @@ describe('assertCapabilityDefinitions', () => {
     rejects(() => assertCapabilityDefinitions([fixtureDefinition('uptime'), fixtureDefinition('uptime')]), "Capability 'uptime' is defined more than once")
   })
 
+  it('refuses a definition with a manifest that brings plugin types, even one built without the helper', () => {
+    const deployments: CapabilityDefinition = { id: 'deployments', manifest: fixtureCapability('deployments'), pluginTypes: [fixturePluginType('heroku'), fixturePluginType('netlify')] }
+    rejects(() => assertCapabilityDefinitions([deployments]), "Capability 'deployments': has a manifest and brings plugin type 'heroku', 'netlify'")
+  })
+
   it('refuses a dependency that is not in the list, naming both sides', () => {
     rejects(() => assertCapabilityDefinitions([fixtureDefinition('bots', { dependsOn: ['slack'] })]), "Capability 'bots' depends on 'slack', which is not in the definition list.")
   })
@@ -149,7 +154,7 @@ describe('assertCapabilityDefinitions', () => {
 
   it('refuses a plugin type brought twice or already supplied by the product, naming both sides', () => {
     const slack = fixtureDefinition('slack', { manifest: null, pluginTypes: [fixturePluginType('slack')] })
-    const bots = fixtureDefinition('bots', { pluginTypes: [fixturePluginType('slack')] })
+    const bots = fixtureDefinition('bots', { manifest: null, pluginTypes: [fixturePluginType('slack')] })
     rejects(() => assertCapabilityDefinitions([slack, bots]), "Plugin type 'slack' is brought by both capability 'slack' and capability 'bots'.")
     rejects(() => assertCapabilityDefinitions([slack], { pluginTypeIds: ['slack'] }), "Plugin type 'slack' is brought by capability 'slack' but the product already supplies it.")
   })

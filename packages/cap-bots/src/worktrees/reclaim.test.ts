@@ -13,7 +13,7 @@ import { inspectWorktree } from './inspect'
 import { createWorktreePool, type WorktreeHolder, type WorktreePool } from './pool'
 import { startWorktreeReclaimer, type WorktreeReclaimer } from './reclaim'
 import { createTempGitRepo, TEST_GIT_ENV, type TempGitRepo } from './test-repo'
-import { createWorkspaceWithRepository, repositoryPaths } from '@candy-mountain/cap-repository'
+import { createWorkspaceWithRepository, repositoryPaths } from '@candy-mountain/plugin-repository'
 
 const HOUR = 3_600_000
 const holder = (id: string): WorktreeHolder => ({ kind: 'session', id })

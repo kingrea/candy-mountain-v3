@@ -3,7 +3,7 @@ import { parseHandoff } from '../handoff'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createPluginInstance, type InstanceHarness } from '@candy-mountain/platform-daemon'
 import { instanceHarness } from '../test-support'
-import { repositoryPluginType } from '@candy-mountain/cap-repository'
+import { repositoryPluginType } from '@candy-mountain/plugin-repository'
 import { BotError } from './errors'
 import { composeSurfaceInstructions, HANDOFF_INFO_STRING, HANDOFF_INSTRUCTION_FIELDS, surfaceInstructionsForBot, type SurfaceInstructionsInput } from './instructions'
 

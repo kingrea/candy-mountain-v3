@@ -5,7 +5,7 @@ import Database from 'better-sqlite3'
 import { drizzle } from 'drizzle-orm/better-sqlite3'
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
 import { afterEach, describe, expect, it } from 'vitest'
-import { findRepository } from '@candy-mountain/cap-repository'
+import { findRepository } from '@candy-mountain/plugin-repository'
 import { migrationsBefore, migrationsTableFor, openDatabase, PLATFORM_MIGRATION_SET_ID } from '@candy-mountain/platform-daemon'
 import { carriesPreSplitDatabases, testMigrationSets } from './testing'
 

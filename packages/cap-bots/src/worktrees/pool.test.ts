@@ -11,7 +11,7 @@ import { createGitRunner, GitError } from './git'
 import { createKeyedLock } from './lock'
 import { botBranchName, createWorktreePool, type WorktreeHolder, type WorktreePool } from './pool'
 import { createTempGitRepo, TEST_GIT_ENV, type TempGitRepo } from './test-repo'
-import { createWorkspaceWithRepository, repositoryPaths } from '@candy-mountain/cap-repository'
+import { createWorkspaceWithRepository, repositoryPaths } from '@candy-mountain/plugin-repository'
 
 let database: PlatformDatabase
 let repo: TempGitRepo

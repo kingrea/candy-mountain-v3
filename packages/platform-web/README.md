@@ -2,7 +2,7 @@
 
 This is the conventions document for capability layers and the shell they plug into. The `cm-layers` lint messages point here.
 
-Every capability's UI is a Nuxt layer at the root of its capability package, `packages/cap-<capability-id>/`. A plugin type's UI lives in the layer of the capability package that brings it (see Plugin-type layers). One more layer, `chat`, is shared infrastructure rather than a capability. **Core** is the shell in this package (`@candy-mountain/platform-web`, itself a Nuxt layer that a distribution such as `apps/web` extends): its `app/`, the Nitro proxy (`server/`), `shared/`, the `chat` and `overview` layers under its own `layers/`, its tests and config. Core holds the platform's own pages (projects, settings) and plumbing; it never knows about a capability or a product plugin type, and it never imports a product: the distribution's `nuxt.config.ts` hands it the product configuration through the `platformWeb: { product }` option of the package's Nuxt module (`modules/platform-web.ts`), which the shell reads as `PRODUCT` (`shared/utils/product.ts`). `apps/web`, Candy Mountain's web distribution, holds only that config (with the product configuration from `@candy-mountain/candy-mountain`), its `package.json` (one dependency per capability package), `public/` and distribution-level tests.
+Every capability's UI is a Nuxt layer at the root of its capability package, `packages/cap-<capability-id>/`, or of its connection package, `packages/plugin-<plugin-type-id>/`. A plugin type's UI lives in the layer of the connection package that brings it (see Plugin-type layers). One more layer, `chat`, is shared infrastructure rather than a capability. **Core** is the shell in this package (`@candy-mountain/platform-web`, itself a Nuxt layer that a distribution such as `apps/web` extends): its `app/`, the Nitro proxy (`server/`), `shared/`, the `chat` and `overview` layers under its own `layers/`, its tests and config. Core holds the platform's own pages (projects, settings) and plumbing; it never knows about a capability or a product plugin type, and it never imports a product: the distribution's `nuxt.config.ts` hands it the product configuration through the `platformWeb: { product }` option of the package's Nuxt module (`modules/platform-web.ts`), which the shell reads as `PRODUCT` (`shared/utils/product.ts`). `apps/web`, Candy Mountain's web distribution, holds only that config (with the product configuration from `@candy-mountain/candy-mountain`), its `package.json` (one dependency per capability package), `public/` and distribution-level tests.
 
 ## Shared visual system
 
@@ -26,13 +26,13 @@ The base text size is 14px; dashboard titles are 18px. Keep the existing system 
 The web app registers exactly the layers the product configuration lists. `apps/web/nuxt.config.ts` spreads `layerListConfig(CANDY_MOUNTAIN_PRODUCT.layers, root)` from `@candy-mountain/platform-web/layer-list` (`packages/platform-web/layer-list.mjs`) and appends `@candy-mountain/platform-web` to its `extends`. Each id in the product configuration's `layers` (`packages/candy-mountain/src/product.ts`) resolves to a layer package the app depends on (below) or, in a distribution that keeps one, to a `layers/<id>/` directory of its own; the shell's own layers (`platformLayers()`: `chat`, `overview`) are listed too but resolve to nothing, since extending the shell brings them. A listed id that resolves to neither, that resolves to both, or whose package has no `nuxt.config` fails the build with an error naming it. A `layers/<id>/` directory that is not listed is dropped (with its `#layers/<id>` alias) in the `modules:before` hook, because Nuxt globs `layers/*` regardless. List order is layer priority (first wins). There is no glob-only mode: Nuxt's glob never registers a layer package.
 
 - `apps/web/test/unit/distribution.test.ts` keeps the product list equal to the web app's layer packages plus the shell's own layers (`apps/web` has no `layers/` directory), checks each id resolves to its package directory and that every layer package with pages contributes its `/p/:project/<id>` route: a new layer's id goes into `CANDY_MOUNTAIN_PRODUCT.layers` and its package into `apps/web/package.json`.
-- The layer id (the package's `webLayer`) is the capability id from the capability's manifest (lowercase kebab-case, e.g. `issues`, `agent-hub`), the plugin type id for a plugin-type layer (e.g. `repository`), or `chat`.
+- The layer id (the package's `webLayer`) is the capability id from the capability's manifest (lowercase kebab-case, e.g. `issues`, `agent-hub`), the plugin type id for a connection package's layer (e.g. `repository`, `claude-code`), or `chat`.
 - Registration gives the layer the alias `#layers/<id>` pointing at its root, in Vite and in the generated tsconfig. The distribution's `nuxt typecheck` covers every registered layer's `app/**`.
 - A layer's `app/app.config.ts` deep-merges into the app config (core wins on conflict). That is how a capability contributes to shared surfaces such as the chat layer without the chat layer importing it.
 
 ## Layer packages
 
-Every capability's `packages/cap-<id>` is a layer package (see `packages/cap-repository`). A package is a layer package when:
+Every capability's `packages/cap-<id>` and every connection package `packages/plugin-<id>` is a layer package when it has UI (see `packages/plugin-repository`). A package is a layer package when:
 
 - its `package.json` declares `"webLayer": "<id>"`, the layer id;
 - it is a `dependencies` or `devDependencies` entry of the web app's `package.json`, found through `node_modules` from the web root (`link:` and `file:` specs resolve straight from the spec, without an install);
@@ -40,7 +40,7 @@ Every capability's `packages/cap-<id>` is a layer package (see `packages/cap-rep
 
 The package's real directory goes into `extends` with `meta.name` set to the id, which gives it the `#layers/<id>` alias.
 
-A capability package (`packages/cap-<id>`, `packages/cap-repository` is the reference) is both the capability's daemon half and its layer: `src/` is the daemon side behind the root entry, and `nuxt.config.ts`, `app/` and `test/` at the package root are the layer. The layer imports the capability's wire types relatively from the package's own `src/wire.ts` (Node-free; the root entry re-exports it for the daemon side and for dependent capabilities); it never imports the package's root entry, which carries daemon code. The package lists `vue`, `zod` and whatever else the layer imports in its own `dependencies`. Its `nuxt.config.ts` adds the layer's `test/` to the distribution's app tsconfig (`typescript.tsConfig.include`), since `nuxt typecheck` of the distribution is what typechecks `app/` and `test/`; the package's own `tsc` covers `src/` only, and its `vitest.config.ts` runs `src/**/*.test.ts` and `test/**/*.test.ts`. `packageLayers(root)` in `packages/platform-web/layer-list.mjs` is the single discovery both Nuxt and the boundary lint use.
+A capability or connection package (`packages/cap-<id>` or `packages/plugin-<id>`; `packages/plugin-repository` is the reference) is both the capability's daemon half and its layer: `src/` is the daemon side behind the root entry, and `nuxt.config.ts`, `app/` and `test/` at the package root are the layer. The layer imports the capability's wire types relatively from the package's own `src/wire.ts` (Node-free; the root entry re-exports it for the daemon side and for dependent capabilities); it never imports the package's root entry, which carries daemon code. The package lists `vue`, `zod` and whatever else the layer imports in its own `dependencies`. Its `nuxt.config.ts` adds the layer's `test/` to the distribution's app tsconfig (`typescript.tsConfig.include`), since `nuxt typecheck` of the distribution is what typechecks `app/` and `test/`; the package's own `tsc` covers `src/` only, and its `vitest.config.ts` runs `src/**/*.test.ts` and `test/**/*.test.ts`. `packageLayers(root)` in `packages/platform-web/layer-list.mjs` is the single discovery both Nuxt and the boundary lint use.
 
 ## Directory shape
 
@@ -152,24 +152,24 @@ Ownership comes from where a file lives, not its name: a file under a layer pack
 
 ## Plugin-type layers
 
-A plugin type that no capability with views owns (today `repository` and `slack`) still has UI: an icon, perhaps a panel on the Plugins page or a setup form. That UI lives in a plugin-type layer named after the plugin type id. It has no manifest and no pages; it holds components, assets and a Nuxt plugin that registers them through core's registration functions, so core never names the plugin type.
+Every plugin type is brought by a connection package, `packages/plugin-<id>` (`repository`, `slack`, `claude-code`, `codex`, `heroku`, `netlify`): a service-only capability definition with no manifest whose id is its plugin type's id, and the only kind of package allowed to bring plugin types (a `cap-` package never does; a service-only package that brings none keeps the `cap-` prefix, as `cap-acp` does). A plugin type has UI: an icon, perhaps a panel on the Plugins page, a setup form or a login panel. That UI lives in the connection package's own layer, named after the plugin type id, never in the feature capability that requires the type (the chat capabilities keep only their chat family pieces). It has no manifest and no pages; it holds components, assets and a Nuxt plugin that registers them through core's registration functions, so core never names the plugin type.
 
 ```ts
-// packages/cap-repository/app/plugins/repository.ts
+// packages/plugin-repository/app/plugins/repository.ts
 export default defineNuxtPlugin(() => {
   registerPluginPanel('repository', defineAsyncComponent(() => import('#layers/repository/app/components/Panel.vue')))
   registerPluginIcon('repository', { name: 'i-lucide-git-branch' })
 })
 ```
 
-`registerPluginIcon(typeId, icon)` sets the icon `PluginsIcon` shows beside the type's name everywhere a plugin is listed: either `{ name }`, an icon name as `UIcon` takes it, or `{ src, class? }`, an image URL (an SVG under the layer's `app/assets/`, imported with `?url`) plus classes for the `<img>`. A type nobody registers shows core's generic plug. A plugin type a capability owns (such as `claude-code`) registers its icon, panel and form from that capability's layer instead, the same way. Name a layer's Nuxt plugin after the layer, never after a core plugin file (see the `~/` alias above). For the boundary lint a plugin-type layer is a capability layer: the same dependency directions and the same prefix rule (`RepositoryPanel` above), and `layer-pages` would only allow pages under `p/[project]/<id>/`, which it should not have.
+`registerPluginIcon(typeId, icon)` sets the icon `PluginsIcon` shows beside the type's name everywhere a plugin is listed: either `{ name }`, an icon name as `UIcon` takes it, or `{ src, class? }`, an image URL (an SVG under the layer's `app/assets/`, imported with `?url`) plus classes for the `<img>`. A type nobody registers shows core's generic plug. Every connection package registers its type's icon, panel and form from its own layer the same way (`packages/plugin-claude-code/app/plugins/claude-code.ts` registers the icon, setup form and login panel of `claude-code`). Name a layer's Nuxt plugin after the layer, never after a core plugin file (see the `~/` alias above). For the boundary lint a connection package's layer is a capability layer: the same dependency directions and the same prefix rule (`RepositoryPanel` above), and `layer-pages` would only allow pages under `p/[project]/<id>/`, which it should not have.
 
 ## Project home cards
 
 The project home (`/p/:project`, the overview layer's page) is platform: it shows the project's own facts, its enabled modules, plugin health and the activity feed, and knows no product capability or plugin type. A layer adds a card to it with core's `registerProjectHomeCard(slot, card)` (`app/utils/project-home.ts`, auto-imported), called from the contributing layer's own Nuxt plugin. The registration lives in core because the overview is a capability layer and capabilities may not use each other's names.
 
 ```ts
-// packages/cap-repository/app/plugins/repository.ts
+// packages/plugin-repository/app/plugins/repository.ts
 export default defineNuxtPlugin(() => {
   registerProjectHomeCard('facts', {
     id: 'repository',
@@ -203,10 +203,10 @@ The Projects page (core's `app/pages/projects.vue`, its form modal and list) is 
 
 **Row items and actions** (`app/utils/project-list.ts`). `registerProjectRowItem(slot, item)` adds a component to every row of the list; it takes `ProjectRowItemProps` (`project`). The slots (`PROJECT_ROW_SLOTS`) are `detail`, under the name and slug, and `badges`, beside the row's actions menu; `item.id` is unique within a slot and items render in registration order. `registerProjectRowAction(action)` adds an entry to each row's actions menu after Edit: `run(project)` is awaited by the page, a throw shows above the list, the page refreshes the projects either way, and an answered `ProjectRowActionNote` (`title`, `description`) becomes a toast.
 
-With nothing contributed the form has only core's fields and the rows only the name, slug, archived badge and core's actions (`packages/platform-web/test/unit/project-form.test.ts`). The repository layer (`packages/cap-repository`) contributes the local path field with its live path check (`POST /workspaces/repository/check`), the path under each row's name, the verification facts beside the menu and the "Re-check path" action (`POST /workspaces/:slug/repository/verify`). The project body carries no path: the field's `afterSave` writes it with `PUT /workspaces/:slug/repository` once the project is saved, and the row items, the facts card and the form read the stored repository through the layer's `useRepository(slug)` composable (`GET /workspaces/:slug/repository`, null when the workspace has none; keyed `repository:<slug>`, so core's `refreshProjectData()` refreshes it too):
+With nothing contributed the form has only core's fields and the rows only the name, slug, archived badge and core's actions (`packages/platform-web/test/unit/project-form.test.ts`). The repository layer (`packages/plugin-repository`) contributes the local path field with its live path check (`POST /workspaces/repository/check`), the path under each row's name, the verification facts beside the menu and the "Re-check path" action (`POST /workspaces/:slug/repository/verify`). The project body carries no path: the field's `afterSave` writes it with `PUT /workspaces/:slug/repository` once the project is saved, and the row items, the facts card and the form read the stored repository through the layer's `useRepository(slug)` composable (`GET /workspaces/:slug/repository`, null when the workspace has none; keyed `repository:<slug>`, so core's `refreshProjectData()` refreshes it too):
 
 ```ts
-// packages/cap-repository/app/plugins/repository.ts
+// packages/plugin-repository/app/plugins/repository.ts
 export default defineNuxtPlugin((nuxtApp) => {
   const api: RepositoryApi = (path, options) => nuxtApp.$api(path, options)
   registerProjectFormField(repositoryFormField(defineAsyncComponent(() => import('#layers/repository/app/components/FormPath.vue')), api))
@@ -224,7 +224,7 @@ The chat layer is platform: it renders a thread of any agent family and knows no
 - `chatFamilyRegister(family, pieces)` adds components to every thread whose agent has that session family (`layers/chat/app/utils/chatFamilies.ts`). `pieces.id` is the contributing layer's id (registering the same id again replaces the earlier pieces); the other fields name a slot of the agent panel: `aboveTranscript`, between the panel header and the transcript, and `promptBar`, in the prompt bar's footer. Several layers may contribute to one family and render in registration order. The chat layer renders whatever is registered for the current thread's family and nothing for a family with no pieces.
 
 ```ts
-// layers/chat-claude-code/app/plugins/chat-claude-code.ts
+// packages/cap-chat-claude-code/app/plugins/chat-claude-code.ts
 export default defineNuxtPlugin(() => {
   chatFamilyRegister('claude-code', {
     id: 'chat-claude-code',

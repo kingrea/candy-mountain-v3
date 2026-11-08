@@ -11,7 +11,7 @@ import { inspectWorktree } from './inspect'
 import { DEPENDENCY_OUTPUT_TAIL_BYTES, dependencyInstallState, detectPackageManager, type DependencyInstaller, installEnv, installWorktreeDependencies } from './install'
 import { createWorktreePool, type WorktreePool } from './pool'
 import { createTempGitRepo, TEST_GIT_ENV, type TempGitRepo } from './test-repo'
-import { createWorkspaceWithRepository, repositoryPaths } from '@candy-mountain/cap-repository'
+import { createWorkspaceWithRepository, repositoryPaths } from '@candy-mountain/plugin-repository'
 
 const dirs: string[] = []
 function tempDir(files: Record<string, string> = {}): string {

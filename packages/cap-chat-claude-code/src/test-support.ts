@@ -1,13 +1,11 @@
 import { join } from 'node:path'
-import { repositoryDefinition } from '@candy-mountain/cap-repository'
+import { ACP_DECISIONS, ACP_HARNESS, ACP_SESSIONS, acpDefinition, assertCodexLaunchOptions, type AcpHarness, type AcpOptions, type DecisionService, type SessionLauncher, type SessionManager } from '@candy-mountain/cap-acp'
+import { claudeCodeDefinition } from '@candy-mountain/plugin-claude-code'
+import { repositoryDefinition } from '@candy-mountain/plugin-repository'
 import type { ModuleDefinition } from '@candy-mountain/platform-sdk'
 import { defineCapability, defineCapabilityDefinition, type CapabilityDefinition } from '@candy-mountain/platform-sdk/daemon'
 import { definePluginType, resolvePluginInstance, SessionError, startPlatform, testProduct, type Platform, type PlatformOptions, type Product, type ProductParts } from '@candy-mountain/platform-daemon'
-import { assertCodexLaunchOptions, type AcpHarness } from './acp'
-import type { DecisionService } from './decisions'
-import { ACP_DECISIONS, ACP_HARNESS, ACP_SESSIONS, chatClaudeCodeDefinition, type ChatClaudeCodeOptions } from './definition'
-import { chatClaudeCodeCapability } from './manifest'
-import type { SessionLauncher, SessionManager } from './sessions'
+import { chatClaudeCodeDefinition } from './definition'
 
 export const CODEX_STAND_IN_FAMILY = { id: 'codex', name: 'Codex' } as const
 
@@ -15,7 +13,7 @@ export const CODEX_STAND_IN_FAMILY = { id: 'codex', name: 'Codex' } as const
 export const codexStandInPluginType = definePluginType({
   id: 'codex',
   name: 'Codex',
-  description: 'Stands in for the Codex plugin type of chat-codex.',
+  description: 'Stands in for the Codex plugin type of plugin-codex.',
   reach: ['Run the fake ACP agent as Codex.'],
   scopes: ['workspace'],
   singleInstance: true,
@@ -39,7 +37,7 @@ const codexStandInCapability = defineCapability({
   ],
 })
 
-/** Launches like chat-codex does: the workspace's plugin instance names the home, the posture carries the codex options. */
+/** Launches like codex does: the workspace's plugin instance names the home, the posture carries the codex options. */
 const codexStandInLauncher: SessionLauncher = {
   assertPosture(posture) {
     if (posture.codex) assertCodexLaunchOptions(posture.codex)
@@ -51,12 +49,11 @@ const codexStandInLauncher: SessionLauncher = {
   },
 }
 
-/** What the chat-codex definition contributes, without chat-codex: a dependent of chat-claude-code bringing a second family. */
-export function codexStandInDefinition(): CapabilityDefinition {
-  return defineCapabilityDefinition({
-    id: codexStandInCapability.id,
-    manifest: codexStandInCapability,
-    dependsOn: [chatClaudeCodeCapability.id],
+/** What codex and chat-codex contribute, without either: a connection on acp bringing a second family, and its chat capability. */
+export function codexStandInDefinitions(): CapabilityDefinition[] {
+  const connection = defineCapabilityDefinition({
+    id: codexStandInPluginType.id,
+    dependsOn: ['acp'],
     pluginTypes: [codexStandInPluginType],
     sessionFamilies: [CODEX_STAND_IN_FAMILY],
     start({ service }) {
@@ -64,6 +61,7 @@ export function codexStandInDefinition(): CapabilityDefinition {
       return {}
     },
   })
+  return [connection, defineCapabilityDefinition({ id: codexStandInCapability.id, manifest: codexStandInCapability, dependsOn: [connection.id] })]
 }
 
 export const AGENT_HUB_MODULE: ModuleDefinition = {
@@ -83,23 +81,23 @@ export interface AcpServices {
   acpHarness: AcpHarness
 }
 
-/** The services the chat-claude-code definition offers; throws when the platform started without it. */
+/** The services the acp definition offers; throws when the platform started without it. */
 export function acpServices(platform: Pick<Platform, 'runtime'>): AcpServices {
   const sessions = platform.runtime.service(ACP_SESSIONS)
   const decisions = platform.runtime.service(ACP_DECISIONS)
   const acpHarness = platform.runtime.service(ACP_HARNESS)
-  if (!sessions || !decisions || !acpHarness) throw new Error('The platform started without the chat-claude-code definition.')
+  if (!sessions || !decisions || !acpHarness) throw new Error('The platform started without the acp definition.')
   return { sessions, decisions, acpHarness }
 }
 
 export type AcpPlatform = Platform & AcpServices
 
-export interface AcpPlatformOptions extends Omit<PlatformOptions, 'product'>, ChatClaudeCodeOptions, Pick<ProductParts, 'capabilities' | 'modules'> {}
+export interface AcpPlatformOptions extends Omit<PlatformOptions, 'product'>, AcpOptions, Pick<ProductParts, 'capabilities' | 'modules'> {}
 
-/** The product the tests boot: repository, chat-claude-code with the given options and the codex stand-in in the Agent Hub module. */
+/** The product the tests boot: repository, acp with the given options, claude-code, chat-claude-code and the codex stand-in in the Agent Hub module. */
 export function acpTestProduct({ acp, sessions, decisions, capabilities = [], modules = [] }: Omit<AcpPlatformOptions, keyof PlatformOptions> = {}): Product {
   return testProduct({
-    capabilities: [repositoryDefinition(), chatClaudeCodeDefinition({ acp, sessions, decisions }), codexStandInDefinition(), ...capabilities],
+    capabilities: [repositoryDefinition(), acpDefinition({ acp, sessions, decisions }), claudeCodeDefinition(), chatClaudeCodeDefinition(), ...codexStandInDefinitions(), ...capabilities],
     modules: [AGENT_HUB_MODULE, ...modules],
   })
 }

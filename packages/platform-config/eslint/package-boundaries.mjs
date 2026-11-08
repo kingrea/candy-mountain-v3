@@ -3,15 +3,18 @@ import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:pat
 
 const SCOPE = '@candy-mountain/'
 const PLATFORM_PREFIX = `${SCOPE}platform-`
-const CAPABILITY_PREFIX = `${SCOPE}cap-`
+const PLUGIN_PREFIX = `${SCOPE}plugin-`
+// A plugin- package is a connection: a capability that brings plugin types, held to the same boundaries.
+const CAPABILITY_PREFIXES = [`${SCOPE}cap-`, PLUGIN_PREFIX]
 const WORKSPACE_FILE = 'pnpm-workspace.yaml'
 
-const DIRECTIONS = 'Allowed: a capability or distribution -> a platform package\'s declared entries; a capability -> a dependency capability\'s root entry; never the reverse, never a relative path across package roots.'
-const DOCS = '.ai-docs/plans/platform-extraction/overview.md'
+const DIRECTIONS = 'Allowed: a capability (cap-* or plugin-*) or distribution -> a platform package\'s declared entries; a capability -> a dependency capability\'s root entry; never the reverse, never a relative path across package roots. Only a plugin-* package brings plugin types: its definition has no manifest and brings the plugin type named by its id, and a cap-* package brings none.'
+const DOCS = 'README.md'
 
-/** The capability id a `@candy-mountain/cap-<id>` package name carries, or undefined for any other package. */
+/** The capability id a `@candy-mountain/cap-<id>` or `@candy-mountain/plugin-<id>` package name carries, or undefined for any other package. */
 export function capabilityId(name) {
-  return name.startsWith(CAPABILITY_PREFIX) ? name.slice(CAPABILITY_PREFIX.length) : undefined
+  const prefix = CAPABILITY_PREFIXES.find(prefix => name.startsWith(prefix))
+  return prefix ? name.slice(prefix.length) : undefined
 }
 
 /** `platform`, `capability` or `other` (a distribution, the product package or a library such as claude-acp). */
@@ -94,7 +97,7 @@ function entriesOf(manifest) {
 }
 
 /**
- * Every package of the pnpm workspace at `root`, by name.
+ * Every package of the pnpm workspace at `root`, by name. Throws when two capability packages carry the same id.
  * @param {string} root
  * @returns {Map<string, WorkspacePackage>}
  */
@@ -112,6 +115,13 @@ export function workspacePackages(root) {
       devDependencies: Object.keys(manifest.devDependencies ?? {}),
       ...entriesOf(manifest),
     })
+  }
+  const byId = new Map()
+  for (const pkg of packages.values()) {
+    if (!pkg.capabilityId) continue
+    const other = byId.get(pkg.capabilityId)
+    if (other) throw new Error(`${other.name} and ${pkg.name} both carry capability id '${pkg.capabilityId}'; a cap- and a plugin- package may not share an id.`)
+    byId.set(pkg.capabilityId, pkg)
   }
   return packages
 }
@@ -137,6 +147,23 @@ export function capabilityDependencyDrift(pkg, definition, packages) {
     const name = byId.get(id).name
     if (!declared.includes(name)) problems.push(`${pkg.name}'s definition depends on '${id}' but its package.json dependencies omit ${name}`)
   }
+  return problems
+}
+
+/**
+ * Where a capability package breaks the plugin-/cap- rule: a plugin- package's definition has no manifest and brings the plugin type named by its id; a cap- package's brings none. Empty when it holds.
+ * @param {WorkspacePackage} pkg
+ * @param {{ id: string, manifest?: unknown, pluginTypes?: readonly { id: string }[] }} definition
+ * @returns {string[]}
+ */
+export function capabilityKindProblems(pkg, definition) {
+  const types = (definition.pluginTypes ?? []).map(type => type.id)
+  if (!pkg.name.startsWith(PLUGIN_PREFIX)) {
+    return types.length ? [`${pkg.name} is a cap- package, so its definition may not bring plugin types, but it brings ${types.map(id => `'${id}'`).join(', ')}; move them to a plugin- package`] : []
+  }
+  const problems = []
+  if (definition.manifest !== undefined) problems.push(`${pkg.name} is a plugin- package, so its definition may not have a manifest`)
+  if (!types.includes(pkg.capabilityId)) problems.push(`${pkg.name} is a plugin- package, so its definition must bring plugin type '${pkg.capabilityId}'`)
   return problems
 }
 

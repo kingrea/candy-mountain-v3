@@ -72,7 +72,7 @@ describe('the platform package', () => {
     const source = [
       `import { BOT_SESSIONS } from '../../../apps/daemon/src/bots'`,
       `import type { Product } from '@candy-mountain/daemon'`,
-      `export { slackDefinition } from '@candy-mountain/cap-slack'`,
+      `export { slackDefinition } from '@candy-mountain/plugin-slack'`,
       `import '@candy-mountain/candy-mountain'`,
       `const codex = await import('../../apps/daemon/src/plugins/codex')`,
       `import { Hono } from 'hono'`,
@@ -82,7 +82,7 @@ describe('the platform package', () => {
     expect(violations(file, source)).toEqual([
       '../../../apps/daemon/src/bots',
       '@candy-mountain/daemon',
-      '@candy-mountain/cap-slack',
+      '@candy-mountain/plugin-slack',
       '@candy-mountain/candy-mountain',
       '../../apps/daemon/src/plugins/codex',
     ])

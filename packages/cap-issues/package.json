@@ -15,7 +15,7 @@
     "db:check": "drizzle-kit check"
   },
   "dependencies": {
-    "@candy-mountain/cap-repository": "workspace:*",
+    "@candy-mountain/plugin-repository": "workspace:*",
     "@candy-mountain/platform-daemon": "workspace:*",
     "@candy-mountain/platform-sdk": "workspace:*",
     "@nuxt/ui": "^4.12.0",

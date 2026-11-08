@@ -9,7 +9,7 @@ import {
 } from './wire'
 import { Hono, type Context } from 'hono'
 import { type AppEnv, type Db, getWorkspaceBySlug, WorkspaceError } from '@candy-mountain/platform-daemon'
-import { RepositoryError, type RepositoryPaths } from '@candy-mountain/cap-repository'
+import { RepositoryError, type RepositoryPaths } from '@candy-mountain/plugin-repository'
 import { IssueError } from './errors'
 import { issuesService, type IssueProject, type IssuesService } from './service'
 

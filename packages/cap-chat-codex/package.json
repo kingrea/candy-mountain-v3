@@ -13,9 +13,10 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@candy-mountain/cap-chat-claude-code": "workspace:*",
+    "@candy-mountain/cap-acp": "workspace:*",
     "@candy-mountain/platform-daemon": "workspace:*",
     "@candy-mountain/platform-sdk": "workspace:*",
+    "@candy-mountain/plugin-codex": "workspace:*",
     "vue": "^3.5.44"
   },
   "devDependencies": {

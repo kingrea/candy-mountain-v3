@@ -2,7 +2,7 @@ import { execFileSync, spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { curateAgentEnv } from '@candy-mountain/cap-chat-claude-code'
+import { curateAgentEnv } from '@candy-mountain/cap-acp'
 import { beadsEnvForWorktree } from './bd-env'
 import { createTempGitRepo, TEST_GIT_ENV, type TempGitRepo } from './test-repo'
 

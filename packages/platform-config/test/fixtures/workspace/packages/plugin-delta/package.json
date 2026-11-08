@@ -1,0 +1,12 @@
+{
+  "name": "@candy-mountain/plugin-delta",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@candy-mountain/cap-alpha": "workspace:*",
+    "@candy-mountain/platform-core": "workspace:*"
+  }
+}

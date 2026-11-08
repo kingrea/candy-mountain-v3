@@ -212,6 +212,9 @@ importers:
       '@candy-mountain/candy-mountain':
         specifier: workspace:*
         version: link:../../packages/candy-mountain
+      '@candy-mountain/cap-acp':
+        specifier: workspace:*
+        version: link:../../packages/cap-acp
       '@candy-mountain/cap-bots':
         specifier: workspace:*
         version: link:../../packages/cap-bots
@@ -227,12 +230,6 @@ importers:
       '@candy-mountain/cap-issues':
         specifier: workspace:*
         version: link:../../packages/cap-issues
-      '@candy-mountain/cap-repository':
-        specifier: workspace:*
-        version: link:../../packages/cap-repository
-      '@candy-mountain/cap-slack':
-        specifier: workspace:*
-        version: link:../../packages/cap-slack
       '@candy-mountain/cap-team':
         specifier: workspace:*
         version: link:../../packages/cap-team
@@ -251,6 +248,24 @@ importers:
       '@candy-mountain/platform-sdk':
         specifier: workspace:*
         version: link:../../packages/platform-sdk
+      '@candy-mountain/plugin-claude-code':
+        specifier: workspace:*
+        version: link:../../packages/plugin-claude-code
+      '@candy-mountain/plugin-codex':
+        specifier: workspace:*
+        version: link:../../packages/plugin-codex
+      '@candy-mountain/plugin-heroku':
+        specifier: workspace:*
+        version: link:../../packages/plugin-heroku
+      '@candy-mountain/plugin-netlify':
+        specifier: workspace:*
+        version: link:../../packages/plugin-netlify
+      '@candy-mountain/plugin-repository':
+        specifier: workspace:*
+        version: link:../../packages/plugin-repository
+      '@candy-mountain/plugin-slack':
+        specifier: workspace:*
+        version: link:../../packages/plugin-slack
       '@hono/node-server':
         specifier: ^2.1.5
         version: 2.1.5(hono@4.13.14)
@@ -315,12 +330,6 @@ importers:
       '@candy-mountain/cap-issues':
         specifier: workspace:*
         version: link:../../packages/cap-issues
-      '@candy-mountain/cap-repository':
-        specifier: workspace:*
-        version: link:../../packages/cap-repository
-      '@candy-mountain/cap-slack':
-        specifier: workspace:*
-        version: link:../../packages/cap-slack
       '@candy-mountain/cap-team':
         specifier: workspace:*
         version: link:../../packages/cap-team
@@ -333,6 +342,24 @@ importers:
       '@candy-mountain/platform-web':
         specifier: workspace:*
         version: link:../../packages/platform-web
+      '@candy-mountain/plugin-claude-code':
+        specifier: workspace:*
+        version: link:../../packages/plugin-claude-code
+      '@candy-mountain/plugin-codex':
+        specifier: workspace:*
+        version: link:../../packages/plugin-codex
+      '@candy-mountain/plugin-heroku':
+        specifier: workspace:*
+        version: link:../../packages/plugin-heroku
+      '@candy-mountain/plugin-netlify':
+        specifier: workspace:*
+        version: link:../../packages/plugin-netlify
+      '@candy-mountain/plugin-repository':
+        specifier: workspace:*
+        version: link:../../packages/plugin-repository
+      '@candy-mountain/plugin-slack':
+        specifier: workspace:*
+        version: link:../../packages/plugin-slack
       '@iconify-json/lucide':
         specifier: ^1.2.147
         version: 1.2.147
@@ -369,20 +396,48 @@ importers:
         specifier: workspace:*
         version: link:../platform-config
 
+  packages/cap-acp:
+    dependencies:
+      '@agentclientprotocol/codex-acp':
+        specifier: 2.3.0
+        version: 2.3.0
+      '@agentclientprotocol/sdk':
+        specifier: 1.4.0
+        version: 1.4.0(zod@4.6.7)
+      '@candy-mountain/claude-acp':
+        specifier: workspace:*
+        version: link:../claude-acp
+      '@candy-mountain/platform-daemon':
+        specifier: workspace:*
+        version: link:../platform-daemon
+      '@candy-mountain/platform-sdk':
+        specifier: workspace:*
+        version: link:../platform-sdk
+      '@candy-mountain/plugin-repository':
+        specifier: workspace:*
+        version: link:../plugin-repository
+      drizzle-orm:
+        specifier: ^0.45.4
+        version: 0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)
+      hono:
+        specifier: ^4.13.14
+        version: 4.13.14
+    devDependencies:
+      '@candy-mountain/platform-config':
+        specifier: workspace:*
+        version: link:../platform-config
+      '@types/better-sqlite3':
+        specifier: ^9.6.0
+        version: 9.6.0
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
+
   packages/cap-bots:
     dependencies:
-      '@candy-mountain/cap-chat-claude-code':
+      '@candy-mountain/cap-acp':
         specifier: workspace:*
-        version: link:../cap-chat-claude-code
-      '@candy-mountain/cap-chat-codex':
-        specifier: workspace:*
-        version: link:../cap-chat-codex
-      '@candy-mountain/cap-repository':
-        specifier: workspace:*
-        version: link:../cap-repository
-      '@candy-mountain/cap-slack':
-        specifier: workspace:*
-        version: link:../cap-slack
+        version: link:../cap-acp
       '@candy-mountain/cap-team':
         specifier: workspace:*
         version: link:../cap-team
@@ -395,6 +450,18 @@ importers:
       '@candy-mountain/platform-sdk':
         specifier: workspace:*
         version: link:../platform-sdk
+      '@candy-mountain/plugin-claude-code':
+        specifier: workspace:*
+        version: link:../plugin-claude-code
+      '@candy-mountain/plugin-codex':
+        specifier: workspace:*
+        version: link:../plugin-codex
+      '@candy-mountain/plugin-repository':
+        specifier: workspace:*
+        version: link:../plugin-repository
+      '@candy-mountain/plugin-slack':
+        specifier: workspace:*
+        version: link:../plugin-slack
       '@nuxt/ui':
         specifier: ^4.12.0
         version: 4.12.0(b6d6ebbd6af74a56fa334ee50252a8b1)
@@ -426,30 +493,24 @@ importers:
 
   packages/cap-chat-claude-code:
     dependencies:
-      '@agentclientprotocol/codex-acp':
-        specifier: 2.3.0
-        version: 2.3.0
-      '@agentclientprotocol/sdk':
-        specifier: 1.4.0
-        version: 1.4.0(zod@4.6.7)
-      '@candy-mountain/cap-repository':
+      '@candy-mountain/cap-acp':
         specifier: workspace:*
-        version: link:../cap-repository
-      '@candy-mountain/claude-acp':
-        specifier: workspace:*
-        version: link:../claude-acp
+        version: link:../cap-acp
       '@candy-mountain/platform-daemon':
         specifier: workspace:*
         version: link:../platform-daemon
       '@candy-mountain/platform-sdk':
         specifier: workspace:*
         version: link:../platform-sdk
+      '@candy-mountain/plugin-claude-code':
+        specifier: workspace:*
+        version: link:../plugin-claude-code
+      '@candy-mountain/plugin-repository':
+        specifier: workspace:*
+        version: link:../plugin-repository
       drizzle-orm:
         specifier: ^0.45.4
         version: 0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)
-      hono:
-        specifier: ^4.13.14
-        version: 4.13.14
       vue:
         specifier: ^3.5.44
         version: 3.5.44(typescript@6.0.3)
@@ -463,21 +524,21 @@ importers:
       '@types/better-sqlite3':
         specifier: ^9.6.0
         version: 9.6.0
-      tsx:
-        specifier: ^4.23.15
-        version: 4.23.15
 
   packages/cap-chat-codex:
     dependencies:
-      '@candy-mountain/cap-chat-claude-code':
+      '@candy-mountain/cap-acp':
         specifier: workspace:*
-        version: link:../cap-chat-claude-code
+        version: link:../cap-acp
       '@candy-mountain/platform-daemon':
         specifier: workspace:*
         version: link:../platform-daemon
       '@candy-mountain/platform-sdk':
         specifier: workspace:*
         version: link:../platform-sdk
+      '@candy-mountain/plugin-codex':
+        specifier: workspace:*
+        version: link:../plugin-codex
       vue:
         specifier: ^3.5.44
         version: 3.5.44(typescript@6.0.3)
@@ -500,6 +561,12 @@ importers:
       '@candy-mountain/platform-sdk':
         specifier: workspace:*
         version: link:../platform-sdk
+      '@candy-mountain/plugin-heroku':
+        specifier: workspace:*
+        version: link:../plugin-heroku
+      '@candy-mountain/plugin-netlify':
+        specifier: workspace:*
+        version: link:../plugin-netlify
       '@nuxt/ui':
         specifier: ^4.12.0
         version: 4.12.0(b6d6ebbd6af74a56fa334ee50252a8b1)
@@ -531,15 +598,15 @@ importers:
 
   packages/cap-issues:
     dependencies:
-      '@candy-mountain/cap-repository':
-        specifier: workspace:*
-        version: link:../cap-repository
       '@candy-mountain/platform-daemon':
         specifier: workspace:*
         version: link:../platform-daemon
       '@candy-mountain/platform-sdk':
         specifier: workspace:*
         version: link:../platform-sdk
+      '@candy-mountain/plugin-repository':
+        specifier: workspace:*
+        version: link:../plugin-repository
       '@nuxt/ui':
         specifier: ^4.12.0
         version: 4.12.0(b6d6ebbd6af74a56fa334ee50252a8b1)
@@ -571,68 +638,6 @@ importers:
       drizzle-kit:
         specifier: ^0.31.11
         version: 0.31.11
-
-  packages/cap-repository:
-    dependencies:
-      '@candy-mountain/platform-daemon':
-        specifier: workspace:*
-        version: link:../platform-daemon
-      '@candy-mountain/platform-sdk':
-        specifier: workspace:*
-        version: link:../platform-sdk
-      drizzle-orm:
-        specifier: ^0.45.4
-        version: 0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)
-      hono:
-        specifier: ^4.13.14
-        version: 4.13.14
-      vue:
-        specifier: ^3.5.44
-        version: 3.5.44(typescript@6.0.3)
-      zod:
-        specifier: ^4.6.7
-        version: 4.6.7
-    devDependencies:
-      '@candy-mountain/platform-config':
-        specifier: workspace:*
-        version: link:../platform-config
-      '@candy-mountain/platform-web':
-        specifier: workspace:*
-        version: link:../platform-web
-      '@types/better-sqlite3':
-        specifier: ^9.6.0
-        version: 9.6.0
-      drizzle-kit:
-        specifier: ^0.31.11
-        version: 0.31.11
-
-  packages/cap-slack:
-    dependencies:
-      '@candy-mountain/platform-daemon':
-        specifier: workspace:*
-        version: link:../platform-daemon
-      '@candy-mountain/platform-sdk':
-        specifier: workspace:*
-        version: link:../platform-sdk
-      nuxt:
-        specifier: ^4.6.2
-        version: 4.6.2(84f7166b67c341755381304223671fad)
-      ws:
-        specifier: ^8.22.0
-        version: 8.22.0
-    devDependencies:
-      '@candy-mountain/platform-config':
-        specifier: workspace:*
-        version: link:../platform-config
-      '@candy-mountain/platform-web':
-        specifier: workspace:*
-        version: link:../platform-web
-      '@types/better-sqlite3':
-        specifier: ^9.6.0
-        version: 9.6.0
-      '@types/ws':
-        specifier: ^8.18.2
-        version: 8.18.2
 
   packages/cap-team:
     dependencies:
@@ -864,6 +869,162 @@ importers:
       vue-tsc:
         specifier: ^3.3.13
         version: 3.3.13(typescript@6.0.3)
+
+  packages/plugin-claude-code:
+    dependencies:
+      '@candy-mountain/cap-acp':
+        specifier: workspace:*
+        version: link:../cap-acp
+      '@candy-mountain/platform-daemon':
+        specifier: workspace:*
+        version: link:../platform-daemon
+      '@candy-mountain/platform-sdk':
+        specifier: workspace:*
+        version: link:../platform-sdk
+      vue:
+        specifier: ^3.5.44
+        version: 3.5.44(typescript@6.0.3)
+    devDependencies:
+      '@candy-mountain/platform-config':
+        specifier: workspace:*
+        version: link:../platform-config
+      '@candy-mountain/platform-web':
+        specifier: workspace:*
+        version: link:../platform-web
+      '@types/better-sqlite3':
+        specifier: ^9.6.0
+        version: 9.6.0
+
+  packages/plugin-codex:
+    dependencies:
+      '@candy-mountain/cap-acp':
+        specifier: workspace:*
+        version: link:../cap-acp
+      '@candy-mountain/platform-daemon':
+        specifier: workspace:*
+        version: link:../platform-daemon
+      '@candy-mountain/platform-sdk':
+        specifier: workspace:*
+        version: link:../platform-sdk
+      vue:
+        specifier: ^3.5.44
+        version: 3.5.44(typescript@6.0.3)
+    devDependencies:
+      '@candy-mountain/platform-config':
+        specifier: workspace:*
+        version: link:../platform-config
+      '@candy-mountain/platform-web':
+        specifier: workspace:*
+        version: link:../platform-web
+      '@types/better-sqlite3':
+        specifier: ^9.6.0
+        version: 9.6.0
+
+  packages/plugin-heroku:
+    dependencies:
+      '@candy-mountain/platform-daemon':
+        specifier: workspace:*
+        version: link:../platform-daemon
+      '@candy-mountain/platform-sdk':
+        specifier: workspace:*
+        version: link:../platform-sdk
+      nuxt:
+        specifier: ^4.6.2
+        version: 4.6.2(84f7166b67c341755381304223671fad)
+    devDependencies:
+      '@candy-mountain/platform-config':
+        specifier: workspace:*
+        version: link:../platform-config
+      '@candy-mountain/platform-web':
+        specifier: workspace:*
+        version: link:../platform-web
+      '@types/better-sqlite3':
+        specifier: ^9.6.0
+        version: 9.6.0
+
+  packages/plugin-netlify:
+    dependencies:
+      '@candy-mountain/platform-daemon':
+        specifier: workspace:*
+        version: link:../platform-daemon
+      '@candy-mountain/platform-sdk':
+        specifier: workspace:*
+        version: link:../platform-sdk
+      nuxt:
+        specifier: ^4.6.2
+        version: 4.6.2(84f7166b67c341755381304223671fad)
+    devDependencies:
+      '@candy-mountain/platform-config':
+        specifier: workspace:*
+        version: link:../platform-config
+      '@candy-mountain/platform-web':
+        specifier: workspace:*
+        version: link:../platform-web
+      '@types/better-sqlite3':
+        specifier: ^9.6.0
+        version: 9.6.0
+
+  packages/plugin-repository:
+    dependencies:
+      '@candy-mountain/platform-daemon':
+        specifier: workspace:*
+        version: link:../platform-daemon
+      '@candy-mountain/platform-sdk':
+        specifier: workspace:*
+        version: link:../platform-sdk
+      drizzle-orm:
+        specifier: ^0.45.4
+        version: 0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)
+      hono:
+        specifier: ^4.13.14
+        version: 4.13.14
+      vue:
+        specifier: ^3.5.44
+        version: 3.5.44(typescript@6.0.3)
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
+    devDependencies:
+      '@candy-mountain/platform-config':
+        specifier: workspace:*
+        version: link:../platform-config
+      '@candy-mountain/platform-web':
+        specifier: workspace:*
+        version: link:../platform-web
+      '@types/better-sqlite3':
+        specifier: ^9.6.0
+        version: 9.6.0
+      drizzle-kit:
+        specifier: ^0.31.11
+        version: 0.31.11
+
+  packages/plugin-slack:
+    dependencies:
+      '@candy-mountain/platform-daemon':
+        specifier: workspace:*
+        version: link:../platform-daemon
+      '@candy-mountain/platform-sdk':
+        specifier: workspace:*
+        version: link:../platform-sdk
+      nuxt:
+        specifier: ^4.6.2
+        version: 4.6.2(84f7166b67c341755381304223671fad)
+      ws:
+        specifier: ^8.22.0
+        version: 8.22.0
+    devDependencies:
+      '@candy-mountain/platform-config':
+        specifier: workspace:*
+        version: link:../platform-config
+      '@candy-mountain/platform-web':
+        specifier: workspace:*
+        version: link:../platform-web
+      '@types/better-sqlite3':
+        specifier: ^9.6.0
+        version: 9.6.0
+      '@types/ws':
+        specifier: ^8.18.2
+        version: 8.18.2
 
 packages:
 

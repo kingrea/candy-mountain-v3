@@ -1,4 +1,4 @@
-import { SLACK_POST_BLOCKS_TOOL } from '@candy-mountain/cap-slack'
+import { SLACK_POST_BLOCKS_TOOL } from '@candy-mountain/plugin-slack'
 import { claudeMcpToolRule, type WrappedMcpTool } from '@candy-mountain/platform-daemon'
 
 export const WRAPPED_MCP_TOOLS: readonly WrappedMcpTool[] = [SLACK_POST_BLOCKS_TOOL]

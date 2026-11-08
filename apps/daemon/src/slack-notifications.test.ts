@@ -7,10 +7,10 @@ import { workspaceNotificationDeliveryPath, workspaceNotificationsPath, type Act
 import { eq } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { absoluteLink, appendActivityEvent, type AppendActivityEventInput, claimNotificationEvent, createActivityEventTypeRegistry, createPluginInstance, declaredActivityEventTypes, DELIVERED_RING_SIZE, fixtureDefinition, fixturePluginType, instanceHarness, type InstanceHarness, isCapabilityDefinition, MasterKey, type NotificationChannel, notificationDeliveredKey, type NotificationDelivery, type NotificationDispatcher, type NotificationDispatcherOptions, notificationRulesKey, platformMeta, openTestDatabase, platformDefinitions, readNotificationRules, startNotificationDispatcher, undescribed } from '@candy-mountain/platform-daemon'
-import { createSlackClient, createSlackOperations, slackNotificationChannel, slackPluginType, type SlackClientOptions } from '@candy-mountain/cap-slack'
+import { createSlackClient, createSlackOperations, slackNotificationChannel, slackPluginType, type SlackClientOptions } from '@candy-mountain/plugin-slack'
 import { CAPABILITY_DEFINITIONS, candyMountainWith, createTempDataDir, createTestApp, startTestPlatform } from './testing'
 import { bots, botSecretOwner, slackBotSource } from '@candy-mountain/cap-bots'
-import { createWorkspaceWithRepository } from '@candy-mountain/cap-repository'
+import { createWorkspaceWithRepository } from '@candy-mountain/plugin-repository'
 
 const WEB_URL = 'http://web.test:4300'
 const PLUGIN_TOKEN = 'xoxb-plugin'

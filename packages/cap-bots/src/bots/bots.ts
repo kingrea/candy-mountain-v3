@@ -3,7 +3,7 @@ import { BOT_FAMILY_NAMES, BOT_SECRET_NAMES, type Bot, type BotFamily, type BotP
 import { and, eq, inArray, ne, sql } from 'drizzle-orm'
 import { createPluginSecrets, type Db, type PluginInstanceDeps, resolvePluginInstance, type SecretsReader } from '@candy-mountain/platform-daemon'
 import { bots, slackDeliveries } from '../schema'
-import { createRepositoryOperations, repositoryConfig, repositoryPluginType } from '@candy-mountain/cap-repository'
+import { createRepositoryOperations, repositoryConfig, repositoryPluginType } from '@candy-mountain/plugin-repository'
 import { BotError } from './errors'
 import { botUsableWithoutSlack, computeBotStatus } from './status'
 import type { CreateBotInput, UpdateBotInput } from './validation'

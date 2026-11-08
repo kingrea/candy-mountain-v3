@@ -1,6 +1,6 @@
 import type { BotFamily, BotWriteScope } from '../wire'
 import { basename, isAbsolute, normalize } from 'node:path'
-import { CODEX_AGENT_MODES, CODEX_LAUNCHER_ENV, type CodexLaunchOptions } from '@candy-mountain/cap-chat-claude-code'
+import { CODEX_AGENT_MODES, CODEX_LAUNCHER_ENV, type CodexLaunchOptions } from '@candy-mountain/cap-acp'
 import { CLAUDE_BASELINE_ALLOWED_TOOLS, CLAUDE_DENIED_TOOLS, CLAUDE_EDIT_TOOLS, CLAUDE_PERMISSION_MODES, CLAUDE_PUSH_ASK_RULES } from './claude'
 import { CODEX_MODES } from './codex'
 import { WRAPPED_MCP_TOOL_RULES } from './mcp-tools'

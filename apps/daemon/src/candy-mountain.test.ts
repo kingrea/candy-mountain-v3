@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
 import { CANDY_MOUNTAIN_PRODUCT, MODULES } from '@candy-mountain/candy-mountain'
 import { CAPABILITY_CATALOG_PATH, MODULES_PATH, WORKSPACES_PATH, type CapabilityCatalogResponse, type ModuleListResponse } from '@candy-mountain/platform-sdk'
-import { ACP_SESSIONS } from '@candy-mountain/cap-chat-claude-code'
+import { ACP_SESSIONS } from '@candy-mountain/cap-acp'
 import { BOT_SESSIONS, BOT_SLACK_ROUTER } from '@candy-mountain/cap-bots'
 import { assertProduct, createCapabilityRegistry, createModuleRegistry, isCapabilityDefinition, platformDefinitions, productCapabilityRegistry, ProductError, startPlatform, type Platform, type Product } from '@candy-mountain/platform-daemon'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -74,10 +74,10 @@ describe('the Candy Mountain product', () => {
     expect(existsSync(temp.root)).toBe(false)
   })
 
-  it('boots without chat-claude-code: bots, chat-codex and team leave with it, Slack routing stays off and the rest still serves', async () => {
+  it('boots without acp: claude-code, chat-claude-code, bots, codex, chat-codex and team leave with it, Slack routing stays off and the rest still serves', async () => {
     temp = createTempDataDir()
-    // Bots and chat-codex depend on chat-claude-code, and team on the hasBots fact bots declares, so a product without it leaves them out too.
-    const gone = ['chat-claude-code', 'bots', 'chat-codex', 'team']
+    // The chat capabilities, codex and bots depend on acp, and team on the hasBots fact bots declares, so a product without it leaves them out too.
+    const gone = ['acp', 'claude-code', 'chat-claude-code', 'bots', 'codex', 'chat-codex', 'team']
     const platform = startTestPlatform(temp.root, withoutCapabilities(...gone))
     try {
       expect(platform.runtime.service(ACP_SESSIONS)).toBeUndefined()

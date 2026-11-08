@@ -20,6 +20,10 @@ export function capabilityDependencyDrift(
   definition: { id: string, dependsOn?: readonly string[] },
   packages: Map<string, WorkspacePackage>,
 ): string[]
+export function capabilityKindProblems(
+  pkg: WorkspacePackage,
+  definition: { id: string, manifest?: unknown, pluginTypes?: readonly { id: string }[] },
+): string[]
 export function packageBoundaries(): Linter.Config
 
 declare const plugin: ESLint.Plugin

@@ -1,5 +1,5 @@
 import { BOT_SECRET_LABELS, BOT_SECRET_NAMES } from '../wire'
-import type { SlackBotSource, SlackConnectionTarget } from '@candy-mountain/cap-slack'
+import type { SlackBotSource, SlackConnectionTarget } from '@candy-mountain/plugin-slack'
 import { eq, sql } from 'drizzle-orm'
 import { resolvePluginInstance, SecretsLockedError, workspaces } from '@candy-mountain/platform-daemon'
 import { botSecretOwner, computeBotStatus, createBotSecrets, type BotReadDeps } from '../bots'

@@ -15,10 +15,11 @@
     "db:check": "drizzle-kit check"
   },
   "dependencies": {
-    "@candy-mountain/cap-chat-claude-code": "workspace:*",
-    "@candy-mountain/cap-chat-codex": "workspace:*",
-    "@candy-mountain/cap-repository": "workspace:*",
-    "@candy-mountain/cap-slack": "workspace:*",
+    "@candy-mountain/cap-acp": "workspace:*",
+    "@candy-mountain/plugin-claude-code": "workspace:*",
+    "@candy-mountain/plugin-codex": "workspace:*",
+    "@candy-mountain/plugin-repository": "workspace:*",
+    "@candy-mountain/plugin-slack": "workspace:*",
     "@candy-mountain/cap-team": "workspace:*",
     "@candy-mountain/claude-acp": "workspace:*",
     "@candy-mountain/platform-daemon": "workspace:*",

@@ -8,7 +8,7 @@ import { type AuthStrategy, createPluginInstance, describePlatform, MasterKey, o
 import { assertCapability, CapabilityManifestError } from '@candy-mountain/platform-sdk/daemon'
 import { startAcpPlatform, type AcpPlatform } from './testing/acp'
 import { scriptedReply, startStubGateway, type StubGateway } from '@candy-mountain/platform-daemon'
-import { createWorkspaceWithRepository } from '@candy-mountain/cap-repository'
+import { createWorkspaceWithRepository } from '@candy-mountain/plugin-repository'
 import { BOTS_CAPABILITY_ID } from '@candy-mountain/cap-bots'
 
 const ADMIN: Actor = { id: 'admin-actor', username: 'admin', displayName: 'Admin', roles: ['admin'] }

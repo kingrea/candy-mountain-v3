@@ -8,7 +8,7 @@ import { createTestApp, type AuthStrategy, dataPaths, deleteWorkspace, type Plat
 import { issuesRoutes } from '../definition'
 import { issuesTestProduct, openIssuesDatabase } from '../test-support'
 import { addAssignee, listAssignees } from './service'
-import { createWorkspaceWithRepository, repositoryPaths } from '@candy-mountain/cap-repository'
+import { createWorkspaceWithRepository, repositoryPaths } from '@candy-mountain/plugin-repository'
 
 let database: PlatformDatabase
 let root: string

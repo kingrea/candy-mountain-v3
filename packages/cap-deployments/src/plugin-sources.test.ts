@@ -1,7 +1,9 @@
 import type { ApiErrorBody, Workspace } from '@candy-mountain/platform-sdk'
 import type { Environment, LiveVersionsResponse } from './wire'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { DEPLOYMENTS_PLUGIN_TYPES, deploymentsRoutes } from './definition'
+import { herokuPluginType } from '@candy-mountain/plugin-heroku'
+import { netlifyPluginType } from '@candy-mountain/plugin-netlify'
+import { deploymentsRoutes } from './definition'
 import { createPluginInstance, deletePluginInstance, instanceHarness, type InstanceHarness, testPluginInstance, updatePluginInstance } from '@candy-mountain/platform-daemon'
 import { openDeploymentsTestDatabase, REPOSITORY_STAND_IN } from './test-support'
 
@@ -71,7 +73,7 @@ beforeEach(async () => {
   vendors.deploys = []
   vendors.releases = [release(3, 'slug-3', true), release(2, 'slug-2')]
   urls = stubVendors()
-  h = instanceHarness([REPOSITORY_STAND_IN, ...DEPLOYMENTS_PLUGIN_TYPES], { openDatabase: openDeploymentsTestDatabase })
+  h = instanceHarness([REPOSITORY_STAND_IN, herokuPluginType, netlifyPluginType], { openDatabase: openDeploymentsTestDatabase })
   shop = await h.createWorkspace('shop')
 })
 afterEach(() => {

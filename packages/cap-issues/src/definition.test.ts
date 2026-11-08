@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { createTempDataDir, platformApp, type Platform, type Product, setEnabledModules, startTestPlatform, type TempDataDir, testProduct } from '@candy-mountain/platform-daemon'
 import { ISSUE_WATCHER } from './definition'
 import { issuesTestProduct } from './test-support'
-import { createWorkspaceWithRepository, repositoryDefinition } from '@candy-mountain/cap-repository'
+import { createWorkspaceWithRepository, repositoryDefinition } from '@candy-mountain/plugin-repository'
 
 describe('the issues definition', () => {
   let temp: TempDataDir

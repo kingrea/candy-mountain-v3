@@ -1,5 +1,5 @@
 import type { ModuleDefinition } from '@candy-mountain/platform-sdk'
-import { repositoryDefinition } from '@candy-mountain/cap-repository'
+import { repositoryDefinition } from '@candy-mountain/plugin-repository'
 import { openTestDatabase, type PlatformDatabase, type Product, testProduct } from '@candy-mountain/platform-daemon'
 import { issuesDefinition, type IssuesOptions } from './definition'
 

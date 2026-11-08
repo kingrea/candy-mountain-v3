@@ -1,4 +1,4 @@
-// The per-bot connection state cap-slack reports and the bots capability serves and renders: slack may not import bots, and a web layer may not import another, so the type both read lives here.
+// The per-bot connection state plugin-slack reports and the bots capability serves and renders: slack may not import bots, and a web layer may not import another, so the type both read lives here.
 export const BOT_SLACK_STATES = ['connected', 'connecting', 'disconnected'] as const
 export type BotSlackState = (typeof BOT_SLACK_STATES)[number]
 

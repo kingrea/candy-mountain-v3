@@ -1,5 +1,5 @@
 import { BOT_BASE_BRANCH_PATTERN, BOT_FAMILY_NAMES, BOT_PERSONA_FILE_KEYS, BOT_PERSONA_NAME_PATTERN, botPersonaMissingReason, botPersonaPath, type Bot, type BotFamily, type BotPersonaCheckResponse, type BotPersonaFiles } from '../wire'
-import { createRepositoryOperations, REPOSITORY_HOST_NAMES, repositoryConfig, RepositoryHostError, repositoryPluginType } from '@candy-mountain/cap-repository'
+import { createRepositoryOperations, REPOSITORY_HOST_NAMES, repositoryConfig, RepositoryHostError, repositoryPluginType } from '@candy-mountain/plugin-repository'
 import { createPluginSecrets, resolvePluginInstance } from '@candy-mountain/platform-daemon'
 import { getBot, recordBotPersonaCheck, type BotReadDeps, type BotReadOptions } from './bots'
 import { BotError } from './errors'

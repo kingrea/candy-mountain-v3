@@ -21,7 +21,7 @@ import { createTestApp, dataPaths, type PlatformDatabase, setEnabledModules } fr
 import { issuesTestProduct, openIssuesDatabase } from './test-support'
 import { issuesRoutes } from './definition'
 import { createTempBeadsWorkspace, hasBd, type TempBeadsWorkspace } from './test-workspace'
-import { createWorkspaceWithRepository, repositoryPaths } from '@candy-mountain/cap-repository'
+import { createWorkspaceWithRepository, repositoryPaths } from '@candy-mountain/plugin-repository'
 
 type Row = Record<string, unknown>
 

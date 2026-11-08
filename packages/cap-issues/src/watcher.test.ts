@@ -9,7 +9,7 @@ import { openIssuesDatabase } from './test-support'
 import { runBd } from './bd-runner'
 import { createTempBeadsWorkspace, hasBd, type TempBeadsWorkspace } from './test-workspace'
 import { ISSUE_WATCH_MIN_INTERVAL_MS, startIssueWatcher, type IssueWatcher } from './watcher'
-import { createWorkspaceWithRepository, repositoryPaths } from '@candy-mountain/cap-repository'
+import { createWorkspaceWithRepository, repositoryPaths } from '@candy-mountain/plugin-repository'
 
 const execFileAsync = promisify(execFile)
 

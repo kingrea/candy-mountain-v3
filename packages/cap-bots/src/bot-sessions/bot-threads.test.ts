@@ -4,13 +4,13 @@ import { chatAgentOptionsPath, workspaceRegistryPath, workspaceThreadPath, works
 import { botAgentId, botSessionsPath, type BotFamily, type BotSessionStartResponse, chatThreadBot } from '../wire'
 import { eq } from 'drizzle-orm'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { fakeBins, fakeClaude, type SessionManager, type SessionMessage } from '@candy-mountain/cap-chat-claude-code'
+import { fakeBins, fakeClaude, type SessionManager, type SessionMessage } from '@candy-mountain/cap-acp'
 import { addRole, type AuthStrategy, createPluginInstance, MasterKey, pluginInstances, setEnabledModules, createTempDataDir, platformApp, type TempDataDir } from '@candy-mountain/platform-daemon'
 import { createBot, getBot, parseCreateBot, recordBotPersonaCheck, type BotReadDeps } from '../bots'
 import { GOOD_TOKEN, stubHosts } from '../test-support'
 import { startBotsPlatform, type BotsPlatform } from '../test-support'
 import { createTempGitRepo, type TempGitRepo } from '../worktrees/test-repo'
-import { createWorkspaceWithRepository } from '@candy-mountain/cap-repository'
+import { createWorkspaceWithRepository } from '@candy-mountain/plugin-repository'
 
 const ADMIN: Actor = { id: 'admin-actor', username: 'admin', displayName: 'Admin', roles: ['admin'] }
 const DEVELOPER: Actor = { id: 'dev-actor', username: 'dev', displayName: 'Dev', roles: ['developer'] }

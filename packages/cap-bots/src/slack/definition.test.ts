@@ -6,10 +6,10 @@ import { botSlackConnectionPath } from '../wire'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { appendActivityEvent, createTempDataDir, fixtureDefinition, MasterKey, platformApp, startTestPlatform, testProduct, type Platform, type TempDataDir, type TestPlatformOptions } from '@candy-mountain/platform-daemon'
 import { BOT_SLACK_ROUTER } from '../definition'
-import { SLACK_CONNECTIONS } from '@candy-mountain/cap-slack'
-import { ACP_SESSIONS, fakeBins } from '@candy-mountain/cap-chat-claude-code'
+import { SLACK_CONNECTIONS } from '@candy-mountain/plugin-slack'
+import { ACP_SESSIONS, fakeBins } from '@candy-mountain/cap-acp'
 import { botsTestProduct } from '../test-support'
-import { createWorkspaceWithRepository } from '@candy-mountain/cap-repository'
+import { createWorkspaceWithRepository } from '@candy-mountain/plugin-repository'
 
 const WEB_URL = 'http://web.test:4300'
 const acp = { bins: fakeBins, killTimeoutMs: 1000 }

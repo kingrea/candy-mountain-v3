@@ -1,0 +1,29 @@
+{
+  "name": "@candy-mountain/cap-acp",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@agentclientprotocol/codex-acp": "2.3.0",
+    "@agentclientprotocol/sdk": "1.4.0",
+    "@candy-mountain/claude-acp": "workspace:*",
+    "@candy-mountain/platform-daemon": "workspace:*",
+    "@candy-mountain/platform-sdk": "workspace:*",
+    "@candy-mountain/plugin-repository": "workspace:*",
+    "drizzle-orm": "^0.45.4",
+    "hono": "^4.13.14"
+  },
+  "devDependencies": {
+    "@candy-mountain/platform-config": "workspace:*",
+    "@types/better-sqlite3": "^9.6.0",
+    "tsx": "^4.23.15"
+  }
+}

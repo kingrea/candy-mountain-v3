@@ -4,7 +4,7 @@ import { Hono } from 'hono'
 import { type AppEnv, getWorkspaceBySlug, requireAdmin, WorkspaceError } from '@candy-mountain/platform-daemon'
 import { botProjectId } from '../bots/bots'
 import { BotError } from '../bots/errors'
-import type { SlackConnections } from '@candy-mountain/cap-slack'
+import type { SlackConnections } from '@candy-mountain/plugin-slack'
 
 /** Admin only, like the bot routes it sits beside. */
 export function slackRoutes(connections: Pick<SlackConnections, 'status'>) {

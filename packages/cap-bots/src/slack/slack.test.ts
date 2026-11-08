@@ -7,7 +7,7 @@ import { botSecretOwner } from '../bots'
 import { bots } from '../schema'
 import { createPluginInstance, fixturePluginType, type InstanceHarness, testPluginInstance, workspaces, createTestApp } from '@candy-mountain/platform-daemon'
 import { instanceHarness } from '../test-support'
-import { startFakeSocketMode, startSlackConnections, type FakeSocketMode, type SlackConnections, type SlackConnectionsOptions } from '@candy-mountain/cap-slack'
+import { startFakeSocketMode, startSlackConnections, type FakeSocketMode, type SlackConnections, type SlackConnectionsOptions } from '@candy-mountain/plugin-slack'
 import { slackBotSource } from './bot-source'
 import { slackRoutes } from './routes'
 

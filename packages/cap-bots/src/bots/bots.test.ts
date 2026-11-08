@@ -5,7 +5,7 @@ import { createPluginInstance, createSecretsStore, type DataPaths, fixturePlugin
 import { instanceHarness } from '../test-support'
 import type { Actor } from '@candy-mountain/platform-sdk'
 import { GOOD_TOKEN, stubHosts } from '../test-support'
-import { repositoryPluginType } from '@candy-mountain/cap-repository'
+import { repositoryPluginType } from '@candy-mountain/plugin-repository'
 import { botSecretOwner, getBot, listBots, recordBotPersonaCheck } from './bots'
 import { botsRoutes } from '../definition'
 

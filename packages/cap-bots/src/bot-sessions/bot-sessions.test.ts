@@ -5,13 +5,13 @@ import { sessionPromptPath, type Actor, type AgentSessionEvent, type AgentSessio
 import { botAgentId, botSessionClosePath, botSessionsPath, type BotFamily, type BotSessionCloseResponse, type BotSessionStartResponse, type BotWriteScope } from '../wire'
 import { eq } from 'drizzle-orm'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { fakeBins, fakeClaude, type SessionManager, type SessionMessage } from '@candy-mountain/cap-chat-claude-code'
+import { fakeBins, fakeClaude, type SessionManager, type SessionMessage } from '@candy-mountain/cap-acp'
 import { type AuthStrategy, createPluginInstance, findThread, listActivityEvents, MasterKey, pluginInstances, setEnabledModules, createTempDataDir, type TempDataDir, platformApp } from '@candy-mountain/platform-daemon'
 import { createBot, parseCreateBot, type BotReadDeps } from '../bots'
 import { GOOD_TOKEN, json as hostJson, stubHosts } from '../test-support'
 import { startBotsPlatform, type BotsPlatform, type BotsPlatformOptions } from '../test-support'
 import { createTempGitRepo, TEST_GIT_ENV, type TempGitRepo } from '../worktrees/test-repo'
-import { createWorkspaceWithRepository } from '@candy-mountain/cap-repository'
+import { createWorkspaceWithRepository } from '@candy-mountain/plugin-repository'
 
 const hasBd = spawnSync('bd', ['--version'], { stdio: 'ignore' }).status === 0
 

@@ -10,7 +10,7 @@ import { issuesRoutes } from './definition'
 import { issueEventRoutes } from './events-routes'
 import { createTempBeadsWorkspace, hasBd, type TempBeadsWorkspace } from './test-workspace'
 import { startIssueWatcher, type IssueChangeListener, type IssueWatcher } from './watcher'
-import { createWorkspaceWithRepository, repositoryPaths } from '@candy-mountain/cap-repository'
+import { createWorkspaceWithRepository, repositoryPaths } from '@candy-mountain/plugin-repository'
 
 const execFileAsync = promisify(execFile)
 

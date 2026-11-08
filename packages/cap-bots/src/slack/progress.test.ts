@@ -1,6 +1,6 @@
 import type { AgentSessionEvent } from '@candy-mountain/platform-sdk'
 import { describe, expect, it } from 'vitest'
-import { createSlackClient } from '@candy-mountain/cap-slack'
+import { createSlackClient } from '@candy-mountain/plugin-slack'
 import { createSlackProgress, SLACK_STREAM_MAX_AGE_MS, SLACK_STREAM_TEXT_MAX, type SlackProgressOptions, type SlackTurnMessage } from './progress'
 
 interface SlackCall { method: string, body: Record<string, unknown> }
