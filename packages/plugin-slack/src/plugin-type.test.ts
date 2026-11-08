@@ -1,6 +1,7 @@
 import { pluginTypeInfo, PLUGIN_SCOPES } from '@candy-mountain/platform-sdk'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { checkPluginHealth, createPluginTypeRegistry, createTempDataDir, startTestPlatform } from '@candy-mountain/platform-daemon'
+import { checkPluginHealth, createPluginTypeRegistry } from '@candy-mountain/platform-daemon'
+import { testKit } from '@candy-mountain/platform-daemon/testing'
 import { SlackApiError } from './client'
 import { slackDefinition } from './definition'
 import { createSlackOperations } from './operations'
@@ -80,15 +81,13 @@ describe('slack plugin type', () => {
     expect(() => slackConfig({ defaultChannelId: '#alerts' })).toThrow(/^Invalid Slack config: defaultChannelId: /)
   })
 
-  it('boots the daemon with it registered by the slack definition', () => {
-    const temp = createTempDataDir()
+  it('boots the daemon with it registered by the slack definition', async () => {
+    const kit = testKit({ capabilities: [slackDefinition()] })
     try {
-      const platform = startTestPlatform(temp.root, { capabilities: [slackDefinition()] })
-      expect(platform.pluginTypes.ids()).toContain('slack')
-      platform.close()
+      expect(kit.platform.pluginTypes.ids()).toContain('slack')
     }
     finally {
-      temp.cleanup()
+      await kit.close()
     }
   })
 })

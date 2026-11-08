@@ -73,11 +73,3 @@ export { claudeMcpToolRule, type WrappedMcpTool } from './agent-mcp/tools'
 
 // The platform schema set's tables, for a capability's foreign keys and the platform-owned rows it reads.
 export { activityEvents, agentSessionEvents, agentSessions, authSessions, chatThreads, chatThreadSessions, organisations, platformMeta, pluginInstances, roleGrants, roles, userPasswords, userRoles, users, workspaceModules, workspaces } from './db/schema'
-
-// Test support: a platform booted from explicit definitions, never a product's.
-export { createTempDataDir, createTestApp, openTestDatabase, platformApp, startTestPlatform, TEST_PRODUCT_CONFIG, testProduct, type ProductParts, type TempDataDir, type TestAppDeps, type TestPlatformOptions } from './testing'
-export { cloneManifest, fixtureCapability, fixtureCapabilityContext, fixtureDefinition, undescribed } from './capabilities/fixtures'
-export { clonePluginType, fixturePluginType, globalPluginType } from './plugins/fixtures'
-export { instanceHarness, multiPluginType, type InstanceHarness, type InstanceHarnessOptions } from './plugins/instances/test-support'
-export { addRole, testAccess, TEST_CAPABILITIES, TEST_MODULES } from './grants/test-access'
-export { scriptedReply, startStubGateway, type StubGateway, type StubGatewayReply, type StubGatewayRequest } from './platform-agent/test-support'

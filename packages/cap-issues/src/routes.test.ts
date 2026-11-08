@@ -11,16 +11,13 @@ import {
   type IssueResponse,
 } from './wire'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { createTestApp, dataPaths, type PlatformDatabase } from '@candy-mountain/platform-daemon'
-import { issuesTestProduct, openIssuesDatabase } from './test-support'
-import { issuesRoutes } from './definition'
+import type { TestKit } from '@candy-mountain/platform-daemon/testing'
+import { issuesKit, workspaceAt } from './test-support'
 import { createTempBeadsWorkspace, hasBd, type TempBeadsWorkspace } from './test-workspace'
-import { createWorkspaceWithRepository, repositoryPaths } from '@candy-mountain/plugin-repository'
 
 describe.skipIf(!hasBd)('issue routes against a real workspace', () => {
   let workspace: TempBeadsWorkspace
-  let database: PlatformDatabase
-  let app: ReturnType<typeof createTestApp>
+  let kit: TestKit | undefined
   let bare: string
   const ids = { epic: '', first: '', second: '', closed: '' }
 
@@ -34,19 +31,18 @@ describe.skipIf(!hasBd)('issue routes against a real workspace', () => {
     workspace.bd('comments', 'add', ids.first, 'hello from a test')
 
     bare = mkdtempSync(join(tmpdir(), 'candy-mountain-no-beads-'))
-    database = openIssuesDatabase()
-    app = createTestApp({ product: issuesTestProduct(), db: database.db, paths: dataPaths('/unused'), runtime: issuesRoutes(repositoryPaths(database.db)) })
-    await createWorkspaceWithRepository(database.db, { name: 'Tracked', slug: 'tracked', path: workspace.path })
-    await createWorkspaceWithRepository(database.db, { name: 'Bare', slug: 'bare', path: bare })
+    kit = issuesKit()
+    await workspaceAt(kit, workspace.path, { name: 'Tracked', slug: 'tracked' })
+    await workspaceAt(kit, bare, { name: 'Bare', slug: 'bare' })
   }, 60_000)
 
-  afterAll(() => {
-    database?.close()
+  afterAll(async () => {
+    await kit?.close()
     workspace?.cleanup()
     if (bare) rmSync(bare, { recursive: true, force: true })
   })
 
-  const get = (path: string) => app.request(path)
+  const get = (path: string) => kit!.admin.request(path)
 
   it('lists every issue, closed included, with ready flags from bd ready', async () => {
     const res = await get(workspaceIssuesPath('tracked'))

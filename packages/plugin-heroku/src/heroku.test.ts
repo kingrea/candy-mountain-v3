@@ -1,6 +1,7 @@
 import { pluginTypeInfo } from '@candy-mountain/platform-sdk'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { checkPluginHealth, createPluginTypeRegistry, createTempDataDir, startTestPlatform } from '@candy-mountain/platform-daemon'
+import { checkPluginHealth, createPluginTypeRegistry } from '@candy-mountain/platform-daemon'
+import { testKit } from '@candy-mountain/platform-daemon/testing'
 import { herokuDefinition } from './definition'
 import { createHerokuOperations, herokuConfig, herokuPluginType, HerokuApiError } from '.'
 
@@ -85,15 +86,13 @@ describe('heroku plugin type', () => {
     expect(() => herokuConfig({ appName: 'Candy Mountain' })).toThrow(/^Invalid Heroku config: appName: /)
   })
 
-  it('boots the daemon with it registered', () => {
-    const temp = createTempDataDir()
+  it('boots the daemon with it registered', async () => {
+    const kit = testKit({ capabilities: [herokuDefinition()] })
     try {
-      const platform = startTestPlatform(temp.root, { capabilities: [herokuDefinition()] })
-      expect(platform.pluginTypes.ids()).toContain('heroku')
-      platform.close()
+      expect(kit.platform.pluginTypes.ids()).toContain('heroku')
     }
     finally {
-      temp.cleanup()
+      await kit.close()
     }
   })
 })

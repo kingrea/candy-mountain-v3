@@ -88,7 +88,7 @@ async function remove(monitor: Monitor) {
   if (!confirmed || !slug.value) return
   actionError.value = null
   try {
-    await $api(workspaceMonitorPath(slug.value, monitor.id), { method: 'DELETE' })
+    await $api<unknown>(workspaceMonitorPath(slug.value, monitor.id), { method: 'DELETE' })
     toast.add({ title: `Deleted ${monitor.name}`, color: 'success' })
     if (selection.monitorId.value === monitor.id) await selection.clear()
   }

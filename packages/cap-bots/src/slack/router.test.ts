@@ -1,38 +1,32 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import type { BotAnswersIn } from '../wire'
-import { eq } from 'drizzle-orm'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fakeBins, fakeClaude } from '@candy-mountain/cap-acp'
-import { createBot, parseCreateBot, recordBotPersonaCheck, type BotReadDeps } from '../bots'
-import { createPluginInstance, MasterKey, pluginInstances, createTempDataDir, type TempDataDir } from '@candy-mountain/platform-daemon'
+import { createBot, parseCreateBot, recordBotPersonaCheck } from '../bots'
 import { slackThreads } from '../schema'
 import { GOOD_TOKEN, stubHosts } from '../test-support'
 import { createSlackClient, createSlackEventBus, createSlackOperations, type SlackEventBus, type SlackMessageBotEvent, slackTextToPlain, splitSlackText } from '@candy-mountain/plugin-slack'
-import { startBotsPlatform, type BotsPlatform } from '../test-support'
+import { botsKit, restartBots, type BotsKit } from '../test-support'
 import { addTeamMember, listTeamMembers, removeTeamMember } from '@candy-mountain/cap-team'
 import { createTempGitRepo, type TempGitRepo } from '../worktrees/test-repo'
 import { isDoneMessage, slackRequestText, startSlackRouter, type SlackRouter } from './router'
 import { findSlackThread } from './threads'
-import { createWorkspaceWithRepository } from '@candy-mountain/plugin-repository'
+import { setRepository } from '@candy-mountain/plugin-repository'
 
 const CLAUDE_PERSONA = '---\nname: ana\ndescription: Ana fixes small issues.\n---\nYou are Ana. Keep changes small.\n'
 const JACK = 'U0JACK'
 const BOT_USER = 'U0BOT'
 
-let temp: TempDataDir | undefined
-let platform: BotsPlatform | undefined
+let kit: BotsKit | undefined
 let repo: TempGitRepo | undefined
 let router: SlackRouter | undefined
 
 afterEach(async () => {
   router?.close()
   router = undefined
-  await platform?.sessions.close()
-  platform?.close()
-  platform = undefined
-  temp?.cleanup()
-  temp = undefined
+  await kit?.close()
+  kit = undefined
   repo?.cleanup()
   repo = undefined
   vi.unstubAllGlobals()
@@ -90,20 +84,8 @@ function commitFile(path: string, text: string): void {
   repo!.git(repo!.clone, 'push', '--quiet', 'origin', 'main')
 }
 
-function setHealth(p: BotsPlatform, projectId: string, type: 'repository' | 'claude-code', config: Record<string, unknown> = {}, secrets: Record<string, string> = {}): void {
-  const existing = p.db.select().from(pluginInstances).where(eq(pluginInstances.workspaceId, projectId)).all().find(row => row.typeId === type)
-  const id = existing?.id ?? createPluginInstance({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly }, { type, scope: 'workspace', workspaceId: projectId, config, secrets }).id
-  p.db.update(pluginInstances).set({ health: { healthy: true }, healthCheckedAt: new Date().toISOString() }).where(eq(pluginInstances.id, id)).run()
-}
 
-const readDeps = (p: BotsPlatform): BotReadDeps => ({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly, secretsReader: p.secrets })
-
-function boot(dataDir: string, key: MasterKey): BotsPlatform {
-  platform = startBotsPlatform(dataDir, { secretsKey: key, acp: { bins: fakeBins, killTimeoutMs: 1000 } })
-  return platform
-}
-
-function route(p: BotsPlatform) {
+function route(p: BotsKit) {
   const transport = fakeTransport()
   router = startSlackRouter({ db: p.db, slack: transport.slack, botSessions: p.botSessions, sessions: p.sessions }, { log: { error: () => {} } })
   return { ...transport, router }
@@ -114,19 +96,18 @@ async function setup(answersIn: BotAnswersIn = { channels: ['C01LISTED'] }) {
   repo = createTempGitRepo()
   commitFile('.claude/agents/ana.md', CLAUDE_PERSONA)
   stubHosts()
-  temp = createTempDataDir()
-  const key = MasterKey.generate()
-  const p = boot(temp.root, key)
-  const project = await createWorkspaceWithRepository(p.db, { name: 'alpha', slug: 'alpha', path: repo.clone })
-  setHealth(p, project.id, 'repository', { host: 'github', owner: 'jack', repo: 'candy' }, { token: GOOD_TOKEN })
-  setHealth(p, project.id, 'claude-code', { claudePath: fakeClaude(temp.root) })
-  const bot = await createBot(readDeps(p), project.id, parseCreateBot({ name: 'Ana Bot', family: 'claude-code', writeScope: 'write-confirm', personaName: 'ana', answersIn }))
+  const p = kit = botsKit({ acp: { bins: fakeBins, killTimeoutMs: 1000 } })
+  const project = p.workspace({ name: 'alpha', slug: 'alpha' })
+  await setRepository(p.db, project.id, { kind: 'local-path', path: repo.clone })
+  p.pluginInstance({ type: 'repository', workspace: project, config: { host: 'github', owner: 'jack', repo: 'candy' }, secrets: { token: GOOD_TOKEN } })
+  p.pluginInstance({ type: 'claude-code', workspace: project, config: { claudePath: fakeClaude(p.platform.paths.root) } })
+  const bot = await createBot(p.deps, project.id, parseCreateBot({ name: 'Ana Bot', family: 'claude-code', writeScope: 'write-confirm', personaName: 'ana', answersIn }))
   expect(recordBotPersonaCheck(p.db, bot.id, bot.updatedAt, { status: 'verified' })).toBe(true)
   const member = addTeamMember(p.db, project.id, { displayName: 'Jack', email: null, slackMemberId: JACK, botScope: { all: true } })
-  return { p, project, bot, member, key }
+  return { p, project, bot, member }
 }
 
-async function send(p: BotsPlatform, bus: SlackEventBus, r: SlackRouter, event: SlackMessageBotEvent): Promise<void> {
+async function send(p: BotsKit, bus: SlackEventBus, r: SlackRouter, event: SlackMessageBotEvent): Promise<void> {
   bus.emit(event)
   await r.idle()
 }
@@ -147,7 +128,7 @@ describe('Slack routing', () => {
     const lease = p.botSessions.lease(session.id)!
     expect(lease).toMatchObject({ state: 'active', branch: `cm/bot/ana-bot/${session.id}` })
     expect(session.cwd).toBe(lease.path)
-    expect(lease.path.startsWith(p.paths.worktrees)).toBe(true)
+    expect(lease.path.startsWith(p.platform.paths.worktrees)).toBe(true)
     expect(t.reactions()).toEqual([{ channel: 'C01LISTED', ts: '1.1', name: 'eyes' }])
     expect(t.posts()).toHaveLength(1)
     expect(t.posts()[0]).toMatchObject({ channel: 'C01LISTED', threadTs: '1.1' })
@@ -222,7 +203,7 @@ describe('Slack routing', () => {
   }, 120_000)
 
   it('resumes the same session when the first reply arrives after a restart', async () => {
-    const { p: first, project, bot, key } = await setup()
+    const { p: first, project, bot } = await setup()
     const before = route(first)
     await send(first, before.bus, before.router, messageEvent(bot.id, project.id, { text: `<@${BOT_USER}> start`, ts: '7.1' }))
     const thread = findSlackThread(first.db, { botId: bot.id, channelId: 'C01LISTED', threadTs: '7.1' })!
@@ -230,8 +211,7 @@ describe('Slack routing', () => {
 
     before.router.close()
     await first.sessions.close()
-    first.close()
-    const p = boot(temp!.root, key)
+    const p = kit = await restartBots(first)
     const after = route(p)
     expect(p.sessions.get(thread.sessionId)).toMatchObject({ status: 'idle' })
     await send(p, after.bus, after.router, messageEvent(bot.id, project.id, { kind: 'message', text: 'after restart', ts: '7.2', threadTs: '7.1' }))

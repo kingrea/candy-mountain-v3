@@ -1,6 +1,7 @@
 import { pluginTypeInfo } from '@candy-mountain/platform-sdk'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { checkPluginHealth, createPluginTypeRegistry, createTempDataDir, startTestPlatform } from '@candy-mountain/platform-daemon'
+import { checkPluginHealth, createPluginTypeRegistry } from '@candy-mountain/platform-daemon'
+import { testKit } from '@candy-mountain/platform-daemon/testing'
 import { netlifyDefinition } from './definition'
 import { createNetlifyOperations, netlifyConfig, netlifyPluginType, NetlifyApiError } from '.'
 
@@ -85,15 +86,13 @@ describe('netlify plugin type', () => {
     expect(() => netlifyConfig({ siteId: 'candy/../x' })).toThrow(/^Invalid Netlify config: siteId: /)
   })
 
-  it('boots the daemon with it registered', () => {
-    const temp = createTempDataDir()
+  it('boots the daemon with it registered', async () => {
+    const kit = testKit({ capabilities: [netlifyDefinition()] })
     try {
-      const platform = startTestPlatform(temp.root, { capabilities: [netlifyDefinition()] })
-      expect(platform.pluginTypes.ids()).toContain('netlify')
-      platform.close()
+      expect(kit.platform.pluginTypes.ids()).toContain('netlify')
     }
     finally {
-      temp.cleanup()
+      await kit.close()
     }
   })
 })

@@ -33,3 +33,22 @@ export interface ProductConfig {
   pluginTypes: readonly string[]
   layers: readonly string[]
 }
+
+/** Ids a product includes only when its apps run from source; a build carries none of them, nor their packages. */
+export interface ProductDevelopment {
+  capabilities: readonly string[]
+  modules: readonly string[]
+  pluginTypes: readonly string[]
+  layers: readonly string[]
+}
+
+/** The configuration a development run boots: the production configuration with the development ids appended to each list. */
+export function developmentProductConfig(config: Readonly<ProductConfig>, development: ProductDevelopment): ProductConfig {
+  return {
+    ...config,
+    capabilities: [...config.capabilities, ...development.capabilities],
+    modules: [...config.modules, ...development.modules],
+    pluginTypes: [...config.pluginTypes, ...development.pluginTypes],
+    layers: [...config.layers, ...development.layers],
+  }
+}

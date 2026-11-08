@@ -96,7 +96,7 @@ async function remove(bot: Bot) {
   if (!confirmed || !slug.value) return
   actionError.value = null
   try {
-    await $api(`${workspaceBotsPath(slug.value)}/${bot.id}`, { method: 'DELETE' })
+    await $api<unknown>(`${workspaceBotsPath(slug.value)}/${bot.id}`, { method: 'DELETE' })
     toast.add({ title: `Deleted ${bot.name}`, color: 'success' })
   }
   catch (error) {

@@ -4,12 +4,13 @@ import { WORKSPACES_PATH, type ApiErrorBody } from '@candy-mountain/platform-sdk
 import { ISSUE_CHANGED_EVENT, workspaceIssueEventsPath, workspaceIssuePath } from './wire'
 import { Hono } from 'hono'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { createTestApp, type AppEnv, dataPaths, type PlatformDatabase } from '@candy-mountain/platform-daemon'
-import { issuesTestProduct, openIssuesDatabase } from './test-support'
-import { issuesRoutes } from './definition'
+import { type AppEnv, dataPaths, type PlatformDatabase } from '@candy-mountain/platform-daemon'
+import { createTestApp, type TestKit } from '@candy-mountain/platform-daemon/testing'
+import { issuesKit, issuesTestProduct, openIssuesDatabase, workspaceAt } from './test-support'
+import { ISSUE_WATCHER, issuesRoutes } from './definition'
 import { issueEventRoutes } from './events-routes'
 import { createTempBeadsWorkspace, hasBd, type TempBeadsWorkspace } from './test-workspace'
-import { startIssueWatcher, type IssueChangeListener, type IssueWatcher } from './watcher'
+import type { IssueChangeListener, IssueWatcher } from './watcher'
 import { createWorkspaceWithRepository, repositoryPaths } from '@candy-mountain/plugin-repository'
 
 const execFileAsync = promisify(execFile)
@@ -154,25 +155,22 @@ describe('issue event stream', () => {
 
 describe.skipIf(!hasBd)('issue event stream against a real workspace', () => {
   let workspace: TempBeadsWorkspace
-  let database: PlatformDatabase
-  let watcher: IssueWatcher
+  let kit: TestKit
 
   beforeEach(async () => {
     workspace = createTempBeadsWorkspace('ev')
-    database = openIssuesDatabase()
-    await createWorkspaceWithRepository(database.db, { name: 'Live', slug: 'live', path: workspace.path })
-    watcher = startIssueWatcher({ db: database.db, repository: repositoryPaths(database.db) })
+    kit = issuesKit()
+    await workspaceAt(kit, workspace.path, { name: 'Live', slug: 'live' })
+    kit.platform.runtime.service(ISSUE_WATCHER)!.reconcile()
   }, 30_000)
 
-  afterEach(() => {
-    watcher.close()
-    database.close()
+  afterEach(async () => {
+    await kit.close()
     workspace.cleanup()
   })
 
   it('emits changed on the stream when bd create runs in the checkout', async () => {
-    const app = createTestApp({ product: issuesTestProduct(), db: database.db, paths: dataPaths('/unused'), runtime: issuesRoutes(repositoryPaths(database.db), watcher) })
-    const stream = new StreamReader((await app.request(workspaceIssueEventsPath('live'))).body!)
+    const stream = new StreamReader((await kit.admin.request(workspaceIssueEventsPath('live'))).body!)
     await stream.until(': connected')
     await new Promise(resolve => setTimeout(resolve, 200))
 

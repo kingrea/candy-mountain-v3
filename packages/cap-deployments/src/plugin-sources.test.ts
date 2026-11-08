@@ -1,11 +1,9 @@
 import type { ApiErrorBody, Workspace } from '@candy-mountain/platform-sdk'
 import type { Environment, LiveVersionsResponse } from './wire'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { herokuPluginType } from '@candy-mountain/plugin-heroku'
-import { netlifyPluginType } from '@candy-mountain/plugin-netlify'
-import { deploymentsRoutes } from './definition'
-import { createPluginInstance, deletePluginInstance, instanceHarness, type InstanceHarness, testPluginInstance, updatePluginInstance } from '@candy-mountain/platform-daemon'
-import { openDeploymentsTestDatabase, REPOSITORY_STAND_IN } from './test-support'
+import { deletePluginInstance, testPluginInstance, updatePluginInstance } from '@candy-mountain/platform-daemon'
+import type { TestActor, TestKit } from '@candy-mountain/platform-daemon/testing'
+import { deploymentsKit } from './test-support'
 
 const NETLIFY_TOKEN = 'nfp_good-token-123'
 const SITE_ID = 'candy-site'
@@ -65,7 +63,7 @@ function stubVendors() {
   return urls
 }
 
-let h: InstanceHarness
+let kit: TestKit
 let shop: Workspace
 let urls: string[]
 beforeEach(async () => {
@@ -73,25 +71,25 @@ beforeEach(async () => {
   vendors.deploys = []
   vendors.releases = [release(3, 'slug-3', true), release(2, 'slug-2')]
   urls = stubVendors()
-  h = instanceHarness([REPOSITORY_STAND_IN, herokuPluginType, netlifyPluginType], { openDatabase: openDeploymentsTestDatabase })
-  shop = await h.createWorkspace('shop')
+  kit = deploymentsKit()
+  shop = kit.workspace({ name: 'shop', slug: 'shop' })
 })
-afterEach(() => {
-  h.close()
+afterEach(async () => {
+  await kit.close()
   vi.unstubAllGlobals()
 })
 
-const call = (method: string, path: string, body?: unknown, roles?: string[]) =>
-  h.app(roles, deploymentsRoutes(h.store)).request(path, { method, headers: { 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) })
+const call = (method: string, path: string, body?: unknown, as: TestActor = kit.admin) =>
+  as.request(path, { method, headers: { 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) })
 const errorOf = async (res: Response) => ((await res.json()) as ApiErrorBody).error
 const saveEnvironment = (name: string, liveSourceKind: string) => call('POST', `/workspaces/${shop.slug}/environments`, { name, liveSourceKind })
-const liveVersions = async () => ((await (await call('GET', `/workspaces/${shop.slug}/live-versions`, undefined, ['viewer'])).json()) as LiveVersionsResponse).environments
+const liveVersions = async () => ((await (await call('GET', `/workspaces/${shop.slug}/live-versions`, undefined, kit.actor())).json()) as LiveVersionsResponse).environments
 
 function addNetlify(token = NETLIFY_TOKEN) {
-  return createPluginInstance(h.deps, { type: 'netlify', scope: 'workspace', workspaceId: shop.id, config: { siteId: SITE_ID }, secrets: { token } })
+  return kit.pluginInstance({ type: 'netlify', workspace: shop, config: { siteId: SITE_ID }, secrets: { token }, health: null })
 }
 function addHeroku(apiKey = HEROKU_KEY) {
-  return createPluginInstance(h.deps, { type: 'heroku', scope: 'workspace', workspaceId: shop.id, config: { appName: 'candy-mountain' }, secrets: { apiKey } })
+  return kit.pluginInstance({ type: 'heroku', workspace: shop, config: { appName: 'candy-mountain' }, secrets: { apiKey }, health: null })
 }
 
 describe('netlify live version', () => {
@@ -104,7 +102,7 @@ describe('netlify live version', () => {
     const instance = addNetlify('nfp_wrong-token')
     expect(await errorOf(await saveEnvironment('Production', 'netlify'))).toMatchObject({ message: expect.stringMatching(/has not been tested since it last changed/) })
 
-    await testPluginInstance(h.deps, instance.id)
+    await testPluginInstance(kit.deps, instance.id)
     const refused = await saveEnvironment('Production', 'netlify')
     expect(refused.status).toBe(422)
     expect(await errorOf(refused)).toEqual({
@@ -112,15 +110,15 @@ describe('netlify live version', () => {
       message: `The Netlify plugin is unhealthy: Netlify returned 401 for site ${SITE_ID}: Access Denied: Invalid token (the token is invalid or has expired)`,
     })
 
-    updatePluginInstance(h.deps, instance.id, { secrets: { token: NETLIFY_TOKEN } })
-    await testPluginInstance(h.deps, instance.id)
+    updatePluginInstance(kit.deps, instance.id, { secrets: { token: NETLIFY_TOKEN } })
+    await testPluginInstance(kit.deps, instance.id)
     const saved = await saveEnvironment('Production', 'netlify')
     expect(saved.status).toBe(201)
     expect((await saved.json() as { environment: Environment }).environment).toMatchObject({ liveSourceKind: 'netlify', liveSourceSettings: {} })
   })
 
   it('shows the published deploy\'s commit, branch, time and permalink', async () => {
-    await testPluginInstance(h.deps, addNetlify().id)
+    await testPluginInstance(kit.deps, addNetlify().id)
     expect((await saveEnvironment('Production', 'netlify')).status).toBe(201)
 
     expect((await liveVersions())[0]).toMatchObject({
@@ -130,7 +128,7 @@ describe('netlify live version', () => {
   })
 
   it('falls back to the site URL for a deploy without a permalink, and is empty before the first deploy', async () => {
-    await testPluginInstance(h.deps, addNetlify().id)
+    await testPluginInstance(kit.deps, addNetlify().id)
     await saveEnvironment('Production', 'netlify')
 
     vendors.publishedDeploy = { id: 'deploy-2', state: 'ready', created_at: '2026-10-21T08:00:00Z' }
@@ -142,11 +140,11 @@ describe('netlify live version', () => {
 
   it('reports the plugin\'s reason once the instance turns unhealthy, without calling Netlify', async () => {
     const instance = addNetlify()
-    await testPluginInstance(h.deps, instance.id)
+    await testPluginInstance(kit.deps, instance.id)
     await saveEnvironment('Production', 'netlify')
 
-    updatePluginInstance(h.deps, instance.id, { secrets: { token: 'nfp_revoked' } })
-    await testPluginInstance(h.deps, instance.id)
+    updatePluginInstance(kit.deps, instance.id, { secrets: { token: 'nfp_revoked' } })
+    await testPluginInstance(kit.deps, instance.id)
     const before = urls.length
     expect((await liveVersions())[0]!.live).toEqual({
       ok: false,
@@ -154,32 +152,32 @@ describe('netlify live version', () => {
     })
     expect(urls).toHaveLength(before)
 
-    await deletePluginInstance(h.deps, instance.id)
+    await deletePluginInstance(kit.deps, instance.id)
     expect((await liveVersions())[0]!.live).toEqual({ ok: false, error: 'The Netlify plugin is not set up for this project; add it on the Plugins page.' })
   })
 })
 
 describe('heroku live version', () => {
   it('cannot be saved without a healthy Heroku plugin, including when switching an environment to it', async () => {
-    await testPluginInstance(h.deps, addNetlify().id)
+    await testPluginInstance(kit.deps, addNetlify().id)
     const { environment } = await (await saveEnvironment('Production', 'netlify')).json() as { environment: Environment }
     const patch = () => call('PATCH', `/workspaces/${shop.slug}/environments/${environment.id}`, { liveSourceKind: 'heroku' })
     expect(await errorOf(await patch())).toMatchObject({ code: 'invalid_settings', message: 'The Heroku plugin is not set up for this project; add it on the Plugins page.' })
 
     const instance = addHeroku('heroku-wrong-key')
-    await testPluginInstance(h.deps, instance.id)
+    await testPluginInstance(kit.deps, instance.id)
     expect(await errorOf(await saveEnvironment('Staging', 'heroku'))).toEqual({
       code: 'invalid_settings',
       message: 'The Heroku plugin is unhealthy: Heroku returned 401 for app \'candy-mountain\': Invalid credentials provided (the API key is invalid or has expired).',
     })
 
-    updatePluginInstance(h.deps, instance.id, { secrets: { apiKey: HEROKU_KEY } })
-    await testPluginInstance(h.deps, instance.id)
+    updatePluginInstance(kit.deps, instance.id, { secrets: { apiKey: HEROKU_KEY } })
+    await testPluginInstance(kit.deps, instance.id)
     expect((await patch()).status).toBe(200)
   })
 
   it('shows the current release\'s commit, time and app link, with no branch', async () => {
-    await testPluginInstance(h.deps, addHeroku().id)
+    await testPluginInstance(kit.deps, addHeroku().id)
     expect((await saveEnvironment('Production', 'heroku')).status).toBe(201)
 
     expect((await liveVersions())[0]).toMatchObject({
@@ -190,7 +188,7 @@ describe('heroku live version', () => {
   })
 
   it('names a release without a commit by its number, and is empty for an app never released', async () => {
-    await testPluginInstance(h.deps, addHeroku().id)
+    await testPluginInstance(kit.deps, addHeroku().id)
     await saveEnvironment('Production', 'heroku')
 
     vendors.releases = [release(2, 'slug-2', true)]
@@ -201,8 +199,8 @@ describe('heroku live version', () => {
   })
 
   it('surfaces a Heroku failure during the read against that environment only', async () => {
-    await testPluginInstance(h.deps, addHeroku().id)
-    await testPluginInstance(h.deps, addNetlify().id)
+    await testPluginInstance(kit.deps, addHeroku().id)
+    await testPluginInstance(kit.deps, addNetlify().id)
     await saveEnvironment('Production', 'netlify')
     await saveEnvironment('API', 'heroku')
 

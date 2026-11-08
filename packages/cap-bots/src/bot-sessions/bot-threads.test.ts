@@ -1,46 +1,36 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { chatAgentOptionsPath, workspaceRegistryPath, workspaceThreadPath, workspaceThreadsPath, sessionPromptPath, threadClosePath, threadPromptPath, type Actor, type AgentSessionEvent, type AgentSessionEventKind, type ApiErrorBody, type ChatAgentOptionsResponse, type ChatThreadCloseResponse, type ChatThreadListResponse, type ChatThreadPromptResponse, type ChatThreadResponse, type PluginTypeId, type RegistryResponse } from '@candy-mountain/platform-sdk'
+import { chatAgentOptionsPath, workspaceRegistryPath, workspaceThreadPath, workspaceThreadsPath, sessionPromptPath, threadClosePath, threadPromptPath, type AgentSessionEvent, type AgentSessionEventKind, type ApiErrorBody, type ChatAgentOptionsResponse, type ChatThreadCloseResponse, type ChatThreadListResponse, type ChatThreadPromptResponse, type ChatThreadResponse, type RegistryResponse } from '@candy-mountain/platform-sdk'
 import { botAgentId, botSessionsPath, type BotFamily, type BotSessionStartResponse, chatThreadBot } from '../wire'
-import { eq } from 'drizzle-orm'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fakeBins, fakeClaude, type SessionManager, type SessionMessage } from '@candy-mountain/cap-acp'
-import { addRole, type AuthStrategy, createPluginInstance, MasterKey, pluginInstances, setEnabledModules, createTempDataDir, platformApp, type TempDataDir } from '@candy-mountain/platform-daemon'
-import { createBot, getBot, parseCreateBot, recordBotPersonaCheck, type BotReadDeps } from '../bots'
+import type { TestActor } from '@candy-mountain/platform-daemon/testing'
+import { createBot, getBot, parseCreateBot, recordBotPersonaCheck } from '../bots'
 import { GOOD_TOKEN, stubHosts } from '../test-support'
-import { startBotsPlatform, type BotsPlatform } from '../test-support'
+import { botsKit, restartBots, type BotsKit } from '../test-support'
 import { createTempGitRepo, type TempGitRepo } from '../worktrees/test-repo'
-import { createWorkspaceWithRepository } from '@candy-mountain/plugin-repository'
+import { setRepository } from '@candy-mountain/plugin-repository'
 
-const ADMIN: Actor = { id: 'admin-actor', username: 'admin', displayName: 'Admin', roles: ['admin'] }
-const DEVELOPER: Actor = { id: 'dev-actor', username: 'dev', displayName: 'Dev', roles: ['developer'] }
 const CLAUDE_PERSONA = '---\nname: ana\ndescription: Ana fixes small issues.\n---\nYou are Ana. Keep changes small.\n'
 
-let temp: TempDataDir | undefined
-let platform: BotsPlatform | undefined
+let kit: BotsKit | undefined
 let repo: TempGitRepo | undefined
 
 afterEach(async () => {
-  await platform?.sessions.close()
-  platform?.close()
-  platform = undefined
-  temp?.cleanup()
-  temp = undefined
+  await kit?.close()
+  kit = undefined
   repo?.cleanup()
   repo = undefined
   vi.unstubAllGlobals()
 })
 
-const as = (actor: Actor): AuthStrategy => ({ name: 'development', resolve: () => actor })
-
-function call(p: BotsPlatform, method: string, path: string, body?: unknown, actor: Actor = ADMIN) {
-  const app = platformApp(p, { auth: as(actor) })
+function call(p: BotsKit, method: string, path: string, body?: unknown, actor: TestActor = p.admin) {
   const init: RequestInit = { method }
   if (body !== undefined) {
     init.headers = { 'content-type': 'application/json' }
     init.body = JSON.stringify(body)
   }
-  return app.request(path, init)
+  return actor.request(path, init)
 }
 
 async function json<T>(res: Response, status: number): Promise<T> {
@@ -61,34 +51,20 @@ function commitFile(path: string, text: string): void {
   repo!.git(repo!.clone, 'push', '--quiet', 'origin', 'main')
 }
 
-function setHealth(p: BotsPlatform, workspaceId: string, type: PluginTypeId, config: Record<string, unknown> = {}, secrets: Record<string, string> = {}): void {
-  const existing = p.db.select().from(pluginInstances).where(eq(pluginInstances.workspaceId, workspaceId)).all().find(row => row.typeId === type)
-  const id = existing?.id ?? createPluginInstance({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly }, { type, scope: 'workspace', workspaceId, config, secrets }).id
-  p.db.update(pluginInstances).set({ health: { healthy: true }, healthCheckedAt: new Date().toISOString() }).where(eq(pluginInstances.id, id)).run()
-}
-
-const readDeps = (p: BotsPlatform): BotReadDeps => ({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly, secretsReader: p.secrets })
-
-function boot(dataDir: string, key: MasterKey): BotsPlatform {
-  platform = startBotsPlatform(dataDir, { secretsKey: key, acp: { bins: fakeBins, killTimeoutMs: 1000 } })
-  return platform
-}
 
 /** Workspace `alpha` on a temp clone with a bare origin and persona `ana` on main; Repository and Claude Code stored healthy; one bot without Slack keys. */
 async function setup({ family = 'claude-code', verified = true }: { family?: BotFamily, verified?: boolean } = {}) {
   repo = createTempGitRepo()
   commitFile('.claude/agents/ana.md', CLAUDE_PERSONA)
   stubHosts()
-  temp = createTempDataDir()
-  const key = MasterKey.generate()
-  const p = boot(temp.root, key)
-  const workspace = await createWorkspaceWithRepository(p.db, { name: 'alpha', slug: 'alpha', path: repo.clone })
-  setEnabledModules(p.db, workspace.id, ['agent-hub'])
-  setHealth(p, workspace.id, 'repository', { host: 'github', owner: 'jack', repo: 'candy' }, { token: GOOD_TOKEN })
-  setHealth(p, workspace.id, 'claude-code', { claudePath: fakeClaude(temp.root) })
-  const bot = await createBot(readDeps(p), workspace.id, parseCreateBot({ name: 'Ana Bot', family, writeScope: 'write-confirm', personaName: 'ana' }))
+  const p = kit = botsKit({ acp: { bins: fakeBins, killTimeoutMs: 1000 } })
+  const workspace = p.workspace({ name: 'alpha', slug: 'alpha', modules: ['agent-hub'] })
+  await setRepository(p.db, workspace.id, { kind: 'local-path', path: repo.clone })
+  p.pluginInstance({ type: 'repository', workspace, config: { host: 'github', owner: 'jack', repo: 'candy' }, secrets: { token: GOOD_TOKEN } })
+  p.pluginInstance({ type: 'claude-code', workspace, config: { claudePath: fakeClaude(p.platform.paths.root) } })
+  const bot = await createBot(p.deps, workspace.id, parseCreateBot({ name: 'Ana Bot', family, writeScope: 'write-confirm', personaName: 'ana' }))
   if (verified) expect(recordBotPersonaCheck(p.db, bot.id, bot.updatedAt, { status: 'verified' })).toBe(true)
-  return { p, workspace, bot, key }
+  return { p, workspace, bot }
 }
 
 function waitFor(sessions: SessionManager, id: string, kind: AgentSessionEventKind): Promise<AgentSessionEvent> {
@@ -111,20 +87,20 @@ async function until(read: () => Promise<boolean> | boolean, timeoutMs = 10_000)
   }
 }
 
-function textOf(p: BotsPlatform, sessionId: string, match: string): string {
+function textOf(p: BotsKit, sessionId: string, match: string): string {
   const event = p.sessions.events(sessionId).find(e => e.kind === 'text' && e.text.includes(match))
   return event?.kind === 'text' ? event.text : ''
 }
 
-const agentsOf = async (p: BotsPlatform, actor: Actor = ADMIN) => (await json<RegistryResponse>(await call(p, 'GET', workspaceRegistryPath('alpha'), undefined, actor), 200)).agents
-const getThread = async (p: BotsPlatform, id: string) => json<ChatThreadResponse>(await call(p, 'GET', workspaceThreadPath('alpha', id)), 200)
-const listThreads = async (p: BotsPlatform) => (await json<ChatThreadListResponse>(await call(p, 'GET', workspaceThreadsPath('alpha')), 200)).threads
+const agentsOf = async (p: BotsKit, actor: TestActor = p.admin) => (await json<RegistryResponse>(await call(p, 'GET', workspaceRegistryPath('alpha'), undefined, actor), 200)).agents
+const getThread = async (p: BotsKit, id: string) => json<ChatThreadResponse>(await call(p, 'GET', workspaceThreadPath('alpha', id)), 200)
+const listThreads = async (p: BotsKit) => (await json<ChatThreadListResponse>(await call(p, 'GET', workspaceThreadsPath('alpha')), 200)).threads
 
-async function prompt(p: BotsPlatform, threadId: string, text: string): Promise<ChatThreadPromptResponse> {
+async function prompt(p: BotsKit, threadId: string, text: string): Promise<ChatThreadPromptResponse> {
   return json<ChatThreadPromptResponse>(await call(p, 'POST', threadPromptPath('alpha', threadId), { text }), 202)
 }
 
-async function promptAndWait(p: BotsPlatform, threadId: string, text: string): Promise<ChatThreadPromptResponse> {
+async function promptAndWait(p: BotsKit, threadId: string, text: string): Promise<ChatThreadPromptResponse> {
   const { session } = await getThread(p, threadId)
   const turnEnd = waitFor(p.sessions, session.id, 'turn_end')
   const response = await prompt(p, threadId, text)
@@ -135,7 +111,7 @@ async function promptAndWait(p: BotsPlatform, threadId: string, text: string): P
 describe('bots as chat agents', () => {
   it('lists a bot whose only gaps are its Slack keys, as a bot agent of the workspace', async () => {
     const { p, bot } = await setup()
-    expect((await getBot(readDeps(p), bot.id)).status).toEqual({ warnings: ['Slack bot token is missing', 'Slack app-level token is missing'] })
+    expect((await getBot(p.deps, bot.id)).status).toEqual({ warnings: ['Slack bot token is missing', 'Slack app-level token is missing'] })
     expect(await agentsOf(p)).toContainEqual({
       id: botAgentId(bot.id),
       capabilityId: 'bots',
@@ -152,19 +128,18 @@ describe('bots as chat agents', () => {
     const { p, workspace } = await setup({ verified: false })
     expect((await agentsOf(p)).map(agent => agent.id)).toEqual(['claude-code'])
 
-    const ready = await createBot(readDeps(p), workspace.id, parseCreateBot({ name: 'Ready Bot', family: 'claude-code', personaName: 'ana' }))
+    const ready = await createBot(p.deps, workspace.id, parseCreateBot({ name: 'Ready Bot', family: 'claude-code', personaName: 'ana' }))
     recordBotPersonaCheck(p.db, ready.id, ready.updatedAt, { status: 'verified' })
     expect((await agentsOf(p)).map(agent => agent.id)).toEqual(['claude-code', botAgentId(ready.id)])
 
-    addRole(p.db, 'developer')
-    await json(await call(p, 'PUT', '/grants', { role: 'developer', target: { kind: 'module', id: 'agent-hub' }, rungs: {} }), 200)
-    expect((await agentsOf(p, DEVELOPER)).map(agent => agent.id)).toEqual(['claude-code', botAgentId(ready.id)])
-    await json(await call(p, 'PUT', '/grants', { role: 'developer', target: { kind: 'module', id: 'agent-hub' }, rungs: { bots: 'none' } }), 200)
-    expect((await agentsOf(p, DEVELOPER)).map(agent => agent.id)).toEqual(['claude-code'])
-    expect(await errorOf(await call(p, 'POST', workspaceThreadsPath('alpha'), { agentId: botAgentId(ready.id) }, DEVELOPER))).toEqual({ status: 403, code: 'not_granted' })
-    await json(await call(p, 'PUT', '/grants', { role: 'developer', target: { kind: 'module', id: 'agent-hub' }, rungs: { 'chat-claude-code': 'none' } }), 200)
-    expect((await agentsOf(p, DEVELOPER)).map(agent => agent.id)).toEqual([])
-    expect(await errorOf(await call(p, 'POST', workspaceThreadsPath('alpha'), { agentId: botAgentId(ready.id) }, DEVELOPER))).toEqual({ status: 403, code: 'not_granted' })
+    const developer = p.actor({ rungs: { 'bots': 'manage', 'chat-claude-code': 'chat' } })
+    expect((await agentsOf(p, developer)).map(agent => agent.id)).toEqual(['claude-code', botAgentId(ready.id)])
+    const withoutBots = p.actor({ rungs: { 'bots': 'none', 'chat-claude-code': 'chat' } })
+    expect((await agentsOf(p, withoutBots)).map(agent => agent.id)).toEqual(['claude-code'])
+    expect(await errorOf(await call(p, 'POST', workspaceThreadsPath('alpha'), { agentId: botAgentId(ready.id) }, withoutBots))).toEqual({ status: 403, code: 'not_granted' })
+    const withoutFamily = p.actor({ rungs: { 'bots': 'manage', 'chat-claude-code': 'none' } })
+    expect((await agentsOf(p, withoutFamily)).map(agent => agent.id)).toEqual([])
+    expect(await errorOf(await call(p, 'POST', workspaceThreadsPath('alpha'), { agentId: botAgentId(ready.id) }, withoutFamily))).toEqual({ status: 403, code: 'not_granted' })
 
     expect(await errorOf(await call(p, 'POST', workspaceThreadsPath('alpha'), { agentId: 'bot:nobody' }))).toEqual({ status: 404, code: 'not_found' })
   })
@@ -182,10 +157,10 @@ describe('bot threads', () => {
     const created = await json<ChatThreadResponse>(await call(p, 'POST', workspaceThreadsPath('alpha'), { agentId }), 201)
     const { thread, session } = created
     const info = chatThreadBot(created)
-    expect(thread).toMatchObject({ agentId, actorId: ADMIN.id, title: null, working: false })
+    expect(thread).toMatchObject({ agentId, actorId: p.admin.actor.id, title: null, working: false })
     expect(info).toMatchObject({ botId: bot.id, name: 'Ana Bot', branch: `cm/bot/ana-bot/${session.id}`, baseBranch: 'main', worktree: 'active', keptUnpushed: false })
-    expect(info!.worktreePath!.startsWith(p.paths.worktrees)).toBe(true)
-    expect(session).toMatchObject({ family: 'claude-code', cwd: info!.worktreePath, actorId: ADMIN.id })
+    expect(info!.worktreePath!.startsWith(p.platform.paths.worktrees)).toBe(true)
+    expect(session).toMatchObject({ family: 'claude-code', cwd: info!.worktreePath, actorId: p.admin.actor.id })
     expect(session.posture?.bot).toEqual({ id: bot.id, name: 'Ana Bot', holder: { kind: 'console', id: thread.id } })
     // Write with confirmation: every edit and every push goes through a permission decision.
     const flags = session.posture!.flags!
@@ -204,7 +179,7 @@ describe('bot threads', () => {
     await decision
     expect((await listThreads(p)).find(t => t.id === thread.id)?.working).toBe(true)
     const pending = p.decisions.list(session.id).find(d => d.state === 'pending')!
-    p.decisions.answer(pending.id, { optionKind: 'deny', surface: 'web', actorId: ADMIN.id })
+    p.decisions.answer(pending.id, { optionKind: 'deny', surface: 'web', actorId: p.admin.actor.id })
     await until(async () => (await listThreads(p)).find(t => t.id === thread.id)?.working === false)
 
     const plain = await json<ChatThreadResponse>(await call(p, 'POST', workspaceThreadsPath('alpha'), { agentId: 'claude-code' }), 201)
@@ -244,7 +219,7 @@ describe('bot threads', () => {
   }, 120_000)
 
   it('adopts bot threads started outside the thread routes, and after a restart', async () => {
-    const { p: first, bot, key } = await setup()
+    const { p: first, bot } = await setup()
     const started = await json<BotSessionStartResponse>(await call(first, 'POST', botSessionsPath('alpha', bot.id), { threadId: 'outside-thread' }), 201)
     const detail = await getThread(first, 'outside-thread')
     expect(chatThreadBot(detail)).toMatchObject({ worktreePath: started.lease.path, branch: started.lease.branch, worktree: 'active' })
@@ -254,9 +229,7 @@ describe('bot threads', () => {
     await turnEnd
     await until(async () => (await listThreads(first)).find(t => t.id === 'outside-thread')?.unread === true)
 
-    await first.sessions.close()
-    first.close()
-    const p = boot(temp!.root, key)
+    const p = kit = await restartBots(first)
     const after = await getThread(p, 'outside-thread')
     expect(after).toMatchObject({ thread: { working: false }, session: { id: started.session.id, status: 'idle' }, extension: { worktreePath: started.lease.path, worktree: 'active' } })
     const reply = await promptAndWait(p, 'outside-thread', 'after restart')

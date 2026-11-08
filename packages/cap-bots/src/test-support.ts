@@ -7,7 +7,8 @@ import { createWorkspaceWithRepository, fakeHosts, repositoryDefinition, type Fa
 import { slackDefinition, type SlackOptions } from '@candy-mountain/plugin-slack'
 import { teamDefinition } from '@candy-mountain/cap-team'
 import { defineCapability, defineCapabilityDefinition, type CapabilityDefinition } from '@candy-mountain/platform-sdk/daemon'
-import { createActivityEventTypeRegistry, declaredActivityEventTypes, instanceHarness as platformInstanceHarness, openTestDatabase, overviewDefinition, platformDefinitions, startPlatform, testProduct, type AnyPluginType, type InstanceHarness, type InstanceHarnessOptions, type Platform, type PlatformDatabase, type PlatformOptions, type Product } from '@candy-mountain/platform-daemon'
+import { createActivityEventTypeRegistry, declaredActivityEventTypes, overviewDefinition, platformDefinitions, type AnyPluginType, type Platform, type PlatformDatabase, type Product } from '@candy-mountain/platform-daemon'
+import { instanceHarness as platformInstanceHarness, openTestDatabase, testKit, testProduct, type InstanceHarness, type InstanceHarnessOptions, type TestKit, type TestKitOptions } from '@candy-mountain/platform-daemon/testing'
 import { BOT_SESSIONS, BOT_WORKTREES, botsDefinition, type BotsOptions } from './definition'
 import type { BotSessionService } from './bot-sessions'
 import type { WorktreePool } from './worktrees'
@@ -102,12 +103,25 @@ export function botsServices(platform: Pick<Platform, 'runtime'>): BotsServices 
   return { sessions, decisions, acpHarness, botSessions, worktrees }
 }
 
-export type BotsPlatform = Platform & BotsServices
+export type BotsKit = TestKit & BotsServices
 
-export type BotsPlatformOptions = Omit<PlatformOptions, 'product'> & BotsTestOptions
+export type BotsKitOptions = Omit<TestKitOptions, 'product' | 'capabilities' | 'modules' | 'pluginTypes'> & BotsTestOptions
 
-/** `startPlatform` over `botsTestProduct` with the given options, the ACP and bot services pulled out for tests. */
-export function startBotsPlatform(dataDir: string, { acp, sessions, decisions, worktrees, slackRouter, slackDecisions, slackHandoffs, slack, ...options }: BotsPlatformOptions = {}): BotsPlatform {
-  const platform = startPlatform(dataDir, { product: botsTestProduct({ acp, sessions, decisions, worktrees, slackRouter, slackDecisions, slackHandoffs, slack }), ...options })
-  return { ...platform, ...botsServices(platform) }
+function splitOptions({ acp, sessions, decisions, worktrees, slackRouter, slackDecisions, slackHandoffs, slack, ...kitOptions }: BotsKitOptions) {
+  const bots = Object.fromEntries(Object.entries({ acp, sessions, decisions, worktrees, slackRouter, slackDecisions, slackHandoffs, slack }).filter(([, value]) => value !== undefined)) as BotsTestOptions
+  return { bots, kitOptions }
+}
+
+const withBotsServices = (kit: TestKit): BotsKit => Object.assign(kit, botsServices(kit.platform))
+
+/** `testKit` over `botsTestProduct` with the given options, the ACP and bot services pulled out for tests. */
+export function botsKit(options: BotsKitOptions = {}): BotsKit {
+  const { bots, kitOptions } = splitOptions(options)
+  return withBotsServices(testKit({ ...kitOptions, product: botsTestProduct(bots) }))
+}
+
+/** `kit.restart` with the services pulled out again; bots options, when any are given, replace the first kit's. */
+export async function restartBots(kit: BotsKit, options: BotsKitOptions = {}): Promise<BotsKit> {
+  const { bots, kitOptions } = splitOptions(options)
+  return withBotsServices(await kit.restart(Object.keys(bots).length ? { ...kitOptions, product: botsTestProduct(bots) } : kitOptions))
 }

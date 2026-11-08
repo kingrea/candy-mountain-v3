@@ -12,7 +12,7 @@ const loading = ref(false)
 async function logout() {
   loading.value = true
   try {
-    await $api(LOGOUT_PATH, { method: 'POST' })
+    await $api<unknown>(LOGOUT_PATH, { method: 'POST' })
     setUser(null)
     await navigateTo(LOGIN_PAGE_PATH, { replace: true })
   }

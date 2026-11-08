@@ -1,21 +1,20 @@
 import { chmodSync, mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { BOT_WRITE_SCOPES } from '../wire'
-import { eq } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { fakeBins, resolveFamilyLaunch, type LaunchMcpServer } from '@candy-mountain/cap-acp'
-import { type AgentMcpHost, claudeMcpToolRule, createPluginInstance, MasterKey, pluginInstances, startAgentMcpHost, createTempDataDir, type TempDataDir } from '@candy-mountain/platform-daemon'
-import { createBot, parseCreateBot, recordBotPersonaCheck, type BotReadDeps } from '../bots'
+import { type AgentMcpHost, claudeMcpToolRule, startAgentMcpHost } from '@candy-mountain/platform-daemon'
+import { createBot, parseCreateBot, recordBotPersonaCheck } from '../bots'
 import { GOOD_TOKEN, stubHosts } from '../test-support'
 import { createSlackClient, createSlackEventBus, createSlackOperations, SLACK_POST_BLOCKS_TOOL, SLACK_RESERVED_ID_PREFIX, type SlackEventBus, slackMcpServer, type SlackMessageBotEvent } from '@candy-mountain/plugin-slack'
 import { assertPostureNotWidened, PostureError, resolveBotPosture } from '../posture'
-import { startBotsPlatform, type BotsPlatform } from '../test-support'
+import { botsKit, type BotsKit } from '../test-support'
 import { addTeamMember } from '@candy-mountain/cap-team'
 import { createTempGitRepo, type TempGitRepo } from '../worktrees/test-repo'
 import { SLACK_DECISION_ACTION } from './decision-message'
 import { startSlackRouter, type SlackRouter } from './router'
 import { findSlackThread } from './threads'
-import { createWorkspaceWithRepository } from '@candy-mountain/plugin-repository'
+import { setRepository } from '@candy-mountain/plugin-repository'
 
 const SECTION = { type: 'section', text: { type: 'mrkdwn', text: '*Build* passed' } }
 const RULE = claudeMcpToolRule(SLACK_POST_BLOCKS_TOOL)
@@ -77,23 +76,21 @@ describe('MCP registration at launch', () => {
 
 describe('MCP host', () => {
   let host: AgentMcpHost | undefined
-  let temp: TempDataDir | undefined
-  let platform: BotsPlatform | undefined
+  let kit: BotsKit | undefined
   afterEach(async () => {
     await host?.close()
     host = undefined
-    platform?.close()
-    platform = undefined
-    temp?.cleanup()
-    temp = undefined
+    await kit?.close()
+    kit = undefined
   })
 
   it('serves only the session it issued the token to, over loopback POST', async () => {
-    temp = createTempDataDir()
-    platform = startBotsPlatform(temp.root, { secretsKey: MasterKey.generate() })
-    const project = await createWorkspaceWithRepository(platform.db, { name: 'beta', slug: 'beta', path: temp.root })
-    const plain = platform.sessions.create({ workspaceId: project.id, family: 'claude-code', actorId: 'u', cwd: temp.root })
-    const bot = platform.sessions.create({ workspaceId: project.id, family: 'claude-code', actorId: 'u', cwd: temp.root, posture: { bot: { id: 'b', name: 'B', holder: { kind: 'slack', id: 'b:C1:1.1' } } } })
+    const platform = kit = botsKit()
+    const { root } = platform.platform.paths
+    const project = platform.workspace({ name: 'beta', slug: 'beta' })
+    await setRepository(platform.db, project.id, { kind: 'local-path', path: root })
+    const plain = platform.sessions.create({ workspaceId: project.id, family: 'claude-code', actorId: 'u', cwd: root })
+    const bot = platform.sessions.create({ workspaceId: project.id, family: 'claude-code', actorId: 'u', cwd: root, posture: { bot: { id: 'b', name: 'B', holder: { kind: 'slack', id: 'b:C1:1.1' } } } })
     host = startAgentMcpHost({ db: platform.db, servers: [slackMcpServer({ slack: { web: () => null, source: () => null } })] })
     expect(await host.serversFor(plain)).toEqual([])
     const [registration] = await host.serversFor(bot)
@@ -153,19 +150,15 @@ for await (const line of readline.createInterface({ input: process.stdin })) {
 `
 
 describe('Block Kit tool end to end', () => {
-  let temp: TempDataDir | undefined
-  let platform: BotsPlatform | undefined
+  let kit: BotsKit | undefined
   let repo: TempGitRepo | undefined
   let router: SlackRouter | undefined
 
   afterEach(async () => {
     router?.close()
     router = undefined
-    await platform?.sessions.close()
-    platform?.close()
-    platform = undefined
-    temp?.cleanup()
-    temp = undefined
+    await kit?.close()
+    kit = undefined
     repo?.cleanup()
     repo = undefined
   })
@@ -203,24 +196,18 @@ describe('Block Kit tool end to end', () => {
     repo.git(repo.clone, 'commit', '--quiet', '-m', 'persona')
     repo.git(repo.clone, 'push', '--quiet', 'origin', 'main')
     stubHosts()
-    temp = createTempDataDir()
     const transport = fakeTransport()
-    const p = startBotsPlatform(temp.root, { secretsKey: MasterKey.generate(), acp: { bins: fakeBins, killTimeoutMs: 1000 }, slack: { web: transport.slack } })
-    platform = p
-    const script = join(temp.root, 'mcp-claude.mjs')
+    const p = kit = botsKit({ acp: { bins: fakeBins, killTimeoutMs: 1000 }, slack: { web: transport.slack } })
+    const script = join(p.platform.paths.root, 'mcp-claude.mjs')
     writeFileSync(script, MCP_CLAUDE)
-    const claudePath = join(temp.root, 'claude')
+    const claudePath = join(p.platform.paths.root, 'claude')
     writeFileSync(claudePath, `#!/bin/sh\nexec '${process.execPath}' '${script}' "$@"\n`)
     chmodSync(claudePath, 0o755)
-    const project = await createWorkspaceWithRepository(p.db, { name: 'alpha', slug: 'alpha', path: repo.clone })
-    const health = (type: 'repository' | 'claude-code', config: Record<string, unknown>, secrets: Record<string, string> = {}) => {
-      const id = createPluginInstance({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly }, { type, scope: 'workspace', workspaceId: project.id, config, secrets }).id
-      p.db.update(pluginInstances).set({ health: { healthy: true }, healthCheckedAt: new Date().toISOString() }).where(eq(pluginInstances.id, id)).run()
-    }
-    health('repository', { host: 'github', owner: 'jack', repo: 'candy' }, { token: GOOD_TOKEN })
-    health('claude-code', { claudePath })
-    const readDeps: BotReadDeps = { db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly, secretsReader: p.secrets }
-    const bot = await createBot(readDeps, project.id, parseCreateBot({ name: 'Ana Bot', family: 'claude-code', writeScope: 'write-confirm', personaName: 'ana', answersIn: { channels: ['C01LISTED'] } }))
+    const project = p.workspace({ name: 'alpha', slug: 'alpha' })
+    await setRepository(p.db, project.id, { kind: 'local-path', path: repo.clone })
+    p.pluginInstance({ type: 'repository', workspace: project, config: { host: 'github', owner: 'jack', repo: 'candy' }, secrets: { token: GOOD_TOKEN } })
+    p.pluginInstance({ type: 'claude-code', workspace: project, config: { claudePath } })
+    const bot = await createBot(p.deps, project.id, parseCreateBot({ name: 'Ana Bot', family: 'claude-code', writeScope: 'write-confirm', personaName: 'ana', answersIn: { channels: ['C01LISTED'] } }))
     expect(recordBotPersonaCheck(p.db, bot.id, bot.updatedAt, { status: 'verified' })).toBe(true)
     addTeamMember(p.db, project.id, { displayName: 'Jack', email: null, slackMemberId: JACK, botScope: { all: true } })
     router = startSlackRouter({ db: p.db, slack: transport.slack, botSessions: p.botSessions, sessions: p.sessions }, { log: { error: () => {} } })

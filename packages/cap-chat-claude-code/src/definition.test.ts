@@ -3,27 +3,25 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { ACP_SESSIONS, acpDefinition, fakeBins } from '@candy-mountain/cap-acp'
 import { claudeCodeDefinition } from '@candy-mountain/plugin-claude-code'
 import { repositoryDefinition } from '@candy-mountain/plugin-repository'
-import { CapabilityDefinitionError, createTempDataDir, type Platform, platformApp, startTestPlatform, type TempDataDir, type TestPlatformOptions } from '@candy-mountain/platform-daemon'
+import { CapabilityDefinitionError } from '@candy-mountain/platform-daemon'
+import { testKit, type TestKit, type TestKitOptions } from '@candy-mountain/platform-daemon/testing'
 import { chatClaudeCodeDefinition } from './definition'
 import { acpTestProduct } from './test-support'
 
 describe('the chat-claude-code definition', () => {
-  let temp: TempDataDir
-  const open: Platform[] = []
+  let kit: TestKit | undefined
 
   afterEach(async () => {
-    for (const platform of open.splice(0)) await platform.close()
-    temp?.cleanup()
+    await kit?.close()
+    kit = undefined
   })
 
-  function start(options: TestPlatformOptions = {}) {
-    temp = createTempDataDir()
-    const platform = startTestPlatform(temp.root, options)
-    open.push(platform)
-    return { platform, app: platformApp(platform) }
+  function start(options: TestKitOptions = {}) {
+    kit = testKit(options)
+    return { platform: kit.platform, app: kit.admin }
   }
 
-  const withAcp = (): TestPlatformOptions => ({ product: acpTestProduct({ acp: { bins: fakeBins, killTimeoutMs: 1000 } }) })
+  const withAcp = (): TestKitOptions => ({ product: acpTestProduct({ acp: { bins: fakeBins, killTimeoutMs: 1000 } }) })
 
   it('brings no plugin types or session families; it depends on claude-code for both, on acp and on repository', () => {
     const definition = chatClaudeCodeDefinition()
@@ -66,9 +64,8 @@ describe('the chat-claude-code definition', () => {
   })
 
   it('refuses a list with chat-claude-code but without claude-code, naming it', () => {
-    temp = createTempDataDir()
     const withoutClaudeCode = { capabilities: [repositoryDefinition(), acpDefinition(), chatClaudeCodeDefinition()], modules: [] }
-    expect(() => startTestPlatform(temp.root, withoutClaudeCode)).toThrow(CapabilityDefinitionError)
-    expect(() => startTestPlatform(temp.root, withoutClaudeCode)).toThrow("Capability 'chat-claude-code' depends on 'claude-code', which is not in the definition list.")
+    expect(() => testKit(withoutClaudeCode)).toThrow(CapabilityDefinitionError)
+    expect(() => testKit(withoutClaudeCode)).toThrow("Capability 'chat-claude-code' depends on 'claude-code', which is not in the definition list.")
   })
 })

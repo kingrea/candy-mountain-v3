@@ -1,19 +1,19 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { CapabilityDefinitionError, createTempDataDir, type Platform, startTestPlatform, type TempDataDir } from '@candy-mountain/platform-daemon'
+import { CapabilityDefinitionError } from '@candy-mountain/platform-daemon'
+import { testKit, type TestKit } from '@candy-mountain/platform-daemon/testing'
 import { fakeBins } from '@candy-mountain/cap-acp'
 import { codexTestCapabilities } from '@candy-mountain/plugin-codex'
 import { chatCodexDefinition } from './definition'
-import { startChatCodexPlatform } from './test-support'
+import { chatCodexKit } from './test-support'
 
 const acp = { bins: fakeBins, killTimeoutMs: 1000 }
 
 describe('the chat-codex definition', () => {
-  let temp: TempDataDir
-  const open: Platform[] = []
+  let kit: TestKit | undefined
 
   afterEach(async () => {
-    for (const platform of open.splice(0)) await platform.close()
-    temp?.cleanup()
+    await kit?.close()
+    kit = undefined
   })
 
   it('brings no plugin types or session families; it depends on codex for both and on acp', () => {
@@ -25,9 +25,8 @@ describe('the chat-codex definition', () => {
   })
 
   it('shows Codex in the chat rail once codex has started', () => {
-    temp = createTempDataDir()
-    const platform = startChatCodexPlatform(temp.root, { acp })
-    open.push(platform)
+    kit = chatCodexKit({ acp })
+    const { platform } = kit
     const started = platform.runtime.started.map(s => s.definition.id)
 
     expect(platform.capabilities.has('chat-codex')).toBe(true)
@@ -37,9 +36,8 @@ describe('the chat-codex definition', () => {
   })
 
   it('refuses a list with chat-codex but without codex, naming it', () => {
-    temp = createTempDataDir()
     const withoutCodex = { capabilities: [...codexTestCapabilities(acp, { withCodex: false }), chatCodexDefinition()], modules: [] }
-    expect(() => startTestPlatform(temp.root, withoutCodex)).toThrow(CapabilityDefinitionError)
-    expect(() => startTestPlatform(temp.root, withoutCodex)).toThrow("Capability 'chat-codex' depends on 'codex', which is not in the definition list.")
+    expect(() => testKit(withoutCodex)).toThrow(CapabilityDefinitionError)
+    expect(() => testKit(withoutCodex)).toThrow("Capability 'chat-codex' depends on 'codex', which is not in the definition list.")
   })
 })

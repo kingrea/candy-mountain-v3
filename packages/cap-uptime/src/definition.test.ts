@@ -1,27 +1,23 @@
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { WORKSPACES_PATH, type ApiErrorBody } from '@candy-mountain/platform-sdk'
-import { createTempDataDir, platformApp, startTestPlatform, testProduct, type Platform, type TempDataDir } from '@candy-mountain/platform-daemon'
+import { testKit, testProduct, type TestKit } from '@candy-mountain/platform-daemon/testing'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { uptimeTestProduct } from './test-support'
 import { MONITOR_SOURCES_PATH } from './wire'
 
 describe('the uptime definition', () => {
-  const open: Platform[] = []
-  const temps: TempDataDir[] = []
+  let kit: TestKit | undefined
 
   afterEach(async () => {
-    await Promise.all(open.splice(0).map(p => p.close()))
-    temps.splice(0).forEach(t => t.cleanup())
+    await kit?.close()
+    kit = undefined
   })
 
   function start(product: ReturnType<typeof testProduct>) {
-    const dir = createTempDataDir()
-    temps.push(dir)
-    const platform = startTestPlatform(dir.root, { product })
-    open.push(platform)
-    return { platform, app: platformApp(platform) }
+    kit = testKit({ product })
+    return { platform: kit.platform, app: kit.admin }
   }
 
   it('serves its routes with its scheduler running', async () => {

@@ -4,9 +4,10 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { PLUGINS_PATH, WORKSPACES_PATH, type PluginInstance, type PluginInstanceResponse } from '@candy-mountain/platform-sdk'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
-import { createTempDataDir, dataPaths, instanceHarness, type InstanceHarness } from '@candy-mountain/platform-daemon'
+import { dataPaths } from '@candy-mountain/platform-daemon'
+import { instanceHarness, testKit, testProduct, type InstanceHarness } from '@candy-mountain/platform-daemon/testing'
 import { fakeBins } from '@candy-mountain/cap-acp'
-import { startClaudeCodePlatform } from '../test-support'
+import { claudeCodeTestCapabilities } from '../test-support'
 import { CLAUDE_CODE_ACTIONS, CLAUDE_CODE_LOGIN_ATTEMPT_TTL_MS, type ClaudeCodeRevokeResponse, type ClaudeCodeStartLoginResponse, type ClaudeCodeSubmitCodeResponse } from '../wire'
 import { claudeCodePluginType } from './definition'
 import { claudeConfigDir } from './cli'
@@ -296,19 +297,18 @@ describe('claude-code login attempt registry', () => {
   })
 
   it('is closed by Platform.close', async () => {
-    const temp = createTempDataDir()
     const configDir = join(scratch, 'platform')
+    const attempt = await claudeLoginAttempts.start({ instanceId: 'i3', configDir })
+    expect(attempt.status).toBe('waiting')
+    const kit = testKit({ product: testProduct({ capabilities: claudeCodeTestCapabilities({ bins: fakeBins }) }) })
     try {
-      const attempt = await claudeLoginAttempts.start({ instanceId: 'i3', configDir })
-      expect(attempt.status).toBe('waiting')
-      const platform = startClaudeCodePlatform(temp.root, { acp: { bins: fakeBins } })
-      expect(platform.pluginTypes.has('claude-code')).toBe(true)
-      await platform.close()
+      expect(kit.platform.pluginTypes.has('claude-code')).toBe(true)
+      await kit.platform.close()
       expect(claudeLoginAttempts.get(attempt.id)).toBeUndefined()
       await expectGone(fakeEnv(configDir).pid)
     }
     finally {
-      temp.cleanup()
+      await kit.close()
     }
   })
 

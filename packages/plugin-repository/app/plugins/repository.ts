@@ -1,6 +1,6 @@
 export default defineNuxtPlugin((nuxtApp) => {
   // $api is read per call: core's api plugin may run after this one.
-  const api: RepositoryApi = <T>(path: string, options: { method: 'POST' | 'PUT', body?: Record<string, unknown> }) => nuxtApp.$api(path, options) as Promise<T>
+  const api: RepositoryApi = <T>(path: string, options: { method: 'POST' | 'PUT', body?: Record<string, unknown> }) => nuxtApp.$api<T>(path, options)
   registerPluginPanel('repository', defineAsyncComponent(() => import('#layers/repository/app/components/Panel.vue')))
   registerPluginIcon('repository', { name: 'i-lucide-git-branch' })
   registerProjectHomeCard('facts', { id: 'repository', component: defineAsyncComponent(() => import('#layers/repository/app/components/Facts.vue')) })

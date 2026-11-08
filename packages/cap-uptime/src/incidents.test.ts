@@ -1,17 +1,14 @@
-import { mkdtempSync, rmSync } from 'node:fs'
 import { createServer, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-import type { Actor, ActivityListResponse, ApiErrorBody, Workspace } from '@candy-mountain/platform-sdk'
+import type { ActivityListResponse, ApiErrorBody, Workspace } from '@candy-mountain/platform-sdk'
 import type { IncidentListResponse, Monitor, MonitorCheckListResponse, MonitorStatusResponse, UptimeStatusResponse } from './wire'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { archiveWorkspace, type AuthStrategy, createTestApp, createWorkspace, dataPaths, listActivityEvents, type PlatformDatabase, setEnabledModules, unarchiveWorkspace } from '@candy-mountain/platform-daemon'
-import { openUptimeDatabase, uptimeTestProduct } from './test-support'
+import { archiveWorkspace, listActivityEvents, unarchiveWorkspace } from '@candy-mountain/platform-daemon'
+import type { TestKit } from '@candy-mountain/platform-daemon/testing'
+import { uptimeRoutesKit } from './test-support'
 import { MONITOR_SOURCE_REGISTRY } from './builtin-sources'
 import type { MonitorCheckResult } from './check'
 import { listMonitorChecks, recordMonitorCheck } from './checks'
-import { uptimeRoutes } from './definition'
 import { findOpenIncident, listIncidents, setIncidentThread } from './incidents'
 import { startUptimeScheduler, type UptimeScheduler, type UptimeSchedulerDeps } from './scheduler'
 import { createMonitor } from './service'
@@ -25,8 +22,7 @@ const retention = { historyMax: 500, historyMaxAgeMs: 30 * 86_400_000 }
 
 type Outcome = 'up' | 'down' | 'slow' | 'degraded'
 
-let database: PlatformDatabase
-let root: string
+let kit: TestKit
 let project: Workspace
 let outcome: Outcome
 let running: { scheduler: UptimeScheduler, tracker: IncidentTracker }[]
@@ -47,26 +43,23 @@ const fake = defineMonitorSource({
 const sources = createMonitorSourceRegistry([fake])
 
 beforeEach(() => {
-  database = openUptimeDatabase()
-  root = mkdtempSync(join(tmpdir(), 'candy-mountain-incidents-'))
-  project = createWorkspace(database.db, { name: 'Alpha' })
-  setEnabledModules(database.db, project.id, ['operations'])
+  kit = uptimeRoutesKit()
+  project = kit.workspace({ name: 'Alpha', modules: ['operations'] })
   outcome = 'up'
   running = []
 })
-afterEach(() => {
+afterEach(async () => {
   stop()
   vi.useRealTimers()
-  database.close()
-  rmSync(root, { recursive: true, force: true })
+  await kit.close()
 })
 
 const monitor = (name = 'API', intervalSeconds = 30): Monitor =>
-  createMonitor(database.db, project.id, { name, sourceType: 'fake', target: `https://${name.toLowerCase()}.test/health`, intervalSeconds, options: {} }, sources)
+  createMonitor(kit.db, project.id, { name, sourceType: 'fake', target: `https://${name.toLowerCase()}.test/health`, intervalSeconds, options: {} }, sources)
 
 function start(deps: Partial<UptimeSchedulerDeps> = {}) {
-  const scheduler = startUptimeScheduler({ db: database.db, sources, key: root, ...deps }, { staggerWindowMs: 0 })
-  const tracker = startIncidentTracker({ db: database.db, scheduler, scopeUrlPrefix: 'p' })
+  const scheduler = startUptimeScheduler({ db: kit.db, sources, key: kit.platform.paths.root, ...deps }, { staggerWindowMs: 0 })
+  const tracker = startIncidentTracker({ db: kit.db, scheduler, scopeUrlPrefix: 'p' })
   running.push({ scheduler, tracker })
   return scheduler
 }
@@ -84,16 +77,12 @@ async function advance(s: number) {
   for (let i = 0; i < 20; i++) await Promise.resolve()
 }
 
-const stateOf = (m: Monitor) => monitorStatus(database.db, m, 0).state
-const incidents = () => listIncidents(database.db, project.id)
-const events = () => listActivityEvents(database.db, project.id, {}).events.filter(e => e.type.startsWith('incident.')).reverse()
+const stateOf = (m: Monitor) => monitorStatus(kit.db, m, 0).state
+const incidents = () => listIncidents(kit.db, project.id)
+const events = () => listActivityEvents(kit.db, project.id, {}).events.filter(e => e.type.startsWith('incident.')).reverse()
 
-function app(roles = ['admin']) {
-  const auth: AuthStrategy = { name: 'development', resolve: (): Actor => ({ id: 'u1', username: 'jack', displayName: 'Jack', roles }) }
-  return createTestApp({ db: database.db, paths: dataPaths('/unused'), auth, runtime: uptimeRoutes(), product: uptimeTestProduct() })
-}
 const get = async <T>(path: string) => {
-  const res = await app().request(path)
+  const res = await kit.admin.request(path)
   return { status: res.status, body: await res.json() as T }
 }
 
@@ -148,7 +137,7 @@ describe('incidents', () => {
     outcome = 'up'
     await advance(30)
     expect(stateOf(m)).toBe('degraded')
-    expect(findOpenIncident(database.db, m.id)).not.toBeNull()
+    expect(findOpenIncident(kit.db, m.id)).not.toBeNull()
     await advance(60)
     expect(stateOf(m)).toBe('up')
     const [incident] = incidents()
@@ -213,7 +202,7 @@ describe('incidents', () => {
   it('settles a transition a crash left half done when it starts', () => {
     const m = monitor()
     for (const s of [0, 30, 60]) {
-      recordMonitorCheck(database.db, m.id, { ok: false, status: 'down', httpStatus: null, detail: 'Connection refused.', latencyMs: 1, checkedAt: at(s) }, retention)
+      recordMonitorCheck(kit.db, m.id, { ok: false, status: 'down', httpStatus: null, detail: 'Connection refused.', latencyMs: 1, checkedAt: at(s) }, retention)
     }
     start()
     expect(incidents()).toMatchObject([{ openedAt: at(60), closedAt: null, reason: 'Connection refused.' }])
@@ -227,17 +216,17 @@ describe('incidents', () => {
     const m = monitor()
     const scheduler = start()
     await advance(30)
-    expect(listMonitorChecks(database.db, m.id)).toHaveLength(2)
+    expect(listMonitorChecks(kit.db, m.id)).toHaveLength(2)
 
-    archiveWorkspace(database.db, project.slug)
+    archiveWorkspace(kit.db, project.slug)
     expect(scheduler.scheduled()).toEqual([])
     await advance(120)
-    expect(listMonitorChecks(database.db, m.id)).toHaveLength(2)
+    expect(listMonitorChecks(kit.db, m.id)).toHaveLength(2)
 
-    unarchiveWorkspace(database.db, project.slug)
+    unarchiveWorkspace(kit.db, project.slug)
     expect(scheduler.scheduled()).toEqual([m.id])
     await advance(0)
-    expect(listMonitorChecks(database.db, m.id)).toHaveLength(3)
+    expect(listMonitorChecks(kit.db, m.id)).toHaveLength(3)
   })
 
   it('stores a thread reference on an incident without touching its state', async () => {
@@ -246,8 +235,8 @@ describe('incidents', () => {
     start()
     await advance(60)
     const [incident] = incidents()
-    expect(setIncidentThread(database.db, incident!.id, null)).toEqual(incident)
-    expect(setIncidentThread(database.db, 'missing', null)).toBeNull()
+    expect(setIncidentThread(kit.db, incident!.id, null)).toEqual(incident)
+    expect(setIncidentThread(kit.db, 'missing', null)).toBeNull()
   })
 })
 
@@ -326,11 +315,11 @@ describe('incidents against a stub service', () => {
 
   it('goes degraded then down when the service fails, and closes the incident when it recovers', async () => {
     const { port } = server.address() as AddressInfo
-    const m = createMonitor(database.db, project.id, { name: 'Stub', sourceType: 'http', target: `http://127.0.0.1:${port}/health`, intervalSeconds: 30, options: {} })
+    const m = createMonitor(kit.db, project.id, { name: 'Stub', sourceType: 'http', target: `http://127.0.0.1:${port}/health`, intervalSeconds: 30, options: {} })
     start({ sources: MONITOR_SOURCE_REGISTRY })
     const tick = async (expectedChecks: number) => {
       await vi.advanceTimersByTimeAsync(expectedChecks === 1 ? 0 : 30_000)
-      await vi.waitFor(() => expect(listMonitorChecks(database.db, m.id)).toHaveLength(expectedChecks))
+      await vi.waitFor(() => expect(listMonitorChecks(kit.db, m.id)).toHaveLength(expectedChecks))
     }
 
     await tick(1)

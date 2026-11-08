@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto'
-import type { Actor, Workspace } from '@candy-mountain/platform-sdk'
+import type { Workspace } from '@candy-mountain/platform-sdk'
 import { botSlackConnectionPath, type BotSlackConnectionResponse, type BotPersonaStatus } from '../wire'
 import { eq } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { botSecretOwner } from '../bots'
 import { bots } from '../schema'
-import { createPluginInstance, fixturePluginType, type InstanceHarness, testPluginInstance, workspaces, createTestApp } from '@candy-mountain/platform-daemon'
+import { createPluginInstance, testPluginInstance, workspaces } from '@candy-mountain/platform-daemon'
+import { fixturePluginType, type InstanceHarness } from '@candy-mountain/platform-daemon/testing'
 import { instanceHarness } from '../test-support'
 import { startFakeSocketMode, startSlackConnections, type FakeSocketMode, type SlackConnections, type SlackConnectionsOptions } from '@candy-mountain/plugin-slack'
 import { slackBotSource } from './bot-source'
@@ -115,10 +116,7 @@ describe('the bots attached to the Slack connections', () => {
     const foreign = addBot(other)
     const slack = start()
     await until(() => slack.status(id).state === 'connected', 'connected')
-    const app = (roles: string[]) => createTestApp({
-      db: h.database.db, paths: h.deps.paths, pluginTypes: h.deps.pluginTypes, secrets: h.store.writeOnly, secretsReader: h.store, runtime: { workspaceRoutes: [slackRoutes(slack)] },
-      auth: { name: 'development', resolve: (): Actor => ({ id: 'u1', username: 'jack', displayName: 'Jack', roles }) },
-    })
+    const app = (roles: string[]) => h.app(roles, { workspaceRoutes: [slackRoutes(slack)] })
 
     const res = await app(['admin']).request(botSlackConnectionPath('alpha', id))
     expect(res.status).toBe(200)

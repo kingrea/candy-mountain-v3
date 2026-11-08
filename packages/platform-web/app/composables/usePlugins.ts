@@ -45,7 +45,7 @@ export function usePluginActions() {
   }
 
   async function deletePlugin(id: string): Promise<void> {
-    await changed($api(pluginInstancePath(id), { method: 'DELETE' }))
+    await changed($api<unknown>(pluginInstancePath(id), { method: 'DELETE' }))
   }
 
   async function testPlugin(id: string): Promise<PluginInstance> {

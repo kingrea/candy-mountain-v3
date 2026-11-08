@@ -1,40 +1,35 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { sessionDecisionPath, sessionDecisionsPath, sessionEventsPath, type Actor, type AgentSessionEvent, type AgentSessionEventKind, type Decision, type DecisionListResponse } from '@candy-mountain/platform-sdk'
+import { sessionDecisionPath, sessionDecisionsPath, sessionEventsPath, type AgentSessionEvent, type AgentSessionEventKind, type Decision, type DecisionListResponse } from '@candy-mountain/platform-sdk'
 import { eq, like } from 'drizzle-orm'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fakeBins, fakeClaude, type SessionMessage } from '@candy-mountain/cap-acp'
-import { type AuthStrategy, createPluginInstance, MasterKey, platformMeta, pluginInstances, setEnabledModules, createTempDataDir, type TempDataDir, platformApp } from '@candy-mountain/platform-daemon'
-import { createBot, parseCreateBot, recordBotPersonaCheck, type BotReadDeps } from '../bots'
+import { platformMeta } from '@candy-mountain/platform-daemon'
+import { createBot, parseCreateBot, recordBotPersonaCheck } from '../bots'
 import { GOOD_TOKEN, stubHosts } from '../test-support'
 import { createSlackClient, createSlackEventBus, createSlackOperations, type SlackEventBus, type SlackInteractiveBotEvent, type SlackMessageBotEvent } from '@candy-mountain/plugin-slack'
-import { startBotsPlatform, type BotsPlatform, type BotsPlatformOptions } from '../test-support'
+import { botsKit, restartBots, type BotsKit, type BotsKitOptions } from '../test-support'
 import { addTeamMember } from '@candy-mountain/cap-team'
 import { createTempGitRepo, type TempGitRepo } from '../worktrees/test-repo'
 import { parseSlackDecisionReply, slackAnswerFromText, slackDecisionChoices, slackDecisionMessage, slackDecisionShortId } from './decision-message'
 import { startSlackDecisions } from './decisions'
 import { startSlackRouter } from './router'
 import { findSlackThread } from './threads'
-import { createWorkspaceWithRepository } from '@candy-mountain/plugin-repository'
+import { setRepository } from '@candy-mountain/plugin-repository'
 
 const CLAUDE_PERSONA = '---\nname: ana\ndescription: Ana fixes small issues.\n---\nYou are Ana. Keep changes small.\n'
 const JACK = 'U0JACK'
 const BOT_USER = 'U0BOT'
-const ADMIN: Actor = { id: 'admin-actor', username: 'admin', displayName: 'Admin', roles: ['admin'] }
 
-let temp: TempDataDir | undefined
-let platform: BotsPlatform | undefined
+let kit: BotsKit | undefined
 let repo: TempGitRepo | undefined
 let stops: (() => void)[] = []
 
 afterEach(async () => {
   for (const stop of stops) stop()
   stops = []
-  await platform?.sessions.close()
-  platform?.close()
-  platform = undefined
-  temp?.cleanup()
-  temp = undefined
+  await kit?.close()
+  kit = undefined
   repo?.cleanup()
   repo = undefined
   vi.unstubAllGlobals()
@@ -96,21 +91,9 @@ function commitFile(path: string, text: string): void {
   repo!.git(repo!.clone, 'push', '--quiet', 'origin', 'main')
 }
 
-function setHealth(p: BotsPlatform, projectId: string, type: 'repository' | 'claude-code', config: Record<string, unknown> = {}, secrets: Record<string, string> = {}): void {
-  const existing = p.db.select().from(pluginInstances).where(eq(pluginInstances.workspaceId, projectId)).all().find(row => row.typeId === type)
-  const id = existing?.id ?? createPluginInstance({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly }, { type, scope: 'workspace', workspaceId: projectId, config, secrets }).id
-  p.db.update(pluginInstances).set({ health: { healthy: true }, healthCheckedAt: new Date().toISOString() }).where(eq(pluginInstances.id, id)).run()
-}
-
-const readDeps = (p: BotsPlatform): BotReadDeps => ({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly, secretsReader: p.secrets })
-
-function boot(dataDir: string, key: MasterKey, decisions?: BotsPlatformOptions['decisions']): BotsPlatform {
-  platform = startBotsPlatform(dataDir, { secretsKey: key, acp: { bins: fakeBins, killTimeoutMs: 1000 }, decisions })
-  return platform
-}
 
 /** The Slack side wired as the platform wires it, but against a recording transport. */
-function wire(p: BotsPlatform) {
+function wire(p: BotsKit) {
   const transport = fakeTransport()
   const decisions = startSlackDecisions({ db: p.db, slack: transport.slack, decisions: p.decisions, sessions: p.sessions }, { log: { error: () => {} } })
   const router = startSlackRouter({ db: p.db, slack: transport.slack, botSessions: p.botSessions, sessions: p.sessions, interceptReply: decisions.interceptReply }, { log: { error: () => {} } })
@@ -122,26 +105,24 @@ function wire(p: BotsPlatform) {
   return { ...transport, decisions, router, idle }
 }
 
-async function setup(decisions?: BotsPlatformOptions['decisions']) {
+async function setup(decisions?: BotsKitOptions['decisions']) {
   repo = createTempGitRepo()
   commitFile('.claude/agents/ana.md', CLAUDE_PERSONA)
   stubHosts()
-  temp = createTempDataDir()
-  const key = MasterKey.generate()
-  const p = boot(temp.root, key, decisions)
-  const project = await createWorkspaceWithRepository(p.db, { name: 'alpha', slug: 'alpha', path: repo.clone })
-  setHealth(p, project.id, 'repository', { host: 'github', owner: 'jack', repo: 'candy' }, { token: GOOD_TOKEN })
-  setHealth(p, project.id, 'claude-code', { claudePath: fakeClaude(temp.root) })
+  const p = kit = botsKit({ acp: { bins: fakeBins, killTimeoutMs: 1000 }, decisions })
   // The panel's session routes are gated on the Agent Hub's chat capabilities.
-  setEnabledModules(p.db, project.id, ['agent-hub'])
-  const bot = await createBot(readDeps(p), project.id, parseCreateBot({ name: 'Ana Bot', family: 'claude-code', writeScope: 'write-confirm', personaName: 'ana', answersIn: { channels: ['C01LISTED'] } }))
+  const project = p.workspace({ name: 'alpha', slug: 'alpha', modules: ['agent-hub'] })
+  await setRepository(p.db, project.id, { kind: 'local-path', path: repo.clone })
+  p.pluginInstance({ type: 'repository', workspace: project, config: { host: 'github', owner: 'jack', repo: 'candy' }, secrets: { token: GOOD_TOKEN } })
+  p.pluginInstance({ type: 'claude-code', workspace: project, config: { claudePath: fakeClaude(p.platform.paths.root) } })
+  const bot = await createBot(p.deps, project.id, parseCreateBot({ name: 'Ana Bot', family: 'claude-code', writeScope: 'write-confirm', personaName: 'ana', answersIn: { channels: ['C01LISTED'] } }))
   expect(recordBotPersonaCheck(p.db, bot.id, bot.updatedAt, { status: 'verified' })).toBe(true)
   addTeamMember(p.db, project.id, { displayName: 'Jack', email: null, slackMemberId: JACK, botScope: { all: true } })
-  return { p, project, bot, key }
+  return { p, project, bot }
 }
 
 /** Opens the thread through the router, then has the agent raise `scenario` the way a turn would. */
-async function raise(p: BotsPlatform, t: ReturnType<typeof wire>, botId: string, projectId: string, scenario: string) {
+async function raise(p: BotsKit, t: ReturnType<typeof wire>, botId: string, projectId: string, scenario: string) {
   let thread = findSlackThread(p.db, { botId, channelId: 'C01LISTED', threadTs: '1.1' })
   if (!thread) {
     t.bus.emit(messageEvent(botId, projectId, { kind: 'app_mention', text: `<@${BOT_USER}> start`, ts: '1.1' }))
@@ -158,7 +139,7 @@ async function raise(p: BotsPlatform, t: ReturnType<typeof wire>, botId: string,
   return { sessionId: thread.sessionId, decision, post, turnEnd }
 }
 
-function waitFor(p: BotsPlatform, id: string, kind: AgentSessionEventKind): Promise<AgentSessionEvent> {
+function waitFor(p: BotsKit, id: string, kind: AgentSessionEventKind): Promise<AgentSessionEvent> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => { unsubscribe(); reject(new Error(`No ${kind} event`)) }, 15_000)
     const unsubscribe = p.sessions.subscribe(id, (message: SessionMessage) => {
@@ -170,19 +151,17 @@ function waitFor(p: BotsPlatform, id: string, kind: AgentSessionEventKind): Prom
   })
 }
 
-function call(p: BotsPlatform, method: string, path: string, body?: unknown) {
-  const auth: AuthStrategy = { name: 'development', resolve: () => ADMIN }
-  const app = platformApp(p, { auth })
+function call(p: BotsKit, method: string, path: string, body?: unknown) {
   const init: RequestInit = { method }
   if (body !== undefined) {
     init.headers = { 'content-type': 'application/json' }
     init.body = JSON.stringify(body)
   }
-  return app.request(path, init)
+  return p.admin.request(path, init)
 }
 
 /** The panel's view: rows replayed on the SSE stream, read until the decision is settled. */
-async function streamedOutcome(p: BotsPlatform, sessionId: string, decisionId: string): Promise<AgentSessionEvent> {
+async function streamedOutcome(p: BotsKit, sessionId: string, decisionId: string): Promise<AgentSessionEvent> {
   const res = await call(p, 'GET', sessionEventsPath('alpha', sessionId))
   expect(res.status).toBe(200)
   const reader = res.body!.getReader()
@@ -273,7 +252,7 @@ describe('Slack decisions', () => {
 
     t.bus.emit(press(bot.id, project.id, { ts }, offered[1]!.value))
     await t.idle()
-    expect(p.decisions.get(decision.id)).toMatchObject({ state: 'answered', answer: { optionKind: 'allow_once', surface: 'web', actorId: ADMIN.id } })
+    expect(p.decisions.get(decision.id)).toMatchObject({ state: 'answered', answer: { optionKind: 'allow_once', surface: 'web', actorId: p.admin.actor.id } })
     expect(updatesOf(t, post, ts)).toHaveLength(2)
     expect(blockText(updatesOf(t, post, ts)[1]!)).toContain('Allowed once in the web app')
   }, 120_000)
@@ -336,7 +315,7 @@ describe('Slack decisions', () => {
   }, 120_000)
 
   it('settles a message whose decision died with the daemon on the next start', async () => {
-    const { p: first, project, bot, key } = await setup()
+    const { p: first, project, bot } = await setup()
     const before = wire(first)
     const { decision, post } = await raise(first, before, bot.id, project.id, 'permission')
     const ts = before.tsOf(post)
@@ -345,9 +324,8 @@ describe('Slack decisions', () => {
     // As in platform.close(): decisions stop before the agents do, so the log keeps the decision pending, as after a crash.
     first.decisions.close()
     await first.sessions.close()
-    first.close()
 
-    const p = boot(temp!.root, key)
+    const p = kit = await restartBots(first)
     const key0 = `slack-decision:${decision.id}`
     expect(p.db.select().from(platformMeta).where(eq(platformMeta.key, key0)).get()).toBeDefined()
     const after = wire(p)

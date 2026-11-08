@@ -5,7 +5,8 @@ import { WORKSPACES_PATH, type Workspace } from '@candy-mountain/platform-sdk'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { botSecretOwner, slackDecisionMetaKey, slackHandoffMetaKey } from '@candy-mountain/cap-bots'
-import { createPluginInstance, createWorkspace, findWorkspaceBySlug, fixtureDefinition, isCapabilityDefinition, MasterKey, notificationDeliveredKey, notificationRulesKey, platformApp, type CapabilityDefinition, type Db, type Platform } from '@candy-mountain/platform-daemon'
+import { createPluginInstance, createWorkspace, findWorkspaceBySlug, isCapabilityDefinition, MasterKey, notificationDeliveredKey, notificationRulesKey, type CapabilityDefinition, type Db, type Platform } from '@candy-mountain/platform-daemon'
+import { fixtureDefinition, platformApp } from '@candy-mountain/platform-daemon/testing'
 import { CAPABILITY_DEFINITIONS, createTempDataDir, startTestPlatform, type TempDataDir } from './testing'
 
 /** Tables no workspace owns a row of; the workspace's own row is checked by id. */

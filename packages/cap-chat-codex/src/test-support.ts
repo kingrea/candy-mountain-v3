@@ -1,7 +1,7 @@
 import type { AcpOptions } from '@candy-mountain/cap-acp'
 import type { ModuleDefinition } from '@candy-mountain/platform-sdk'
 import type { CapabilityDefinition } from '@candy-mountain/platform-sdk/daemon'
-import { startTestPlatform, testProduct, type Platform, type TestPlatformOptions } from '@candy-mountain/platform-daemon'
+import { testKit, testProduct, type TestKit, type TestKitOptions } from '@candy-mountain/platform-daemon/testing'
 import { codexTestCapabilities } from '@candy-mountain/plugin-codex'
 import { chatCodexDefinition } from './definition'
 
@@ -18,10 +18,7 @@ export function chatCodexTestCapabilities(acp?: AcpOptions['acp']): CapabilityDe
   return [...codexTestCapabilities(acp), chatCodexDefinition()]
 }
 
-/** `startTestPlatform` over codex's test definitions and chat-codex in an Agent Hub module. */
-export function startChatCodexPlatform(dataDir: string, { acp, ...options }: Omit<TestPlatformOptions, 'product' | 'capabilities' | 'modules'> & { acp?: AcpOptions['acp'] } = {}): Platform {
-  return startTestPlatform(dataDir, {
-    product: testProduct({ capabilities: chatCodexTestCapabilities(acp), modules: [AGENT_HUB_MODULE] }),
-    ...options,
-  })
+/** `testKit` over codex's test definitions and chat-codex in an Agent Hub module. */
+export function chatCodexKit({ acp, ...options }: Omit<TestKitOptions, 'product' | 'capabilities' | 'modules'> & { acp?: AcpOptions['acp'] } = {}): TestKit {
+  return testKit({ ...options, product: testProduct({ capabilities: chatCodexTestCapabilities(acp), modules: [AGENT_HUB_MODULE] }) })
 }

@@ -1,5 +1,6 @@
 import type { CapabilityDefinition } from '@candy-mountain/platform-sdk/daemon'
-import { fixturePluginType, openTestDatabase, startTestPlatform, type AnyPluginType, type Platform, type PlatformDatabase, type TestPlatformOptions } from '@candy-mountain/platform-daemon'
+import type { AnyPluginType, PlatformDatabase } from '@candy-mountain/platform-daemon'
+import { fixturePluginType, openTestDatabase, testKit, type TestKit, type TestKitOptions } from '@candy-mountain/platform-daemon/testing'
 import { herokuDefinition } from '@candy-mountain/plugin-heroku'
 import { netlifyDefinition } from '@candy-mountain/plugin-netlify'
 import { deploymentsDefinition } from './definition'
@@ -9,9 +10,9 @@ export const REPOSITORY_STAND_IN: AnyPluginType = fixturePluginType('repository'
 
 export const deploymentsConnections = (): CapabilityDefinition[] => [herokuDefinition(), netlifyDefinition()]
 
-/** A platform booting deployments and its connections alone, unless the options name other capabilities. */
-export function startDeploymentsPlatform(dataDir: string, { capabilities = [...deploymentsConnections(), deploymentsDefinition()], pluginTypes = [REPOSITORY_STAND_IN], ...options }: TestPlatformOptions = {}): Platform {
-  return startTestPlatform(dataDir, { capabilities, pluginTypes, ...options })
+/** The test kit over deployments and its connections alone, unless the options name other capabilities. */
+export function deploymentsKit({ capabilities = [...deploymentsConnections(), deploymentsDefinition()], pluginTypes = [REPOSITORY_STAND_IN], ...options }: TestKitOptions = {}): TestKit {
+  return testKit({ capabilities, pluginTypes, ...options })
 }
 
 /** The platform's tables plus the environments table. */

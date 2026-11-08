@@ -1,29 +1,37 @@
 import { PLUGINS_PATH, type PluginInstance, type PluginInstanceResponse } from '@candy-mountain/platform-sdk'
 import type { RepositoryBranchList } from '../wire'
+import { mkdirSync } from 'node:fs'
+import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { instanceHarness, openTestDatabase, type InstanceHarness } from '@candy-mountain/platform-daemon'
+import { testKit, type TestKit } from '@candy-mountain/platform-daemon/testing'
 import { repositoryDefinition } from '../definition'
-import { createWorkspaceWithRepository } from '../test-support'
-import { repositoryPluginType } from './definition'
+import { setRepository } from '../service'
 import { GOOD_TOKEN, json } from './fake-hosts'
 import { stubHosts } from './stub-hosts'
 
-let h: InstanceHarness
-
-// Workspaces carry a repository, as in the product.
-const harness = () => instanceHarness([repositoryPluginType], { openDatabase: () => openTestDatabase({ definitions: [repositoryDefinition()] }), createWorkspace: createWorkspaceWithRepository })
-afterEach(() => {
-  h?.close()
+let kit: TestKit | undefined
+afterEach(async () => {
+  await kit?.close()
+  kit = undefined
   vi.unstubAllGlobals()
 })
 
-function call(method: string, path: string, body?: unknown, roles?: string[]) {
+// The workspace carries a repository, as in the product.
+async function start(): Promise<void> {
+  kit = testKit({ capabilities: [repositoryDefinition()] })
+  const workspace = kit.workspace({ name: 'alpha', slug: 'alpha' })
+  const path = join(kit.platform.paths.root, 'repos', 'alpha')
+  mkdirSync(path, { recursive: true })
+  await setRepository(kit.db, workspace.id, { kind: 'local-path', path })
+}
+
+function call(method: string, path: string, body?: unknown) {
   const init: RequestInit = { method }
   if (body !== undefined) {
     init.headers = { 'content-type': 'application/json' }
     init.body = JSON.stringify(body)
   }
-  return h.app(roles).request(`${PLUGINS_PATH}${path}`, init)
+  return kit!.admin.request(`${PLUGINS_PATH}${path}`, init)
 }
 
 async function created(body: unknown): Promise<PluginInstance> {
@@ -37,8 +45,7 @@ describe('repository instance actions', () => {
 
   it.each(['github', 'bitbucket'])('tests the connection and lists branches on %s', async (host) => {
     stubHosts()
-    h = harness()
-    await h.createWorkspace('alpha')
+    await start()
     const instance = await created(repository(host, GOOD_TOKEN))
 
     const tested = (await (await call('POST', `/${instance.id}/test`)).json() as PluginInstanceResponse).instance
@@ -57,8 +64,7 @@ describe('repository instance actions', () => {
 
   it.each(['github', 'bitbucket'])('records the host\'s reason for a wrong token on %s and maps branch errors', async (host) => {
     stubHosts()
-    h = harness()
-    await h.createWorkspace('alpha')
+    await start()
     const instance = await created(repository(host, 'wrong-token'))
 
     const tested = (await (await call('POST', `/${instance.id}/test`)).json() as PluginInstanceResponse).instance
@@ -71,8 +77,7 @@ describe('repository instance actions', () => {
 
   it('passes rate limits through with Retry-After', async () => {
     stubHosts(() => json(429, { message: 'slow down' }, { 'retry-after': '30' }))
-    h = harness()
-    await h.createWorkspace('alpha')
+    await start()
     const instance = await created(repository('github', GOOD_TOKEN))
     const res = await call('GET', `/${instance.id}/branches`)
     expect(res.status).toBe(503)
@@ -81,8 +86,7 @@ describe('repository instance actions', () => {
   })
 
   it('answers 404 for an action the type does not have', async () => {
-    h = harness()
-    await h.createWorkspace('alpha')
+    await start()
     const instance = await created(repository('github', GOOD_TOKEN))
     for (const [method, path] of [['POST', 'branches'], ['GET', 'deploy'], ['GET', 'test'], ['GET', 'constructor']]) {
       const res = await call(method!, `/${instance.id}/${path}`)

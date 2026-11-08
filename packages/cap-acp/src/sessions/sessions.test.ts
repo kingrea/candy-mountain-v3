@@ -1,69 +1,52 @@
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { workspaceSessionsPath, sessionCancelPath, sessionDecisionPath, sessionDecisionsPath, sessionEventsPath, sessionPromptPath, type ActivityListResponse, type Actor, type AgentSession, type AgentSessionEvent, type AgentSessionEventKind, type ApiErrorBody, type DecisionListResponse, type Workspace, type SessionListResponse, type SessionResponse } from '@candy-mountain/platform-sdk'
+import { workspaceSessionsPath, sessionCancelPath, sessionDecisionPath, sessionDecisionsPath, sessionEventsPath, sessionPromptPath, type ActivityListResponse, type AgentSession, type AgentSessionEvent, type AgentSessionEventKind, type ApiErrorBody, type DecisionListResponse, type Workspace, type SessionListResponse, type SessionResponse } from '@candy-mountain/platform-sdk'
 import { eq } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { FAKE_ACP_AGENT, fakeBins } from '../acp/test-support'
-import { addRole, agentSessions, type AuthStrategy, createPluginInstance, createTempDataDir, platformApp, pluginInstances, setEnabledModules, type TempDataDir } from '@candy-mountain/platform-daemon'
-import { startAcpPlatform, type AcpPlatform, type AcpPlatformOptions } from '../test-support'
+import { agentSessions } from '@candy-mountain/platform-daemon'
+import type { TestActor } from '@candy-mountain/platform-daemon/testing'
+import { acpKit, type AcpKit, type AcpKitOptions } from '../test-support'
 import { resolveSessionSettings } from './config'
 import type { SessionManager, SessionMessage } from './manager'
-import { createWorkspaceWithRepository } from '@candy-mountain/plugin-repository'
+import { setRepository } from '@candy-mountain/plugin-repository'
 
-let temp: TempDataDir | undefined
-let platform: AcpPlatform | undefined
+let kit: AcpKit | undefined
 
 afterEach(async () => {
-  await platform?.sessions.close()
-  platform?.close()
-  platform = undefined
-  temp?.cleanup()
-  temp = undefined
+  await kit?.close()
+  kit = undefined
 })
 
-function boot(options: AcpPlatformOptions = {}): AcpPlatform {
-  temp ??= createTempDataDir()
-  platform = startAcpPlatform(temp.root, { acp: { bins: fakeBins, killTimeoutMs: 1000 }, ...options })
-  return platform
+function boot(options: AcpKitOptions = {}): AcpKit {
+  return kit = acpKit({ acp: { bins: fakeBins, killTimeoutMs: 1000 }, ...options })
 }
 
-async function workspaceWithCodex(p: AcpPlatform, slug = 'alpha'): Promise<Workspace> {
-  const path = join(temp!.root, '..', 'repos', slug)
+const repoPath = (p: AcpKit, slug: string) => join(p.platform.paths.root, '..', 'repos', slug)
+
+async function workspaceWithCodex(p: AcpKit, slug = 'alpha'): Promise<Workspace> {
+  const path = repoPath(p, slug)
   mkdirSync(path, { recursive: true })
-  const workspace = await createWorkspaceWithRepository(p.db, { name: slug, slug, path })
-  setEnabledModules(p.db, workspace.id, ['agent-hub'])
-  const instance = createPluginInstance({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly }, { type: 'codex', scope: 'workspace', workspaceId: workspace.id, config: {}, secrets: {} })
-  markHealthy(p, instance.id)
+  const workspace = p.workspace({ name: slug, slug, modules: ['agent-hub'] })
+  await setRepository(p.db, workspace.id, { kind: 'local-path', path })
+  p.pluginInstance({ type: 'codex', workspace })
   return workspace
 }
 
-/** Stands in for a passing connection test: the chat gate only reads the stored result. */
-function markHealthy(p: AcpPlatform, instanceId: string): void {
-  p.db.update(pluginInstances).set({ health: { healthy: true }, healthCheckedAt: new Date().toISOString() }).where(eq(pluginInstances.id, instanceId)).run()
-}
-
-const ADMIN: Actor = { id: 'admin-actor', username: 'admin', displayName: 'Admin', roles: ['admin'] }
-const DEVELOPER: Actor = { id: 'dev-actor', username: 'dev', displayName: 'Dev', roles: ['developer'] }
-const OTHER: Actor = { id: 'other-actor', username: 'other', displayName: 'Other', roles: ['developer'] }
-
-const as = (actor: Actor): AuthStrategy => ({ name: 'development', resolve: () => actor })
-
-const appOf = (p: AcpPlatform, actor?: Actor) => platformApp(p, actor ? { auth: as(actor) } : {})
-
-function call(p: AcpPlatform, method: string, path: string, body?: unknown, actor?: Actor) {
+function call(p: AcpKit, method: string, path: string, body?: unknown, actor: TestActor = p.admin) {
   const init: RequestInit = { method }
   if (body !== undefined) init.headers = { 'content-type': 'application/json' }
   if (body !== undefined) init.body = typeof body === 'string' ? body : JSON.stringify(body)
-  return appOf(p, actor).request(path, init)
+  return actor.request(path, init)
 }
 
-async function createSession(p: AcpPlatform, slug = 'alpha', body: unknown = { family: 'codex' }): Promise<AgentSession> {
+async function createSession(p: AcpKit, slug = 'alpha', body: unknown = { family: 'codex' }): Promise<AgentSession> {
   const res = await call(p, 'POST', workspaceSessionsPath(slug), body)
   expect(res.status, await res.clone().text()).toBe(201)
   return ((await res.json()) as SessionResponse).session
 }
 
-async function prompt(p: AcpPlatform, slug: string, id: string, text: string): Promise<Response> {
+async function prompt(p: AcpKit, slug: string, id: string, text: string): Promise<Response> {
   return call(p, 'POST', sessionPromptPath(slug, id), { text })
 }
 
@@ -136,8 +119,8 @@ class SseReader {
 const sessionFrames = (frames: Frame[]) => frames.filter(frame => frame.event === 'session').map(frame => JSON.parse(frame.data) as AgentSessionEvent)
 const statusFrames = (frames: Frame[]) => frames.filter(frame => frame.event === 'status').map(frame => (JSON.parse(frame.data) as { status: string }).status)
 
-async function openStream(p: AcpPlatform, slug: string, id: string, after?: number): Promise<SseReader> {
-  const res = await appOf(p).request(sessionEventsPath(slug, id, after))
+async function openStream(p: AcpKit, slug: string, id: string, after?: number): Promise<SseReader> {
+  const res = await p.admin.request(sessionEventsPath(slug, id, after))
   expect(res.status).toBe(200)
   expect(res.headers.get('content-type')).toBe('text/event-stream')
   return new SseReader(res.body!)
@@ -148,7 +131,7 @@ describe('agent sessions', () => {
     const p = boot()
     const workspace = await workspaceWithCodex(p)
     const session = await createSession(p)
-    expect(session).toMatchObject({ workspaceId: workspace.id, family: 'codex', actorId: expect.any(String), cwd: join(temp!.root, '..', 'repos', 'alpha'), upstreamSessionId: null, status: 'idle', posture: null })
+    expect(session).toMatchObject({ workspaceId: workspace.id, family: 'codex', actorId: expect.any(String), cwd: repoPath(p, 'alpha'), upstreamSessionId: null, status: 'idle', posture: null })
 
     const list = (await (await call(p, 'GET', workspaceSessionsPath('alpha'))).json()) as SessionListResponse
     expect(list.sessions).toEqual([session])
@@ -159,7 +142,8 @@ describe('agent sessions', () => {
     expect(activity.events).toHaveLength(1)
     expect(activity.events[0]).toMatchObject({ type: 'session.started', title: 'Codex session started', payload: { sessionId: session.id, family: 'codex' } })
 
-    await createWorkspaceWithRepository(p.db, { name: 'beta', slug: 'beta', path: join(temp!.root, '..', 'repos', 'alpha') })
+    const beta = p.workspace({ name: 'beta', slug: 'beta' })
+    await setRepository(p.db, beta.id, { kind: 'local-path', path: repoPath(p, 'alpha') })
     expect(await errorOf(await call(p, 'GET', `${workspaceSessionsPath('beta')}/${session.id}`))).toEqual({ status: 404, code: 'not_found' })
     expect(await errorOf(await call(p, 'POST', workspaceSessionsPath('alpha'), { family: 'gemini' }))).toEqual({ status: 400, code: 'invalid_request' })
     expect(await errorOf(await call(p, 'POST', workspaceSessionsPath('alpha'), { family: 'codex', posture: { codex: { mode: 'agent' } } }))).toEqual({ status: 400, code: 'invalid_request' })
@@ -171,10 +155,10 @@ describe('agent sessions', () => {
 
   it('refuses a prompt when the family plugin is not set up, without logging it', async () => {
     const p = boot()
-    const workspace = await createWorkspaceWithRepository(p.db, { name: 'bare', slug: 'bare', path: temp!.root })
-    setEnabledModules(p.db, workspace.id, ['agent-hub'])
+    const workspace = p.workspace({ name: 'bare', slug: 'bare', modules: ['agent-hub'] })
+    await setRepository(p.db, workspace.id, { kind: 'local-path', path: p.platform.paths.root })
     expect(await errorOf(await call(p, 'POST', workspaceSessionsPath('bare'), { family: 'codex' }))).toEqual({ status: 409, code: 'not_ready' })
-    const session = p.sessions.create({ workspaceId: workspace.id, family: 'codex', actorId: 'someone', cwd: temp!.root })
+    const session = p.sessions.create({ workspaceId: workspace.id, family: 'codex', actorId: 'someone', cwd: p.platform.paths.root })
     await expect(p.sessions.prompt(session.id, 'hello')).rejects.toMatchObject({ code: 'family_unavailable', status: 422 })
     expect(p.sessions.events(session.id)).toEqual([])
     expect(p.sessions.get(session.id)?.status).toBe('idle')
@@ -247,7 +231,7 @@ describe('agent sessions', () => {
     await tail.until(frames => statusFrames(frames).length > 0)
     expect(sessionFrames(tail.frames).map(event => event.seq)).toEqual([5, 6])
     await tail.cancel()
-    expect(await errorOf(await appOf(p).request(sessionEventsPath('alpha', session.id) + '?after=x'))).toEqual({ status: 400, code: 'invalid_request' })
+    expect(await errorOf(await p.admin.request(sessionEventsPath('alpha', session.id) + '?after=x'))).toEqual({ status: 400, code: 'invalid_request' })
   })
 
   it('resumes the same upstream session after a daemon restart', async () => {
@@ -262,9 +246,8 @@ describe('agent sessions', () => {
     const exited = waitFor(p.sessions, session.id, 'exited')
     await p.sessions.close()
     await expect(exited).resolves.toMatchObject({ kind: 'exited', expected: true })
-    p.close()
 
-    p = boot()
+    p = kit = await p.restart()
     const restored = p.sessions.get(session.id)
     expect(restored).toMatchObject({ id: session.id, status: 'idle', upstreamSessionId: upstream })
     expect(p.sessions.events(session.id).map(event => event.kind)).toEqual(['prompt', 'text', 'turn_end', 'exited'])
@@ -388,7 +371,7 @@ describe('agent sessions', () => {
     await prompt(p, 'alpha', session.id, 'hello')
     await done
     const pid = p.acpHarness.list()[0]!.pid
-    const res = await appOf(p).request(sessionEventsPath('alpha', session.id))
+    const res = await p.admin.request(sessionEventsPath('alpha', session.id))
     const reader = res.body!.getReader()
     await reader.read()
     await p.sessions.close()
@@ -400,11 +383,7 @@ describe('agent sessions', () => {
 })
 
 describe('session access', () => {
-  async function grantDeveloper(p: AcpPlatform, rungs: Record<string, string>): Promise<void> {
-    addRole(p.db, 'developer')
-    const res = await call(p, 'PUT', '/grants', { role: 'developer', target: { kind: 'module', id: 'agent-hub' }, rungs }, ADMIN)
-    expect(res.status, await res.clone().text()).toBe(200)
-  }
+  const developer = (p: AcpKit, rung: 'chat' | 'none' = 'chat') => p.actor({ rungs: { 'chat-codex': rung, 'chat-claude-code': rung } })
 
   const sessionRequests = (id: string): [string, string, unknown?][] => [
     ['GET', `${workspaceSessionsPath('alpha')}/${id}`],
@@ -415,7 +394,7 @@ describe('session access', () => {
     ['POST', sessionDecisionPath('alpha', id, 'some-decision'), { optionKind: 'allow_once' }],
   ]
 
-  const listed = async (p: AcpPlatform, actor: Actor) => {
+  const listed = async (p: AcpKit, actor: TestActor) => {
     const res = await call(p, 'GET', workspaceSessionsPath('alpha'), undefined, actor)
     expect(res.status, await res.clone().text()).toBe(200)
     return ((await res.json()) as SessionListResponse).sessions.map(session => session.id)
@@ -424,22 +403,23 @@ describe('session access', () => {
   it('hides another actor\'s session from a non-admin on every route', async () => {
     const p = boot()
     await workspaceWithCodex(p)
-    await grantDeveloper(p, {})
+    const dev = developer(p)
+    const other = developer(p)
     const adminOwned = await createSession(p)
-    const theirs = p.sessions.create({ workspaceId: adminOwned.workspaceId, family: 'codex', actorId: OTHER.id, cwd: adminOwned.cwd! })
+    const theirs = p.sessions.create({ workspaceId: adminOwned.workspaceId, family: 'codex', actorId: other.actor.id, cwd: adminOwned.cwd! })
 
     for (const [method, path, body] of [...sessionRequests(adminOwned.id), ...sessionRequests(theirs.id)]) {
-      expect(await errorOf(await call(p, method, path, body, DEVELOPER)), `${method} ${path}`).toEqual({ status: 404, code: 'not_found' })
+      expect(await errorOf(await call(p, method, path, body, dev)), `${method} ${path}`).toEqual({ status: 404, code: 'not_found' })
     }
-    expect(await listed(p, DEVELOPER)).toEqual([])
+    expect(await listed(p, dev)).toEqual([])
     expect(p.sessions.events(theirs.id)).toEqual([])
   })
 
   it('refuses an actor whose chat rung is none, even on their own session', async () => {
     const p = boot()
     const workspace = await workspaceWithCodex(p)
-    await grantDeveloper(p, { 'chat-codex': 'none', 'chat-claude-code': 'none' })
-    const own = p.sessions.create({ workspaceId: workspace.id, family: 'codex', actorId: DEVELOPER.id, cwd: temp!.root })
+    const dev = developer(p, 'none')
+    const own = p.sessions.create({ workspaceId: workspace.id, family: 'codex', actorId: dev.actor.id, cwd: p.platform.paths.root })
 
     const refused = [
       ...sessionRequests(own.id),
@@ -447,7 +427,7 @@ describe('session access', () => {
       ['POST', workspaceSessionsPath('alpha'), { family: 'codex' }],
     ] as [string, string, unknown?][]
     for (const [method, path, body] of refused) {
-      expect(await errorOf(await call(p, method, path, body, DEVELOPER)), `${method} ${path}`).toEqual({ status: 403, code: 'not_granted' })
+      expect(await errorOf(await call(p, method, path, body, dev)), `${method} ${path}`).toEqual({ status: 403, code: 'not_granted' })
     }
     expect(p.sessions.events(own.id)).toEqual([])
   })
@@ -455,17 +435,17 @@ describe('session access', () => {
   it('lets the owner and the admin drive a session, including one with no human owner', async () => {
     const p = boot()
     await workspaceWithCodex(p)
-    await grantDeveloper(p, {})
-    const res = await call(p, 'POST', workspaceSessionsPath('alpha'), { family: 'codex' }, DEVELOPER)
+    const dev = developer(p)
+    const res = await call(p, 'POST', workspaceSessionsPath('alpha'), { family: 'codex' }, dev)
     expect(res.status, await res.clone().text()).toBe(201)
     const own = ((await res.json()) as SessionResponse).session
-    expect(own.actorId).toBe(DEVELOPER.id)
+    expect(own.actorId).toBe(dev.actor.id)
     const bot = p.sessions.create({ workspaceId: own.workspaceId, family: 'codex', actorId: 'bot:reviewer', cwd: own.cwd! })
 
-    expect(await listed(p, DEVELOPER)).toEqual([own.id])
-    expect((await listed(p, ADMIN)).sort()).toEqual([own.id, bot.id].sort())
+    expect(await listed(p, dev)).toEqual([own.id])
+    expect((await listed(p, p.admin)).sort()).toEqual([own.id, bot.id].sort())
 
-    for (const [actor, session] of [[DEVELOPER, own], [ADMIN, own], [ADMIN, bot]] as const) {
+    for (const [actor, session] of [[dev, own], [p.admin, own], [p.admin, bot]] as const) {
       const done = waitFor(p.sessions, session.id, 'turn_end')
       expect((await call(p, 'POST', sessionPromptPath('alpha', session.id), { text: 'hello' }, actor)).status).toBe(202)
       await done
@@ -473,7 +453,7 @@ describe('session access', () => {
       expect(((await one.json()) as SessionResponse).session.id).toBe(session.id)
       expect(((await (await call(p, 'GET', sessionDecisionsPath('alpha', session.id), undefined, actor)).json()) as DecisionListResponse).decisions).toEqual([])
       expect((await call(p, 'POST', sessionCancelPath('alpha', session.id), undefined, actor)).status).toBe(200)
-      const stream = await appOf(p, actor).request(sessionEventsPath('alpha', session.id))
+      const stream = await actor.request(sessionEventsPath('alpha', session.id))
       expect(stream.status).toBe(200)
       const reader = new SseReader(stream.body!)
       await reader.until(frames => frames.some(frame => frame.event === 'session' && JSON.parse(frame.data).kind === 'turn_end'))

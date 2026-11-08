@@ -1,8 +1,9 @@
-import { createActivityEventTypeRegistry, declaredActivityEventTypes, instanceHarness as platformInstanceHarness, isCapabilityDefinition, migrationSets, openTestDatabase as openPlatformTestDatabase, platformDefinitions, type AnyPluginType, type InstanceHarness, type InstanceHarnessOptions, type MigrationSet, type PlatformDatabase } from '@candy-mountain/platform-daemon'
+import { createActivityEventTypeRegistry, declaredActivityEventTypes, isCapabilityDefinition, migrationSets, platformDefinitions, type AnyPluginType, type MigrationSet, type PlatformDatabase } from '@candy-mountain/platform-daemon'
+import { instanceHarness as platformInstanceHarness, openTestDatabase as openPlatformTestDatabase, type InstanceHarness, type InstanceHarnessOptions } from '@candy-mountain/platform-daemon/testing'
 import { CANDY_MOUNTAIN } from '../candy-mountain'
 import { createWorkspaceWithRepository } from '@candy-mountain/plugin-repository'
 
-export { createTempDataDir, type TempDataDir } from '@candy-mountain/platform-daemon'
+export { createTempDataDir, type TempDataDir } from '@candy-mountain/platform-daemon/testing'
 export * from './platform'
 
 const candyMountainDefinitions = () => [...platformDefinitions(), ...CANDY_MOUNTAIN.capabilities.filter(isCapabilityDefinition)]

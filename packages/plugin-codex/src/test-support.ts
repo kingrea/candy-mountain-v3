@@ -1,6 +1,5 @@
 import { acpDefinition, type AcpOptions } from '@candy-mountain/cap-acp'
 import { bindService, defineCapabilityDefinition, serviceKey, type CapabilityDefinition } from '@candy-mountain/platform-sdk/daemon'
-import { startTestPlatform, testProduct, type Platform, type TestPlatformOptions } from '@candy-mountain/platform-daemon'
 import { codexDefinition } from './definition'
 
 /** acp depends on repository for checkouts; codex does not, so the tests stand it in by id and service name instead of importing plugin-repository. */
@@ -28,12 +27,4 @@ function claudeCodeFamilyStandInDefinition(): CapabilityDefinition {
 /** The definitions codex boots on, with codex itself unless `withCodex` is false. */
 export function codexTestCapabilities(acp: AcpOptions['acp'], { withCodex = true } = {}): CapabilityDefinition[] {
   return [repositoryStandInDefinition(), acpDefinition({ acp }), claudeCodeFamilyStandInDefinition(), ...(withCodex ? [codexDefinition()] : [])]
-}
-
-/** `startTestPlatform` over the repository stand-in, acp, the claude-code family stand-in and codex. */
-export function startCodexPlatform(dataDir: string, { acp, withCodex = true, ...options }: Omit<TestPlatformOptions, 'product' | 'capabilities' | 'modules'> & { acp?: AcpOptions['acp'], withCodex?: boolean } = {}): Platform {
-  return startTestPlatform(dataDir, {
-    product: testProduct({ capabilities: codexTestCapabilities(acp, { withCodex }) }),
-    ...options,
-  })
 }

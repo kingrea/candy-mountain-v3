@@ -1,94 +1,25 @@
-import { mkdtempSync, rmSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-import type { ProductConfig } from '@candy-mountain/platform-sdk'
-import { createActivityEventTypeRegistry, declaredActivityEventTypes, registerActivityEventTypes } from '../activity/types'
-import { createApp, type AppDeps } from '../app'
-import { seedAuth } from '../auth/seed'
-import { isCapabilityDefinition } from '../capabilities/definition'
-import { migrationSets } from '../capabilities/migration-sets'
-import type { CapabilityRegistryEntry } from '../capabilities/registry'
-import { openDatabase, type PlatformDatabase } from '../db'
-import { startPlatform, type Platform, type PlatformOptions } from '../platform'
-import { platformDefinitions } from '../platform-capabilities'
-import { suppliedIds, type Product } from '../product'
+// The daemon test kit: the one entry a capability's tests import test support from. See ../../TESTING.md.
+export { testKit, TEST_ACTOR_HEADER, TEST_FACTS_ID, type TestActor, type TestActorOptions, type TestDeps, type TestKit, type TestKitOptions, type TestPluginInstanceOptions, type TestWorkspaceOptions } from './kit'
+export { createTempDataDir, createTestApp, openTestDatabase, platformApp, startTestPlatform, type TempDataDir, type TestAppDeps, type TestDatabaseOptions, type TestPlatformOptions } from './platform'
+export { TEST_PRODUCT_CONFIG, testProduct, type ProductParts } from './product'
 
-/** A product with nothing of its own; `testProduct` lists whatever parts a test supplies. */
-export const TEST_PRODUCT_CONFIG: Readonly<ProductConfig> = Object.freeze({
-  name: 'Test Product',
-  description: 'A product for platform tests.',
-  theme: { primary: 'sky', hex: '#0ea5e9' },
-  scope: { label: { singular: 'workspace', plural: 'workspaces', singularTitle: 'Workspace', pluralTitle: 'Workspaces' }, urlPrefix: 'w', listPath: 'workspaces' },
-  capabilities: [],
-  modules: [],
-  pluginTypes: [],
-  layers: [],
-})
+// Fixtures: valid manifests, definitions and plugin types a test can break or build on.
+export { cloneManifest, fixtureCapability, fixtureCapabilityContext, fixtureDefinition, undescribed } from '../capabilities/fixtures'
+export { clonePluginType, fixturePluginType, globalPluginType } from '../plugins/fixtures'
+export { ALPHA_MIGRATION_SET, BETA_MIGRATION_SET, FIXTURE_MIGRATION_SETS } from '../db/fixtures'
 
-export type ProductParts = Partial<Pick<Product, 'capabilities' | 'modules' | 'pluginTypes'>>
+// Lower-level harnesses kept for tests that assemble their own app or registries.
+export { instanceHarness, multiPluginType, type InstanceHarness, type InstanceHarnessOptions } from '../plugins/instances/test-support'
+export { addRole, testAccess, TEST_CAPABILITIES, TEST_MODULES } from '../grants/test-access'
+export { scriptedReply, startStubGateway, type StubGateway, type StubGatewayReply, type StubGatewayRequest } from '../platform-agent/test-support'
 
-/** The configuration's ids follow the parts, so only the parts themselves are validated. */
-export function testProduct({ capabilities = [], modules = [], pluginTypes = [] }: ProductParts = {}, config: Partial<ProductConfig> = {}): Product {
-  const parts = { capabilities, modules, pluginTypes }
-  const ids = suppliedIds(parts)
-  return { config: { ...TEST_PRODUCT_CONFIG, ...config, capabilities: ids.capabilities, modules: ids.modules, pluginTypes: [...new Set(ids.pluginTypes)] }, ...parts }
-}
-
-export interface TestDatabaseOptions {
-  /** Started after the platform's own; their sets are applied and their activity event types registered. */
-  definitions?: readonly CapabilityRegistryEntry[]
-  seed?: boolean
-}
-
-export function openTestDatabase({ definitions = [], seed = true }: TestDatabaseOptions = {}): PlatformDatabase {
-  const all = [...platformDefinitions(), ...definitions.filter(isCapabilityDefinition)]
-  const database = openDatabase(':memory:', { sets: migrationSets(all) })
-  registerActivityEventTypes(database.db, createActivityEventTypeRegistry(declaredActivityEventTypes(all)))
-  if (seed) seedAuth(database.db)
-  return database
-}
-
-export interface TempDataDir {
-  root: string
-  cleanup(): void
-}
-
-export function createTempDataDir(): TempDataDir {
-  const parent = mkdtempSync(join(tmpdir(), 'platform-test-'))
-  return { root: join(parent, 'data'), cleanup: () => rmSync(parent, { recursive: true, force: true }) }
-}
-
-export type TestPlatformOptions = Omit<PlatformOptions, 'product'> & ProductParts & {
-  /** Built from the parts when not given. */
-  product?: Product
-}
-
-export function startTestPlatform(dataDir: string, { product, capabilities, modules, pluginTypes, ...options }: TestPlatformOptions = {}): Platform {
-  return startPlatform(dataDir, { product: product ?? testProduct({ capabilities, modules, pluginTypes }), ...options })
-}
-
-export type TestAppDeps = Omit<AppDeps, 'product'> & { product?: Product }
-
-/** An app for route tests that pass their own registries or runtime. */
-export function createTestApp({ product = testProduct(), ...deps }: TestAppDeps): ReturnType<typeof createApp> {
-  return createApp({ product, ...deps })
-}
-
-/** The app a distribution's entry point would build over this platform. */
-export function platformApp(platform: Platform, deps: Partial<AppDeps> = {}): ReturnType<typeof createApp> {
-  return createApp({
-    db: platform.db,
-    paths: platform.paths,
-    product: platform.product,
-    capabilities: platform.capabilities,
-    modules: platform.modules,
-    pluginTypes: platform.pluginTypes,
-    families: platform.families,
-    workspaceFacts: platform.workspaceFacts,
-    secrets: platform.secrets.writeOnly,
-    secretsReader: platform.secrets,
-    runtime: platform.runtime,
-    ...deps,
-  })
-}
-
+// The platform types a test names when it holds what the kit started.
+export type { AppDeps, AppEnv } from '../app'
+export type { AuthStrategy } from '../auth'
+export type { CapabilityDefinition } from '../capabilities/definition'
+export type { CapabilityRegistryEntry } from '../capabilities/registry'
+export type { DataPaths } from '../data-dir'
+export type { Db, MigrationSet, PlatformDatabase } from '../db'
+export type { Platform, PlatformOptions } from '../platform'
+export type { AnyPluginType } from '../plugins/definition'
+export type { Product } from '../product'

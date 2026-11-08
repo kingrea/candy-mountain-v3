@@ -4,32 +4,28 @@ import { join } from 'node:path'
 import { WORKSPACES_PATH, type ApiErrorBody } from '@candy-mountain/platform-sdk'
 import { workspaceIssueEventsPath, type ProjectAssigneesResponse } from './wire'
 import { afterEach, describe, expect, it } from 'vitest'
-import { createTempDataDir, platformApp, type Platform, type Product, setEnabledModules, startTestPlatform, type TempDataDir, testProduct } from '@candy-mountain/platform-daemon'
+import { testKit, testProduct, type TestKit } from '@candy-mountain/platform-daemon/testing'
+import type { Product } from '@candy-mountain/platform-daemon'
 import { ISSUE_WATCHER } from './definition'
-import { issuesTestProduct } from './test-support'
-import { createWorkspaceWithRepository, repositoryDefinition } from '@candy-mountain/plugin-repository'
+import { issuesTestProduct, workspaceAt } from './test-support'
+import { repositoryDefinition } from '@candy-mountain/plugin-repository'
 
 describe('the issues definition', () => {
-  let temp: TempDataDir
+  let kit: TestKit | undefined
   let checkout: string
-  const open: Platform[] = []
 
   afterEach(async () => {
-    for (const platform of open.splice(0)) await platform.close()
-    temp?.cleanup()
+    await kit?.close()
+    kit = undefined
     rmSync(checkout, { recursive: true, force: true })
   })
 
   async function start(product: Product = issuesTestProduct()) {
-    temp = createTempDataDir()
     checkout = mkdtempSync(join(tmpdir(), 'candy-mountain-issues-'))
     mkdirSync(join(checkout, '.beads'))
-    const platform = startTestPlatform(temp.root, { product })
-    open.push(platform)
-    const project = await createWorkspaceWithRepository(platform.db, { name: 'Alpha', slug: 'alpha', path: checkout })
-    setEnabledModules(platform.db, project.id, platform.modules.list().map(m => m.id))
-    const app = platformApp(platform)
-    return { platform, app, project }
+    kit = testKit({ product })
+    const project = await workspaceAt(kit, checkout, { name: 'Alpha', slug: 'alpha' })
+    return { platform: kit.platform, app: kit.admin, project }
   }
 
   it('serves the issue, assignee and event stream routes with its watcher running', async () => {

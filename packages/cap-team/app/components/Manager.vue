@@ -54,7 +54,7 @@ async function remove(member: TeamMember) {
   if (!confirmed || !slug.value) return
   actionError.value = null
   try {
-    await $api(`${workspaceTeamPath(slug.value)}/${member.id}`, { method: 'DELETE' })
+    await $api<unknown>(`${workspaceTeamPath(slug.value)}/${member.id}`, { method: 'DELETE' })
     toast.add({ title: `Removed ${member.displayName}`, color: 'success' })
   }
   catch (error) {

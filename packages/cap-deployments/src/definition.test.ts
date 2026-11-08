@@ -4,9 +4,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createEnvironment } from './service'
 import { createLiveVersionSourceRegistry, defineLiveVersionSource, LiveVersionSourceError } from './sources'
 import { LIVE_VERSION_SOURCES } from './builtin-sources'
-import { createTempDataDir, createWorkspace, type Platform, platformApp, startTestPlatform, type TempDataDir, type TestPlatformOptions } from '@candy-mountain/platform-daemon'
+import { testKit, type TestKit, type TestKitOptions } from '@candy-mountain/platform-daemon/testing'
 import { deploymentsDefinition } from './definition'
-import { deploymentsConnections, REPOSITORY_STAND_IN, startDeploymentsPlatform } from './test-support'
+import { deploymentsConnections, deploymentsKit, REPOSITORY_STAND_IN } from './test-support'
 
 const pinned = defineLiveVersionSource({
   id: 'pinned',
@@ -19,21 +19,17 @@ const pinned = defineLiveVersionSource({
 })
 
 describe('the deployments definition', () => {
-  let temp: TempDataDir
-  const open: Platform[] = []
+  let kit: TestKit | undefined
 
   afterEach(async () => {
-    for (const platform of open.splice(0)) await platform.close()
-    temp?.cleanup()
+    await kit?.close()
+    kit = undefined
   })
 
-  function start(options: TestPlatformOptions = {}) {
-    temp = createTempDataDir()
-    const platform = startDeploymentsPlatform(temp.root, options)
-    open.push(platform)
-    const project = createWorkspace(platform.db, { name: 'Alpha', slug: 'alpha' })
-    const app = platformApp(platform)
-    return { platform, app, project }
+  function start(options: TestKitOptions = {}) {
+    kit = deploymentsKit(options)
+    const project = kit.workspace({ name: 'Alpha', slug: 'alpha' })
+    return { platform: kit.platform, app: kit.admin, project }
   }
 
   it('serves the environment and live version source routes, starting after the heroku and netlify connections that bring their plugin types', async () => {
@@ -82,9 +78,8 @@ describe('the deployments definition', () => {
   })
 
   it('refuses boot when a source reads a plugin type nothing registers', () => {
-    temp = createTempDataDir()
     const render = defineLiveVersionSource({ ...pinned, id: 'render-deploy', plugin: 'render' })
-    const boot = () => startTestPlatform(temp.root, { capabilities: [...deploymentsConnections(), deploymentsDefinition({ sources: [...LIVE_VERSION_SOURCES, render] })], pluginTypes: [REPOSITORY_STAND_IN] })
+    const boot = () => testKit({ capabilities: [...deploymentsConnections(), deploymentsDefinition({ sources: [...LIVE_VERSION_SOURCES, render] })], pluginTypes: [REPOSITORY_STAND_IN] })
 
     expect(boot).toThrow(LiveVersionSourceError)
     expect(boot).toThrow("Live-version source 'render-deploy': plugin type 'render' is not registered.")

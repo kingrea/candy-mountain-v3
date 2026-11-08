@@ -14,7 +14,7 @@ import { teamDefinition } from '@candy-mountain/cap-team'
 import { uptimeDefinition } from '@candy-mountain/cap-uptime'
 import { overviewDefinition, platformAgentDefinition, type CapabilityRegistryEntry } from '@candy-mountain/platform-daemon'
 
-/** Candy Mountain's capabilities by id, in registration order. */
+/** Candy Mountain's capabilities by id, in registration order; what a build ships. Development-only ones are in development.ts. */
 export const DEFINITIONS = {
   'overview': overviewDefinition,
   'repository': repositoryDefinition,

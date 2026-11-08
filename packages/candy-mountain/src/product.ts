@@ -1,5 +1,6 @@
 import type { ProductConfig } from '@candy-mountain/platform-sdk'
 
+/** What a build of Candy Mountain includes; development-only additions are in development.ts. */
 export const CANDY_MOUNTAIN_PRODUCT: Readonly<ProductConfig> = {
   name: 'Candy Mountain',
   description: 'Codebase management platform',

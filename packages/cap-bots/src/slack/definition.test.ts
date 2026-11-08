@@ -4,19 +4,19 @@ import { join } from 'node:path'
 import { CAPABILITY_CATALOG_PATH, GRANTS_PATH, MODULES_PATH, WORKSPACES_PATH, workspaceNotificationsPath, type CapabilityCatalogResponse, type GrantListResponse, type ModuleListResponse, type NotificationRulesResponse } from '@candy-mountain/platform-sdk'
 import { botSlackConnectionPath } from '../wire'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { appendActivityEvent, createTempDataDir, fixtureDefinition, MasterKey, platformApp, startTestPlatform, testProduct, type Platform, type TempDataDir, type TestPlatformOptions } from '@candy-mountain/platform-daemon'
+import { appendActivityEvent } from '@candy-mountain/platform-daemon'
+import { fixtureDefinition, testKit, testProduct, type TestActor, type TestKit, type TestKitOptions } from '@candy-mountain/platform-daemon/testing'
 import { BOT_SLACK_ROUTER } from '../definition'
 import { SLACK_CONNECTIONS } from '@candy-mountain/plugin-slack'
 import { ACP_SESSIONS, fakeBins } from '@candy-mountain/cap-acp'
 import { botsTestProduct } from '../test-support'
-import { createWorkspaceWithRepository } from '@candy-mountain/plugin-repository'
+import { setRepository } from '@candy-mountain/plugin-repository'
 
 const WEB_URL = 'http://web.test:4300'
 const acp = { bins: fakeBins, killTimeoutMs: 1000 }
 
 describe('the slack definition under bots', () => {
-  let temp: TempDataDir
-  const open: Platform[] = []
+  let kit: TestKit | undefined
   const posts: Array<{ token: string, body: Record<string, unknown> }> = []
 
   const fakeFetch: typeof fetch = async (input, init) => {
@@ -28,36 +28,36 @@ describe('the slack definition under bots', () => {
   }
 
   afterEach(async () => {
-    for (const platform of open.splice(0)) await platform.close()
-    temp?.cleanup()
+    await kit?.close()
+    kit = undefined
     posts.length = 0
     vi.restoreAllMocks()
   })
 
-  function start(options: TestPlatformOptions = {}) {
-    temp = createTempDataDir()
-    const platform = startTestPlatform(temp.root, { secretsKey: MasterKey.generate(), notifications: { webUrl: WEB_URL, log: { error: () => {} } }, ...options })
-    open.push(platform)
-    return { platform, app: platformApp(platform) }
+  function start(options: TestKitOptions = {}) {
+    kit = testKit({ notifications: { webUrl: WEB_URL, log: { error: () => {} } }, ...options })
+    return { kit, platform: kit.platform, app: kit.admin }
   }
 
-  const withSlack = (): TestPlatformOptions => ({ product: botsTestProduct({ acp, slack: { fetch: fakeFetch } }) })
+  const withSlack = (): TestKitOptions => ({ product: botsTestProduct({ acp, slack: { fetch: fakeFetch } }) })
   // Stands in for a capability with a notification kind, so the rules route has something to store without slack.
   const incidents = fixtureDefinition('incidents', { manifest: null, activityEventTypes: [{ id: 'incident.opened', label: 'Incident opened', icon: 'i-lucide-siren', notifications: [{ id: 'incident.opened', label: 'An incident opens' }] }] })
   // Bots depend on slack, and team on the hasBots fact bots declares, so a product without it leaves both out too.
-  const withoutSlack = (): TestPlatformOptions => {
+  const withoutSlack = (): TestKitOptions => {
     const product = botsTestProduct({ acp }, ['slack', 'bots', 'team'])
     return { product: testProduct({ capabilities: [...product.capabilities, incidents], modules: product.modules }) }
   }
 
-  async function projectWithRule(platform: Platform, app: ReturnType<typeof platformApp>, checkout: string) {
-    const project = await createWorkspaceWithRepository(platform.db, { name: 'alpha', path: checkout })
+  async function projectWithRule(kit: TestKit, checkout: string) {
+    const app = kit.admin
+    const project = kit.workspace({ name: 'alpha', slug: 'alpha' })
+    await setRepository(kit.db, project.id, { kind: 'local-path', path: checkout })
     const res = await app.request(workspaceNotificationsPath('alpha'), { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ rules: { 'incident.opened': { enabled: true, destination: { channelId: 'C777' } } } }) })
     expect(res.status).toBe(200)
     return project
   }
 
-  const rules = async (app: ReturnType<typeof platformApp>) => ((await (await app.request(workspaceNotificationsPath('alpha'))).json()) as NotificationRulesResponse).rules
+  const rules = async (app: TestActor) => ((await (await app.request(workspaceNotificationsPath('alpha'))).json()) as NotificationRulesResponse).rules
 
   it('offers the connections to bots, brings the plugin type, and is in no catalog, module or grant', async () => {
     const { platform, app } = start(withSlack())
@@ -88,7 +88,7 @@ describe('the slack definition under bots', () => {
   })
 
   it('closes its connections after the router and after the sessions that may still post', async () => {
-    const { platform } = start(withSlack())
+    const { kit, platform } = start(withSlack())
     const connections = platform.runtime.services('slack').get(SLACK_CONNECTIONS)
     const sessions = platform.runtime.service(ACP_SESSIONS)!
     const order: string[] = []
@@ -103,13 +103,13 @@ describe('the slack definition under bots', () => {
     record(sessions, 'close', 'sessions')
     record(connections, 'close', 'connections')
 
-    await platform.close()
+    await kit.close()
     expect(order).toEqual(['router', 'sessions', 'connections'])
     expect(connections.status('b1')).toMatchObject({ state: 'disconnected', reasonCode: 'stopped' })
   })
 
   it('boots without it and bots: no plugin type, no MCP server, no channel, no routing, no status route, and notifications report no channel', async () => {
-    const { platform, app } = start(withoutSlack())
+    const { kit, platform, app } = start(withoutSlack())
     const checkout = mkdtempSync(join(tmpdir(), 'cap-bots-slack-'))
     try {
       const started = platform.runtime.started.map(s => s.definition.id)
@@ -126,7 +126,7 @@ describe('the slack definition under bots', () => {
       expect(await status.text()).toBe('404 Not Found')
       expect((await app.request(WORKSPACES_PATH)).status).toBe(200)
 
-      const project = await projectWithRule(platform, app, checkout)
+      const project = await projectWithRule(kit, checkout)
       appendActivityEvent(platform.db, { workspaceId: project.id, type: 'incident.opened', title: 'down' })
       await platform.notifications.idle()
       expect((await rules(app))['incident.opened']).toMatchObject({ lastDeliveredAt: null, lastFailureReason: 'No delivery channel: no capability offers one.' })

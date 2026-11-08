@@ -95,7 +95,7 @@ async function remove(organisation: Organisation) {
 
   deleteError.value = null
   try {
-    await $api(`${ORGANISATIONS_PATH}/${organisation.slug}`, { method: 'DELETE' })
+    await $api<unknown>(`${ORGANISATIONS_PATH}/${organisation.slug}`, { method: 'DELETE' })
     await refreshProjectData()
   }
   catch (error) {

@@ -17,18 +17,16 @@ import {
   type IssueResponse,
 } from './wire'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { createTestApp, dataPaths, type PlatformDatabase, setEnabledModules } from '@candy-mountain/platform-daemon'
-import { issuesTestProduct, openIssuesDatabase } from './test-support'
-import { issuesRoutes } from './definition'
+import { setEnabledModules } from '@candy-mountain/platform-daemon'
+import type { TestKit } from '@candy-mountain/platform-daemon/testing'
+import { issuesKit, workspaceAt } from './test-support'
 import { createTempBeadsWorkspace, hasBd, type TempBeadsWorkspace } from './test-workspace'
-import { createWorkspaceWithRepository, repositoryPaths } from '@candy-mountain/plugin-repository'
 
 type Row = Record<string, unknown>
 
 describe.skipIf(!hasBd)('issue write routes against a real workspace', () => {
   let workspace: TempBeadsWorkspace
-  let database: PlatformDatabase
-  let app: ReturnType<typeof createTestApp>
+  let kit: TestKit | undefined
   const ids = { epic: '', first: '', second: '' }
 
   beforeAll(async () => {
@@ -36,18 +34,16 @@ describe.skipIf(!hasBd)('issue write routes against a real workspace', () => {
     ids.epic = workspace.create('Epic', '--type', 'epic')
     ids.first = workspace.create('First')
     ids.second = workspace.create('Second')
-    database = openIssuesDatabase()
-    app = createTestApp({ product: issuesTestProduct(), db: database.db, paths: dataPaths('/unused'), runtime: issuesRoutes(repositoryPaths(database.db)) })
-    const project = await createWorkspaceWithRepository(database.db, { name: 'Tracked', slug: 'tracked', path: workspace.path })
-    setEnabledModules(database.db, project.id, ['issues'])
+    kit = issuesKit()
+    await workspaceAt(kit, workspace.path, { name: 'Tracked', slug: 'tracked', modules: ['issues'] })
   }, 60_000)
 
-  afterAll(() => {
-    database?.close()
+  afterAll(async () => {
+    await kit?.close()
     workspace?.cleanup()
   })
 
-  const send = (method: string, path: string, body?: unknown) => app.request(path, {
+  const send = (method: string, path: string, body?: unknown) => kit!.admin.request(path, {
     method,
     headers: { 'content-type': 'application/json' },
     body: body === undefined ? undefined : typeof body === 'string' ? body : JSON.stringify(body),
@@ -244,12 +240,12 @@ describe.skipIf(!hasBd)('issue write routes against a real workspace', () => {
   it('refuses writes while the module is off or the project has no .beads directory', async () => {
     const plain = mkdtempSync(join(tmpdir(), 'cm-plain-'))
     try {
-      const project = await createWorkspaceWithRepository(database.db, { name: 'Plain', slug: 'plain', path: plain })
+      const project = await workspaceAt(kit!, plain, { name: 'Plain', slug: 'plain', modules: [] })
       const off = await send('POST', workspaceIssuesPath('plain'), { title: 'x' })
       expect(off.status).toBe(404)
       expect((await off.json() as ApiErrorBody).error.code).toBe('not_enabled')
 
-      setEnabledModules(database.db, project.id, ['issues'])
+      setEnabledModules(kit!.db, project.id, ['issues'])
       const comment = await send('POST', workspaceIssueCommentsPath('plain', 'wr-x'), { text: 'x' })
       expect(comment.status).toBe(409)
       expect((await comment.json() as ApiErrorBody).error).toMatchObject({ code: 'not_ready', message: expect.stringContaining('.beads') })

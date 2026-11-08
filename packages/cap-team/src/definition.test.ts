@@ -1,7 +1,7 @@
 import { WORKSPACES_PATH } from '@candy-mountain/platform-sdk'
 import type { ModuleDefinition } from '@candy-mountain/platform-sdk'
 import { afterEach, describe, expect, it } from 'vitest'
-import { createTempDataDir, fixtureDefinition, createTestApp, createWorkspace, type Platform, setEnabledModules, startTestPlatform, type TempDataDir } from '@candy-mountain/platform-daemon'
+import { fixtureDefinition, testKit, type TestKit } from '@candy-mountain/platform-daemon/testing'
 import { teamDefinition } from './definition'
 import type { TeamMemberListResponse } from './wire'
 
@@ -17,22 +17,17 @@ const TEAM_MODULE: ModuleDefinition = {
 const botFacts = fixtureDefinition('bots', { manifest: null, workspaceFacts: [{ id: 'hasBots', compute: () => true, message: () => 'No bots yet.' }] })
 
 describe('the team definition', () => {
-  let temp: TempDataDir
-  const open: Platform[] = []
+  let kit: TestKit | undefined
 
   afterEach(async () => {
-    for (const platform of open.splice(0)) await platform.close()
-    temp?.cleanup()
+    await kit?.close()
+    kit = undefined
   })
 
   function start(withTeam: boolean) {
-    temp = createTempDataDir()
-    const platform = startTestPlatform(temp.root, withTeam ? { capabilities: [botFacts, teamDefinition()], modules: [TEAM_MODULE] } : {})
-    open.push(platform)
-    const project = createWorkspace(platform.db, { name: 'Alpha', slug: 'alpha' })
-    setEnabledModules(platform.db, project.id, platform.modules.list().map(m => m.id))
-    const app = createTestApp({ db: platform.db, paths: platform.paths, product: platform.product, capabilities: platform.capabilities, modules: platform.modules, runtime: platform.runtime })
-    return { platform, app }
+    kit = testKit(withTeam ? { capabilities: [botFacts, teamDefinition()], modules: [TEAM_MODULE] } : {})
+    kit.workspace({ name: 'Alpha', slug: 'alpha' })
+    return { platform: kit.platform, app: kit.admin }
   }
 
   it('serves the team routes', async () => {

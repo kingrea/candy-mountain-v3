@@ -2,25 +2,22 @@ import { join } from 'node:path'
 import type { ApiErrorBody } from '@candy-mountain/platform-sdk'
 import { REPOSITORY_CHECK_PATH, repositoryPath, repositoryVerifyPath, type RepositoryCheckResponse, type RepositoryResponse } from './wire'
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { createTestApp, createWorkspace, dataPaths, openTestDatabase, type PlatformDatabase } from '@candy-mountain/platform-daemon'
+import { testKit, type TestKit } from '@candy-mountain/platform-daemon/testing'
 import { repositoryDefinition } from './definition'
-import { repositoryRoutes } from './routes'
 import { createTempRepos } from './test-repos'
 
 const repos = createTempRepos()
 afterAll(() => repos.cleanup())
 
-let database: PlatformDatabase
-let app: ReturnType<typeof createTestApp>
+let kit: TestKit
 beforeEach(() => {
-  database = openTestDatabase({ definitions: [repositoryDefinition()] })
-  app = createTestApp({ db: database.db, paths: dataPaths('/unused'), runtime: { workspaceRoutes: [repositoryRoutes()] } })
-  createWorkspace(database.db, { name: 'Alpha', slug: 'alpha' })
+  kit = testKit({ capabilities: [repositoryDefinition()] })
+  kit.workspace({ name: 'Alpha', slug: 'alpha' })
 })
-afterEach(() => database.close())
+afterEach(() => kit.close())
 
 function send(method: string, path: string, body?: unknown) {
-  return app.request(path, {
+  return kit.admin.request(path, {
     method,
     headers: body === undefined ? undefined : { 'content-type': 'application/json' },
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -58,7 +55,7 @@ describe('repository routes', () => {
     expect((await send('PUT', repositoryPath('alpha'), {})).status).toBe(400)
     expect((await send('PUT', repositoryPath('alpha'), { source: { kind: 'managed-clone', path: '/' } })).status).toBe(400)
     expect((await send('POST', REPOSITORY_CHECK_PATH, {})).status).toBe(400)
-    const raw = await app.request(repositoryPath('alpha'), { method: 'PUT', body: 'not json', headers: { 'content-type': 'application/json' } })
+    const raw = await kit.admin.request(repositoryPath('alpha'), { method: 'PUT', body: 'not json', headers: { 'content-type': 'application/json' } })
     expect(raw.status).toBe(400)
   })
 

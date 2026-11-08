@@ -1,6 +1,7 @@
 import { CAPABILITY_CATALOG_PATH, workspaceNotificationsPath, type AgentSession, type CapabilityCatalogResponse, type NotificationRulesResponse } from '@candy-mountain/platform-sdk'
 import { afterEach, describe, expect, it } from 'vitest'
-import { appendActivityEvent, CapabilityDefinitionError, createPluginInstance, createTempDataDir, createWorkspace, fixtureDefinition, MasterKey, type Platform, platformApp, startTestPlatform, type TempDataDir, type TestPlatformOptions } from '@candy-mountain/platform-daemon'
+import { appendActivityEvent, CapabilityDefinitionError } from '@candy-mountain/platform-daemon'
+import { fixtureDefinition, testKit, type TestKit, type TestKitOptions } from '@candy-mountain/platform-daemon/testing'
 import { SLACK_CONNECTIONS, slackDefinition } from './definition'
 import { SLACK_POST_BLOCKS_TOOL } from './mcp'
 import { SLACK_NOTIFICATION_CHANNEL_ID } from './notifications'
@@ -20,8 +21,7 @@ const session = (holder?: 'slack' | 'console') => ({
 }) as unknown as AgentSession
 
 describe('the slack definition', () => {
-  let temp: TempDataDir
-  const open: Platform[] = []
+  let kit: TestKit | undefined
   const posts: Array<{ token: string, body: Record<string, unknown> }> = []
 
   const fakeFetch: typeof fetch = async (input, init) => {
@@ -33,19 +33,17 @@ describe('the slack definition', () => {
   }
 
   afterEach(async () => {
-    for (const platform of open.splice(0)) await platform.close()
-    temp?.cleanup()
+    await kit?.close()
+    kit = undefined
     posts.length = 0
   })
 
-  function start(options: TestPlatformOptions = {}) {
-    temp = createTempDataDir()
-    const platform = startTestPlatform(temp.root, { secretsKey: MasterKey.generate(), notifications: { webUrl: WEB_URL, log: { error: () => {} } }, ...options })
-    open.push(platform)
-    return { platform, app: platformApp(platform) }
+  function start(options: TestKitOptions = {}) {
+    kit = testKit({ notifications: { webUrl: WEB_URL, log: { error: () => {} } }, ...options })
+    return { platform: kit.platform, app: kit.admin }
   }
 
-  const withSlack = (): TestPlatformOptions => ({ capabilities: [incidents, slackDefinition({ fetch: fakeFetch })] })
+  const withSlack = (): TestKitOptions => ({ capabilities: [incidents, slackDefinition({ fetch: fakeFetch })] })
 
   it('offers the connections, brings the plugin type, and is in no catalog', async () => {
     const { platform, app } = start(withSlack())
@@ -75,10 +73,10 @@ describe('the slack definition', () => {
   it('delivers notifications through the project\'s Slack plugin while no bots are attached', async () => {
     const { platform, app } = start(withSlack())
     expect(platform.runtime.notificationChannels.map(c => c.id)).toEqual([SLACK_NOTIFICATION_CHANNEL_ID])
-    const workspace = createWorkspace(platform.db, { name: 'alpha', slug: 'alpha' })
+    const workspace = kit!.workspace({ name: 'alpha', slug: 'alpha' })
     const res = await app.request(workspaceNotificationsPath('alpha'), { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ rules: { 'incident.opened': { enabled: true, destination: { channelId: 'C777' } } } }) })
     expect(res.status).toBe(200)
-    createPluginInstance({ db: platform.db, pluginTypes: platform.pluginTypes, secrets: platform.secrets.writeOnly }, { type: 'slack', scope: 'workspace', workspaceId: workspace.id, config: {}, secrets: { botToken: 'xoxb-plugin' } })
+    kit!.pluginInstance({ type: 'slack', workspace, secrets: { botToken: 'xoxb-plugin' } })
 
     appendActivityEvent(platform.db, { workspaceId: workspace.id, type: 'incident.opened', title: 'API <down> & out', link: '/w/alpha/uptime' })
     await platform.notifications.idle()
@@ -91,7 +89,7 @@ describe('the slack definition', () => {
   it('stops its connections when the platform closes', async () => {
     const { platform } = start(withSlack())
     const connections = platform.runtime.service(SLACK_CONNECTIONS)!
-    await platform.close()
+    await kit!.close()
     expect(connections.status('b1')).toMatchObject({ state: 'disconnected', reasonCode: 'stopped' })
   })
 
@@ -104,9 +102,8 @@ describe('the slack definition', () => {
   })
 
   it('refuses a product that already supplies the slack plugin type', () => {
-    temp = createTempDataDir()
-    const options: TestPlatformOptions = { capabilities: [slackDefinition()], pluginTypes: [slackPluginType] }
-    expect(() => startTestPlatform(temp.root, options)).toThrow(CapabilityDefinitionError)
-    expect(() => startTestPlatform(temp.root, options)).toThrow("Plugin type 'slack' is brought by capability 'slack' but the product already supplies it.")
+    const options = { capabilities: [slackDefinition()], pluginTypes: [slackPluginType] }
+    expect(() => testKit(options)).toThrow(CapabilityDefinitionError)
+    expect(() => testKit(options)).toThrow("Plugin type 'slack' is brought by capability 'slack' but the product already supplies it.")
   })
 })

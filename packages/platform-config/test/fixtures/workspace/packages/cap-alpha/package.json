@@ -10,6 +10,7 @@
     "@candy-mountain/platform-core": "workspace:*"
   },
   "devDependencies": {
-    "@candy-mountain/platform-config": "workspace:*"
+    "@candy-mountain/platform-config": "workspace:*",
+    "@fixture/daemon": "workspace:*"
   }
 }

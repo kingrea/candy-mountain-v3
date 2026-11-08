@@ -7,7 +7,7 @@
     "dev": "nuxt dev",
     "build": "nuxt build",
     "start": "node .output/server/index.mjs",
-    "typecheck": "nuxt typecheck",
+    "typecheck": "NODE_ENV=development nuxt typecheck",
     "lint": "eslint .",
     "test": "vitest run",
     "postinstall": "nuxt prepare"
@@ -36,6 +36,7 @@
     "vue-router": "^5.4.0"
   },
   "devDependencies": {
+    "@candy-mountain/cap-template": "workspace:*",
     "@candy-mountain/platform-config": "workspace:*",
     "@nuxt/eslint": "^1.17.0",
     "vue-tsc": "^3.3.13"

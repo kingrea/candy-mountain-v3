@@ -1,29 +1,27 @@
 import { chmodSync, existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { eq } from 'drizzle-orm'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createPluginInstance, listActivityEvents, MasterKey, pluginInstances, createTempDataDir, type TempDataDir } from '@candy-mountain/platform-daemon'
+import { listActivityEvents } from '@candy-mountain/platform-daemon'
 import { CLAUDE_FIXTURE, fakeBins } from '@candy-mountain/cap-acp'
-import { createBot, parseCreateBot, recordBotPersonaCheck, type BotReadDeps } from '../bots'
+import { createBot, parseCreateBot, recordBotPersonaCheck } from '../bots'
 import { slackTurns } from '../schema'
 import { GOOD_TOKEN, stubHosts } from '../test-support'
 import { createSlackClient, createSlackEventBus, createSlackOperations, type SlackEventBus, type SlackInteractiveBotEvent, type SlackMessageBotEvent } from '@candy-mountain/plugin-slack'
-import { startBotsPlatform, type BotsPlatform } from '../test-support'
+import { botsKit, type BotsKit } from '../test-support'
 import { addTeamMember } from '@candy-mountain/cap-team'
 import { createTempGitRepo, type TempGitRepo } from '../worktrees/test-repo'
 import { SLACK_HANDOFF_DONE_ACTION, issueShortId, slackHandoffMessage } from './handoff-message'
 import { startSlackHandoffs, type SlackHandoffs } from './handoffs'
 import { startSlackRouter, type SlackRouter, type SlackTurnEnd } from './router'
 import { findSlackThread } from './threads'
-import { createWorkspaceWithRepository } from '@candy-mountain/plugin-repository'
+import { setRepository } from '@candy-mountain/plugin-repository'
 
 const CLAUDE_PERSONA = '---\nname: ana\ndescription: Ana fixes small issues.\n---\nYou are Ana. Keep changes small.\n'
 const JACK = 'U0JACK'
 const BOT_USER = 'U0BOT'
 const HANDOFF = 'Fixed the login redirect.\n\n```handoff\noutcome: done\nsummary: Fixed the login redirect loop\npull_request: https://github.com/jack/candy/pull/42\nissues: candy-mountain-v3-x8m.7.6, cm-abc\nfollow_ups: add a test for SSO; tidy the docs\n```'
 
-let temp: TempDataDir | undefined
-let platform: BotsPlatform | undefined
+let kit: BotsKit | undefined
 let repo: TempGitRepo | undefined
 let router: SlackRouter | undefined
 let handoffs: SlackHandoffs | undefined
@@ -33,11 +31,8 @@ afterEach(async () => {
   router = undefined
   handoffs?.close()
   handoffs = undefined
-  await platform?.sessions.close()
-  platform?.close()
-  platform = undefined
-  temp?.cleanup()
-  temp = undefined
+  await kit?.close()
+  kit = undefined
   repo?.cleanup()
   repo = undefined
   vi.unstubAllGlobals()
@@ -121,24 +116,17 @@ function commitFile(path: string, text: string): void {
   repo!.git(repo!.clone, 'push', '--quiet', 'origin', 'main')
 }
 
-function setHealth(p: BotsPlatform, projectId: string, type: 'repository' | 'claude-code', config: Record<string, unknown> = {}, secrets: Record<string, string> = {}): void {
-  const existing = p.db.select().from(pluginInstances).where(eq(pluginInstances.workspaceId, projectId)).all().find(row => row.typeId === type)
-  const id = existing?.id ?? createPluginInstance({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly }, { type, scope: 'workspace', workspaceId: projectId, config, secrets }).id
-  p.db.update(pluginInstances).set({ health: { healthy: true }, healthCheckedAt: new Date().toISOString() }).where(eq(pluginInstances.id, id)).run()
-}
-
-const readDeps = (p: BotsPlatform): BotReadDeps => ({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly, secretsReader: p.secrets })
 
 async function setup({ scopeUrlPrefix = 'p', permalinks = true } = {}) {
   repo = createTempGitRepo()
   commitFile('.claude/agents/ana.md', CLAUDE_PERSONA)
   stubHosts()
-  temp = createTempDataDir()
-  const p = platform = startBotsPlatform(temp.root, { secretsKey: MasterKey.generate(), acp: { bins: fakeBins, killTimeoutMs: 1000 } })
-  const project = await createWorkspaceWithRepository(p.db, { name: 'alpha', slug: 'alpha', path: repo.clone })
-  setHealth(p, project.id, 'repository', { host: 'github', owner: 'jack', repo: 'candy' }, { token: GOOD_TOKEN })
-  setHealth(p, project.id, 'claude-code', { claudePath: slackClaude(temp.root) })
-  const bot = await createBot(readDeps(p), project.id, parseCreateBot({ name: 'Ana Bot', family: 'claude-code', writeScope: 'write-confirm', personaName: 'ana', answersIn: { channels: ['C01LISTED'] } }))
+  const p = kit = botsKit({ acp: { bins: fakeBins, killTimeoutMs: 1000 } })
+  const project = p.workspace({ name: 'alpha', slug: 'alpha' })
+  await setRepository(p.db, project.id, { kind: 'local-path', path: repo.clone })
+  p.pluginInstance({ type: 'repository', workspace: project, config: { host: 'github', owner: 'jack', repo: 'candy' }, secrets: { token: GOOD_TOKEN } })
+  p.pluginInstance({ type: 'claude-code', workspace: project, config: { claudePath: slackClaude(p.platform.paths.root) } })
+  const bot = await createBot(p.deps, project.id, parseCreateBot({ name: 'Ana Bot', family: 'claude-code', writeScope: 'write-confirm', personaName: 'ana', answersIn: { channels: ['C01LISTED'] } }))
   expect(recordBotPersonaCheck(p.db, bot.id, bot.updatedAt, { status: 'verified' })).toBe(true)
   addTeamMember(p.db, project.id, { displayName: 'Jack', email: null, slackMemberId: JACK, botScope: { all: true } })
 

@@ -3,9 +3,9 @@ import type { PluginHealth, Workspace } from '@candy-mountain/platform-sdk'
 import { eq, inArray } from 'drizzle-orm'
 import { workspaceBotsPath, type Bot, type BotListResponse, type BotResponse } from '../wire'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { agentSessions, createPluginInstance, createSecretsStore, platformMeta, type DataPaths, fixturePluginType, type InstanceHarness, resolvePluginInstance, testPluginInstance, updatePluginInstance, createTestApp } from '@candy-mountain/platform-daemon'
-import { instanceHarness } from '../test-support'
-import type { Actor } from '@candy-mountain/platform-sdk'
+import { agentSessions, createPluginInstance, platformMeta, resolvePluginInstance, testPluginInstance, updatePluginInstance } from '@candy-mountain/platform-daemon'
+import { fixturePluginType, type InstanceHarness } from '@candy-mountain/platform-daemon/testing'
+import { botsKit, instanceHarness, restartBots } from '../test-support'
 import { GOOD_TOKEN, stubHosts } from '../test-support'
 import { repositoryPluginType } from '@candy-mountain/plugin-repository'
 import { botSecretOwner, getBot, listBots, recordBotPersonaCheck } from './bots'
@@ -214,20 +214,30 @@ describe('bot routes', () => {
   })
 
   it('refuses Slack keys while the secrets store is locked', async () => {
-    await setup()
-    const bot = await created({ name: 'Ana', family: 'claude-code', secrets: { slackBotToken: BOT_TOKEN } })
-    const locked = createSecretsStore(h.secretsDir, undefined)
-    const admin: Actor = { id: 'u1', username: 'jack', displayName: 'Jack', roles: ['admin'] }
-    const app = createTestApp({ db: h.database.db, paths: {} as DataPaths, auth: { name: 'development', resolve: () => admin }, pluginTypes: h.deps.pluginTypes, secrets: locked.writeOnly, secretsReader: locked, runtime: botsRoutes({ db: h.database.db, secrets: locked }) })
-    const request = (method: string, path: string, body: unknown) =>
-      app.request(`${workspaceBotsPath('alpha')}${path}`, { method, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+    stubHosts()
+    let kit = botsKit()
+    try {
+      const workspace = kit.workspace({ name: 'alpha', slug: 'alpha' })
+      kit.pluginInstance({ type: 'repository', workspace, config: { host: 'github', owner: 'jack', repo: 'candy' }, secrets: { token: GOOD_TOKEN } })
+      kit.pluginInstance({ type: 'claude-code', workspace })
+      const request = (method: string, path: string, body: unknown) =>
+        kit.admin.request(`${workspaceBotsPath('alpha')}${path}`, { method, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+      const first = await request('POST', '', { name: 'Ana', family: 'claude-code', secrets: { slackBotToken: BOT_TOKEN } })
+      expect(first.status, await first.clone().text()).toBe(201)
+      const bot = (await first.json() as BotResponse).bot
+      kit = await restartBots(kit, { lockedSecrets: true })
+      const { deps } = kit
 
-    expect(await errorOf(await request('POST', '', { name: 'Bob', family: 'claude-code', secrets: { slackAppToken: APP_TOKEN } }))).toEqual({ status: 409, code: 'secrets_locked' })
-    expect(await errorOf(await request('PATCH', `/${bot.id}`, { name: 'Renamed', secrets: { slackAppToken: APP_TOKEN } }))).toEqual({ status: 409, code: 'secrets_locked' })
-    const named = await request('POST', '', { name: 'Bob', family: 'claude-code' })
-    expect(named.status).toBe(201)
-    expect((await getBot(h.deps, bot.id)).name).toBe('Ana')
-    expect((await listBots(h.deps)).map(b => b.name)).toEqual(['Ana', 'Bob'])
+      expect(await errorOf(await request('POST', '', { name: 'Bob', family: 'claude-code', secrets: { slackAppToken: APP_TOKEN } }))).toEqual({ status: 409, code: 'secrets_locked' })
+      expect(await errorOf(await request('PATCH', `/${bot.id}`, { name: 'Renamed', secrets: { slackAppToken: APP_TOKEN } }))).toEqual({ status: 409, code: 'secrets_locked' })
+      const named = await request('POST', '', { name: 'Bob', family: 'claude-code' })
+      expect(named.status).toBe(201)
+      expect((await getBot(deps, bot.id)).name).toBe('Ana')
+      expect((await listBots(deps)).map(b => b.name)).toEqual(['Ana', 'Bob'])
+    }
+    finally {
+      await kit.close()
+    }
   })
 
   it('deletes a bot with its secrets, and a project delete removes its bots\' secrets', async () => {

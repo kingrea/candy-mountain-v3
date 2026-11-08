@@ -89,11 +89,11 @@ async function archive(project: Workspace) {
     confirmLabel: 'Archive',
     color: 'warning',
   }).result
-  if (confirmed) await runAction(() => $api(projectPath(project, '/archive'), { method: 'POST' }))
+  if (confirmed) await runAction(() => $api<unknown>(projectPath(project, '/archive'), { method: 'POST' }))
 }
 
 function unarchive(project: Workspace) {
-  return runAction(() => $api(projectPath(project, '/unarchive'), { method: 'POST' }))
+  return runAction(() => $api<unknown>(projectPath(project, '/unarchive'), { method: 'POST' }))
 }
 
 async function remove(project: Workspace) {
@@ -102,7 +102,7 @@ async function remove(project: Workspace) {
     description: `This removes the ${SCOPE.singular} and everything ${PRODUCT.name} stores for it. Files on disk are not touched.`,
     confirmLabel: `Delete ${SCOPE.singular}`,
   }).result
-  if (confirmed) await runAction(() => $api(projectPath(project), { method: 'DELETE' }))
+  if (confirmed) await runAction(() => $api<unknown>(projectPath(project), { method: 'DELETE' }))
 }
 </script>
 

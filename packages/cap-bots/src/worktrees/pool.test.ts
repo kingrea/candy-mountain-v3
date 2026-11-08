@@ -2,16 +2,16 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Workspace } from '@candy-mountain/platform-sdk'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { BOT_WORKTREES } from '../definition'
-import { createTempDataDir, deleteWorkspace, startTestPlatform, type PlatformDatabase, type TempDataDir } from '@candy-mountain/platform-daemon'
-import { botsTestProduct, openBotsDatabase } from '../test-support'
+import { deleteWorkspace, type PlatformDatabase } from '@candy-mountain/platform-daemon'
+import { createTempDataDir, type TempDataDir } from '@candy-mountain/platform-daemon/testing'
+import { botsKit, openBotsDatabase } from '../test-support'
 import { resolveWorktreeSettings } from './config'
 import { WorktreeError } from './errors'
 import { createGitRunner, GitError } from './git'
 import { createKeyedLock } from './lock'
 import { botBranchName, createWorktreePool, type WorktreeHolder, type WorktreePool } from './pool'
 import { createTempGitRepo, TEST_GIT_ENV, type TempGitRepo } from './test-repo'
-import { createWorkspaceWithRepository, repositoryPaths } from '@candy-mountain/plugin-repository'
+import { createWorkspaceWithRepository, repositoryPaths, setRepository } from '@candy-mountain/plugin-repository'
 
 let database: PlatformDatabase
 let repo: TempGitRepo
@@ -274,17 +274,18 @@ describe('settings and platform', () => {
   })
 
   it('exposes the pool through the bots definition under the data directory', async () => {
-    const platform = startTestPlatform(data.root, { product: botsTestProduct({ worktrees: { maxPerProject: 1 } }) })
+    const kit = botsKit({ worktrees: { maxPerProject: 1 } })
     try {
-      const worktrees = platform.runtime.services('bots').get(BOT_WORKTREES)
+      const { worktrees } = kit
       repo = createTempGitRepo()
-      const created = await createWorkspaceWithRepository(platform.db, { name: 'beta', path: repo.clone })
+      const created = kit.workspace({ name: 'beta' })
+      await setRepository(kit.db, created.id, { kind: 'local-path', path: repo.clone })
       const lease = await worktrees.acquire({ projectId: created.id, holder: holder('s1'), baseBranch: 'main' })
-      expect(lease.path).toBe(join(platform.paths.worktrees, created.id, lease.id))
+      expect(lease.path).toBe(join(kit.platform.paths.worktrees, created.id, lease.id))
       expect(await failure(worktrees.acquire({ projectId: created.id, holder: holder('s2'), baseBranch: 'main' }))).toMatchObject({ code: 'cap_reached' })
     }
     finally {
-      await platform.close()
+      await kit.close()
     }
   })
 })

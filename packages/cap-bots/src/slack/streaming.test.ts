@@ -1,37 +1,31 @@
 import { chmodSync, mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { eq } from 'drizzle-orm'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CLAUDE_FIXTURE, fakeBins } from '@candy-mountain/cap-acp'
-import { createBot, parseCreateBot, recordBotPersonaCheck, type BotReadDeps } from '../bots'
-import { createPluginInstance, MasterKey, pluginInstances, createTempDataDir, type TempDataDir } from '@candy-mountain/platform-daemon'
+import { createBot, parseCreateBot, recordBotPersonaCheck } from '../bots'
 import { slackTurns } from '../schema'
 import { GOOD_TOKEN, stubHosts } from '../test-support'
 import { createSlackClient, createSlackEventBus, createSlackOperations, type SlackEventBus, type SlackMessageBotEvent } from '@candy-mountain/plugin-slack'
-import { startBotsPlatform, type BotsPlatform } from '../test-support'
+import { botsKit, restartBots, type BotsKit } from '../test-support'
 import { addTeamMember } from '@candy-mountain/cap-team'
 import { createTempGitRepo, type TempGitRepo } from '../worktrees/test-repo'
 import { startSlackRouter, type SlackRouter, type SlackRouterOptions, type SlackTurnEnd } from './router'
 import { findSlackThread } from './threads'
-import { createWorkspaceWithRepository } from '@candy-mountain/plugin-repository'
+import { setRepository } from '@candy-mountain/plugin-repository'
 
 const CLAUDE_PERSONA = '---\nname: ana\ndescription: Ana fixes small issues.\n---\nYou are Ana. Keep changes small.\n'
 const JACK = 'U0JACK'
 const BOT_USER = 'U0BOT'
 
-let temp: TempDataDir | undefined
-let platform: BotsPlatform | undefined
+let kit: BotsKit | undefined
 let repo: TempGitRepo | undefined
 let router: SlackRouter | undefined
 
 afterEach(async () => {
   router?.close()
   router = undefined
-  await platform?.sessions.close()
-  platform?.close()
-  platform = undefined
-  temp?.cleanup()
-  temp = undefined
+  await kit?.close()
+  kit = undefined
   repo?.cleanup()
   repo = undefined
   vi.unstubAllGlobals()
@@ -142,20 +136,8 @@ function commitFile(path: string, text: string): void {
   repo!.git(repo!.clone, 'push', '--quiet', 'origin', 'main')
 }
 
-function setHealth(p: BotsPlatform, projectId: string, type: 'repository' | 'claude-code', config: Record<string, unknown> = {}, secrets: Record<string, string> = {}): void {
-  const existing = p.db.select().from(pluginInstances).where(eq(pluginInstances.workspaceId, projectId)).all().find(row => row.typeId === type)
-  const id = existing?.id ?? createPluginInstance({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly }, { type, scope: 'workspace', workspaceId: projectId, config, secrets }).id
-  p.db.update(pluginInstances).set({ health: { healthy: true }, healthCheckedAt: new Date().toISOString() }).where(eq(pluginInstances.id, id)).run()
-}
 
-const readDeps = (p: BotsPlatform): BotReadDeps => ({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly, secretsReader: p.secrets })
-
-function boot(dataDir: string, key: MasterKey): BotsPlatform {
-  platform = startBotsPlatform(dataDir, { secretsKey: key, acp: { bins: fakeBins, killTimeoutMs: 1000 } })
-  return platform
-}
-
-function route(p: BotsPlatform, input: { stream: boolean, expired?: boolean }, options: SlackRouterOptions = {}) {
+function route(p: BotsKit, input: { stream: boolean, expired?: boolean }, options: SlackRouterOptions = {}) {
   const transport = fakeTransport(input)
   router = startSlackRouter({ db: p.db, slack: transport.slack, botSessions: p.botSessions, sessions: p.sessions }, { log: { error: () => {} }, streamIntervalMs: 50, ...options })
   return { ...transport, router }
@@ -165,16 +147,15 @@ async function setup() {
   repo = createTempGitRepo()
   commitFile('.claude/agents/ana.md', CLAUDE_PERSONA)
   stubHosts()
-  temp = createTempDataDir()
-  const key = MasterKey.generate()
-  const p = boot(temp.root, key)
-  const project = await createWorkspaceWithRepository(p.db, { name: 'alpha', slug: 'alpha', path: repo.clone })
-  setHealth(p, project.id, 'repository', { host: 'github', owner: 'jack', repo: 'candy' }, { token: GOOD_TOKEN })
-  setHealth(p, project.id, 'claude-code', { claudePath: slackClaude(temp.root) })
-  const bot = await createBot(readDeps(p), project.id, parseCreateBot({ name: 'Ana Bot', family: 'claude-code', writeScope: 'write-confirm', personaName: 'ana', answersIn: { channels: ['C01LISTED'] } }))
+  const p = kit = botsKit({ acp: { bins: fakeBins, killTimeoutMs: 1000 } })
+  const project = p.workspace({ name: 'alpha', slug: 'alpha' })
+  await setRepository(p.db, project.id, { kind: 'local-path', path: repo.clone })
+  p.pluginInstance({ type: 'repository', workspace: project, config: { host: 'github', owner: 'jack', repo: 'candy' }, secrets: { token: GOOD_TOKEN } })
+  p.pluginInstance({ type: 'claude-code', workspace: project, config: { claudePath: slackClaude(p.platform.paths.root) } })
+  const bot = await createBot(p.deps, project.id, parseCreateBot({ name: 'Ana Bot', family: 'claude-code', writeScope: 'write-confirm', personaName: 'ana', answersIn: { channels: ['C01LISTED'] } }))
   expect(recordBotPersonaCheck(p.db, bot.id, bot.updatedAt, { status: 'verified' })).toBe(true)
   addTeamMember(p.db, project.id, { displayName: 'Jack', email: null, slackMemberId: JACK, botScope: { all: true } })
-  return { p, project, bot, key }
+  return { p, project, bot }
 }
 
 async function waitFor(check: () => boolean, timeoutMs = 20_000): Promise<void> {
@@ -215,7 +196,7 @@ describe('Slack turn progress', () => {
     const t = route(p, { stream: false })
     t.bus.emit(messageEvent(bot.id, project.id, { text: `<@${BOT_USER}> gated`, ts: '1.1' }))
     await waitFor(() => t.of('chat.update').some(body => String(body.text).includes('… Bash: ls')))
-    writeFileSync(join(temp!.root, 'gate'), '')
+    writeFileSync(join(p.platform.paths.root, 'gate'), '')
     await t.router.idle()
 
     expect(t.of('chat.startStream')).toHaveLength(1)
@@ -236,7 +217,7 @@ describe('Slack turn progress', () => {
   }, 60_000)
 
   it('finishes a turn interrupted by a restart exactly once, in the message it started', async () => {
-    const { p: first, project, bot, key } = await setup()
+    const { p: first, project, bot } = await setup()
     const before = route(first, { stream: true })
     before.bus.emit(messageEvent(bot.id, project.id, { text: `<@${BOT_USER}> hang`, ts: '1.1' }))
     const thread = () => findSlackThread(first.db, { botId: bot.id, channelId: 'C01LISTED', threadTs: '1.1' })
@@ -248,9 +229,8 @@ describe('Slack turn progress', () => {
     expect(before.created().map(call => call.method)).toEqual(['chat.startStream'])
     before.router.close()
     await first.sessions.close()
-    first.close()
 
-    const p = boot(temp!.root, key)
+    const p = kit = await restartBots(first)
     expect(p.db.select().from(slackTurns).all()).toEqual([expect.objectContaining({ state: 'open', mode: 'stream', messageTs: '9.1', resumes: 0 })])
     const after = route(p, { stream: true })
     await after.router.idle()
@@ -273,7 +253,7 @@ describe('Slack turn progress', () => {
   }, 90_000)
 
   it('edits the same message when the stream ended while the daemon was down', async () => {
-    const { p: first, project, bot, key } = await setup()
+    const { p: first, project, bot } = await setup()
     const before = route(first, { stream: true })
     before.bus.emit(messageEvent(bot.id, project.id, { text: `<@${BOT_USER}> hang`, ts: '1.1' }))
     await waitFor(() => {
@@ -282,9 +262,8 @@ describe('Slack turn progress', () => {
     })
     before.router.close()
     await first.sessions.close()
-    first.close()
 
-    const p = boot(temp!.root, key)
+    const p = kit = await restartBots(first)
     const after = route(p, { stream: true, expired: true })
     await after.router.idle()
     expect(after.created()).toEqual([])
@@ -295,15 +274,14 @@ describe('Slack turn progress', () => {
   }, 90_000)
 
   it('runs the turn-end hook again after a restart that cut it off, without touching the message', async () => {
-    const { p: first, project, bot, key } = await setup()
+    const { p: first, project, bot } = await setup()
     const before = route(first, { stream: true }, { onTurnEnd: () => new Promise(() => {}) })
     before.bus.emit(messageEvent(bot.id, project.id, { text: `<@${BOT_USER}> slow`, ts: '1.1' }))
     await waitFor(() => first.db.select().from(slackTurns).get()?.state === 'finished')
     before.router.close()
     await first.sessions.close()
-    first.close()
 
-    const p = boot(temp!.root, key)
+    const p = kit = await restartBots(first)
     const ends: SlackTurnEnd[] = []
     const after = route(p, { stream: true }, { onTurnEnd: end => void ends.push(end) })
     await after.router.idle()

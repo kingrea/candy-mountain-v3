@@ -1,23 +1,20 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { createTempDataDir, type TempDataDir } from '@candy-mountain/platform-daemon'
-import { startAcpPlatform, type AcpPlatform } from '../test-support'
+import { acpKit, type AcpKit } from '../test-support'
 
 describe('ACP harness on the platform', () => {
-  let temp: TempDataDir | undefined
-  let platform: AcpPlatform | undefined
+  let kit: AcpKit | undefined
 
-  afterEach(() => {
-    platform?.close()
-    temp?.cleanup()
+  afterEach(async () => {
+    await kit?.close()
+    kit = undefined
   })
 
   it('starts with the platform and is closed by it', async () => {
-    temp = createTempDataDir()
-    platform = startAcpPlatform(temp.root)
-    expect(platform.acpHarness.closed).toBe(false)
-    expect(platform.acpHarness.list()).toEqual([])
-    await platform.close()
-    expect(platform.acpHarness.closed).toBe(true)
-    await expect(platform.acpHarness.startSession({ family: 'codex', cwd: temp.root, configHome: platform.paths.agentHomes })).rejects.toThrow(/closed/)
+    kit = acpKit()
+    expect(kit.acpHarness.closed).toBe(false)
+    expect(kit.acpHarness.list()).toEqual([])
+    await kit.platform.close()
+    expect(kit.acpHarness.closed).toBe(true)
+    await expect(kit.acpHarness.startSession({ family: 'codex', cwd: kit.platform.paths.root, configHome: kit.platform.paths.agentHomes })).rejects.toThrow(/closed/)
   })
 })

@@ -5,6 +5,7 @@ import { workspacePackages, workspaceRoot } from '@candy-mountain/platform-confi
 import { createConfigForNuxt } from '@nuxt/eslint-config/flat'
 import ts from 'typescript'
 import { hasNuxtConfig, packageLayers, PLATFORM_DIR, platformLayers } from '../layer-list.mjs'
+import { camelCase, COMPONENT_FILE, componentName, layerPrefix, NOT_A_COMPONENT, splitByCase, upperFirst } from '../naming.mjs'
 import { SCOPE_PAGES_DIR } from '../scope-routes.mjs'
 
 export const SHARED_LAYER = 'chat'
@@ -31,6 +32,9 @@ const DOCS = 'packages/platform-web/README.md'
 const LAYER_ID = /^[a-z][a-z\d]*(?:-[a-z\d]+)*$/
 const PROJECT_PAGES = [SCOPE_PAGES_DIR, '[project]']
 const TOOLING_CONFIG = /^(?:eslint|vitest)\.config\.[cm]?[jt]s$/
+// A layer's tests and the one subpath of the platform package they may import: the web test kit.
+const LAYER_TESTS = 'test'
+const TEST_ENTRY = 'test'
 
 function readJson(file) {
   try {
@@ -163,62 +167,6 @@ function forbiddenOwner(from, owners) {
   return [...owners][0]
 }
 
-// Naming follows scule and Nuxt 4.6's component naming so names match what Nuxt registers.
-
-function isUppercase(char = '') {
-  if (/\d/.test(char)) return undefined
-  return char !== char.toLowerCase()
-}
-
-function splitByCase(str) {
-  const parts = []
-  if (!str) return parts
-  let buff = ''
-  let previousUpper
-  let previousSplitter
-  for (const char of str) {
-    const isSplitter = ['-', '_', '/', '.'].includes(char)
-    if (isSplitter) {
-      parts.push(buff)
-      buff = ''
-      previousUpper = undefined
-      continue
-    }
-    const isUpper = isUppercase(char)
-    if (previousSplitter === false) {
-      if (previousUpper === false && isUpper === true) {
-        parts.push(buff)
-        buff = char
-        previousUpper = isUpper
-        continue
-      }
-      if (previousUpper === true && isUpper === false && buff.length > 1) {
-        const lastChar = buff.at(-1)
-        parts.push(buff.slice(0, -1))
-        buff = lastChar + char
-        previousUpper = isUpper
-        continue
-      }
-    }
-    buff += char
-    previousUpper = isUpper
-    previousSplitter = isSplitter
-  }
-  parts.push(buff)
-  return parts
-}
-
-const upperFirst = str => (str ? str[0].toUpperCase() + str.slice(1) : '')
-const pascalCase = parts => parts.map(upperFirst).join('')
-const camelCase = (str) => {
-  const pascal = pascalCase(splitByCase(str))
-  return pascal ? pascal[0].toLowerCase() + pascal.slice(1) : ''
-}
-
-export function layerPrefix(layer) {
-  return pascalCase(splitByCase(layer))
-}
-
 /** True when an auto-imported name identifies its layer: useIssuesBoard, IssuesRow, issuesPath, ISSUES_PAGE_SIZE. */
 export function hasLayerPrefix(name, layer) {
   const pascal = layerPrefix(layer)
@@ -228,45 +176,11 @@ export function hasLayerPrefix(name, layer) {
   return new RegExp(`^(?:${pascal}|${camel})(?:$|[A-Z\\d_])`).test(bare) || new RegExp(`^${screaming}(?:$|_)`).test(name)
 }
 
-const isGroupingFolder = segment => /^\(.*\)$/.test(segment.trim())
-
-function resolveComponentNameSegments(fileName, prefixParts) {
-  const fileNameParts = splitByCase(fileName)
-  const fileNamePartsContent = fileNameParts.join('/').toLowerCase()
-  const componentPrefixParts = prefixParts.filter(part => !isGroupingFolder(part))
-  const componentNameParts = componentPrefixParts.flatMap(p => splitByCase(p))
-  let index = componentPrefixParts.length - 1
-  const matchedSuffix = []
-  while (index >= 0) {
-    const prefixPart = componentPrefixParts[index]
-    matchedSuffix.unshift(...splitByCase(prefixPart).map(p => p.toLowerCase()))
-    const matchedSuffixContent = matchedSuffix.join('/')
-    if (
-      fileNamePartsContent === matchedSuffixContent
-      || fileNamePartsContent.startsWith(matchedSuffixContent + '/')
-      || (prefixPart.toLowerCase() === fileNamePartsContent && componentPrefixParts[index + 1] === prefixPart)
-    ) {
-      componentNameParts.length = index
-    }
-    index--
-  }
-  return [...componentNameParts, ...fileNameParts]
-}
-
-function componentName(componentsDir, file, prefix) {
-  const prefixParts = [...splitByCase(prefix), ...splitByCase(relative(componentsDir, dirname(file)))]
-  let fileName = basename(file, extname(file)).replace(/(?:\.(?:client|server))?(?:\.global|\.island)*$/, '')
-  if (fileName.toLowerCase() === 'index') fileName = ''
-  return pascalCase(resolveComponentNameSegments(fileName.replace(/["']/g, ''), prefixParts).filter(Boolean))
-}
-
 /** Template tags and #components imports may be kebab-case and Lazy-prefixed. */
 function componentKey(name) {
   return name.replace(/^(?:Lazy|lazy-)/, '').replace(/[-_]/g, '').toLowerCase()
 }
 
-const COMPONENT_FILE = /\.(?:vue|[jt]sx?)$/
-const NOT_A_COMPONENT = /(?:[-.]?[Mm]ixin\.[jt]sx?|\.d\.[cm]?ts|\.(?:spec|stories|test)\.[jt]sx?)$/
 const SCRIPT_FILE = /\.(?:ts|js|mjs|mts)$/
 const INDEX_FILES = ['index.ts', 'index.js', 'index.mjs', 'index.mts']
 const AUTO_IMPORT_DIRS = ['app/composables', 'app/utils', 'shared/utils', 'shared/types']
@@ -487,14 +401,19 @@ const noPlatformPackageImport = {
     messages: {
       forbidden: '{{from}} may not import {{platform}} by package name or path (\'{{source}}\'). '
         + 'Reach core through its auto-imports, #imports, #components or #layers/' + PLATFORM_LAYER + '/…; wire types belong in @candy-mountain/platform-sdk.',
+      tests: '{{from}}\'s tests may import only {{platform}}/' + TEST_ENTRY + ' from the platform package (\'{{source}}\'). '
+        + 'Reach core through #imports, #components or #layers/' + PLATFORM_LAYER + '/…; wire types belong in @candy-mountain/platform-sdk.',
     },
   },
   create(context) {
     const { project, layer } = layerOf(context)
     if (!layer || inside(project.platform, context.filename)) return {}
+    const rel = relative(layerRoot(project, layer), context.filename)
     // A layer package's lint and test configs take their presets from the platform package.
-    if (TOOLING_CONFIG.test(relative(layerRoot(project, layer), context.filename))) return {}
+    if (TOOLING_CONFIG.test(rel)) return {}
+    const inTests = rel.split(sep)[0] === LAYER_TESTS
     const name = project.platformName
+    const testEntry = source => Boolean(name) && (source === `${name}/${TEST_ENTRY}` || source.startsWith(`${name}/${TEST_ENTRY}/`))
 
     function check(node) {
       const source = staticString(node)
@@ -502,7 +421,8 @@ const noPlatformPackageImport = {
       const byName = Boolean(name) && (source === name || source.startsWith(`${name}/`))
       const byPath = (source.startsWith('.') || isAbsolute(source)) && inside(project.platform, resolveSource(project, source, context.filename))
       if (!byName && !byPath) return
-      context.report({ node, messageId: 'forbidden', data: { from: upperFirst(describe(layer)), platform: name ?? 'the platform package', source } })
+      if (inTests && testEntry(source)) return
+      context.report({ node, messageId: inTests ? 'tests' : 'forbidden', data: { from: upperFirst(describe(layer)), platform: name ?? 'the platform package', source } })
     }
 
     return moduleSources(check)

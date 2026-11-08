@@ -7,7 +7,7 @@ import { createTempDataDir, createTestApp, type TempDataDir } from './testing'
 import { type AuthStrategy, createPluginInstance, describePlatform, MasterKey, openView, platformAgentCapability, type PlatformTurnContext, pluginInstances, resolveActorRungs, resolveCapabilityAccess, setEnabledModules, startChat } from '@candy-mountain/platform-daemon'
 import { assertCapability, CapabilityManifestError } from '@candy-mountain/platform-sdk/daemon'
 import { startAcpPlatform, type AcpPlatform } from './testing/acp'
-import { scriptedReply, startStubGateway, type StubGateway } from '@candy-mountain/platform-daemon'
+import { scriptedReply, startStubGateway, type StubGateway } from '@candy-mountain/platform-daemon/testing'
 import { createWorkspaceWithRepository } from '@candy-mountain/plugin-repository'
 import { BOTS_CAPABILITY_ID } from '@candy-mountain/cap-bots'
 

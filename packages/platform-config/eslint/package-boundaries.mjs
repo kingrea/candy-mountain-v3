@@ -7,9 +7,11 @@ const PLUGIN_PREFIX = `${SCOPE}plugin-`
 // A plugin- package is a connection: a capability that brings plugin types, held to the same boundaries.
 const CAPABILITY_PREFIXES = [`${SCOPE}cap-`, PLUGIN_PREFIX]
 const WORKSPACE_FILE = 'pnpm-workspace.yaml'
+// A distribution is an app under apps/: a product's entry point, which nothing under packages/ may reach.
+const DISTRIBUTIONS_DIR = 'apps'
 
 const DIRECTIONS = 'Allowed: a capability (cap-* or plugin-*) or distribution -> a platform package\'s declared entries; a capability -> a dependency capability\'s root entry; never the reverse, never a relative path across package roots. Only a plugin-* package brings plugin types: its definition has no manifest and brings the plugin type named by its id, and a cap-* package brings none.'
-const DOCS = 'README.md'
+const DOCS = 'packages/platform-daemon/README.md'
 
 /** The capability id a `@candy-mountain/cap-<id>` or `@candy-mountain/plugin-<id>` package name carries, or undefined for any other package. */
 export function capabilityId(name) {
@@ -17,7 +19,7 @@ export function capabilityId(name) {
   return prefix ? name.slice(prefix.length) : undefined
 }
 
-/** `platform`, `capability` or `other` (a distribution, the product package or a library such as claude-acp). */
+/** `platform`, `capability` or `other` (a distribution, the product package or a library such as claude-acp); `distribution` on the package tells the first apart. */
 export function kindOf(name) {
   if (name.startsWith(PLATFORM_PREFIX)) return 'platform'
   return capabilityId(name) ? 'capability' : 'other'
@@ -110,6 +112,7 @@ export function workspacePackages(root) {
       name: manifest.name,
       dir,
       kind: kindOf(manifest.name),
+      distribution: relative(root, dir).split(/[\\/]/)[0] === DISTRIBUTIONS_DIR,
       capabilityId: capabilityId(manifest.name),
       dependencies: Object.keys(manifest.dependencies ?? {}),
       devDependencies: Object.keys(manifest.devDependencies ?? {}),
@@ -326,6 +329,20 @@ const noCapabilityImportFromPlatform = rule(
   },
 )
 
+const noDistributionImport = rule(
+  'Forbid a capability or platform package importing a distribution (an app under apps/)',
+  {
+    capability: '{{from}} may not import \'{{source}}\': {{to}} is a distribution. A capability\'s tests take what they need from the platform\'s test entry, never from an app. ' + DIRECTIONS,
+    platform: '{{from}} may not import \'{{source}}\': {{to}} is a distribution, and the platform never depends on one. ' + DIRECTIONS,
+  },
+  ({ packages, owner }, source, report) => {
+    if (owner.kind === 'other') return
+    const target = targetOf(packages, source)
+    if (!target?.pkg.distribution) return
+    report({ messageId: owner.kind, data: { from: upperFirst(describe(owner)), source, to: target.pkg.name } })
+  },
+)
+
 const noUnlistedDependency = rule(
   'Require every imported workspace package to be listed in the importing package\'s package.json, so Turborepo invalidates dependents',
   {
@@ -346,6 +363,7 @@ const plugin = {
     'no-subpath-import': noSubpathImport,
     'no-undeclared-capability-import': noUndeclaredCapabilityImport,
     'no-capability-import-from-platform': noCapabilityImportFromPlatform,
+    'no-distribution-import': noDistributionImport,
     'no-unlisted-dependency': noUnlistedDependency,
   },
 }
@@ -363,6 +381,7 @@ export function packageBoundaries() {
       'cm-packages/no-subpath-import': 'error',
       'cm-packages/no-undeclared-capability-import': 'error',
       'cm-packages/no-capability-import-from-platform': 'error',
+      'cm-packages/no-distribution-import': 'error',
       'cm-packages/no-unlisted-dependency': 'error',
     },
   }
@@ -373,6 +392,7 @@ export function packageBoundaries() {
  * @property {string} name
  * @property {string} dir
  * @property {'platform' | 'capability' | 'other'} kind
+ * @property {boolean} distribution
  * @property {string | undefined} capabilityId
  * @property {string[]} dependencies
  * @property {string[]} devDependencies

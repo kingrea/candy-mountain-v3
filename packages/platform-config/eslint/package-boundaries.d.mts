@@ -4,6 +4,7 @@ export interface WorkspacePackage {
   name: string
   dir: string
   kind: 'platform' | 'capability' | 'other'
+  distribution: boolean
   capabilityId: string | undefined
   dependencies: string[]
   devDependencies: string[]

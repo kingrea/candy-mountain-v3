@@ -1,6 +1,7 @@
 import type { ScopeLabel, Workspace } from '@candy-mountain/platform-sdk'
 import { afterEach, describe, expect, it } from 'vitest'
-import { createPluginInstance, type InstanceHarness, instanceHarness, type NotificationDelivery } from '@candy-mountain/platform-daemon'
+import type { NotificationDelivery } from '@candy-mountain/platform-daemon'
+import { testKit, type TestKit } from '@candy-mountain/platform-daemon/testing'
 import { createSlackClient, type SlackClientOptions } from './client'
 import type { SlackBotSource, SlackNotificationSender } from './manager'
 import { slackNotificationChannel } from './notifications'
@@ -11,11 +12,12 @@ const PROJECT: ScopeLabel = { singular: 'project', plural: 'projects', singularT
 
 interface Call { method: string, token: string, body: Record<string, unknown> }
 
-let h: InstanceHarness
+let kit: TestKit | undefined
 const calls: Call[] = []
 
-afterEach(() => {
-  h?.close()
+afterEach(async () => {
+  await kit?.close()
+  kit = undefined
   calls.length = 0
 })
 
@@ -44,22 +46,22 @@ function channel(senders: SlackNotificationSender[] | null, tokens: Record<strin
       return token ? { client: createSlackClient(token, options), operations: createSlackOperations({}, { get: () => token }, options) } : null
     },
   }
-  return slackNotificationChannel({ ...h.deps, slack, scopeUrlPrefix: 'p', scopeLabel: PROJECT }, { fetch: fakeFetch })
+  return slackNotificationChannel({ ...kit!.deps, slack, scopeUrlPrefix: 'p', scopeLabel: PROJECT }, { fetch: fakeFetch })
 }
 
-async function setup(): Promise<Workspace> {
-  h = instanceHarness([slackPluginType])
-  return h.createWorkspace('alpha')
+function setup(): Workspace {
+  kit = testKit({ pluginTypes: [slackPluginType] })
+  return kit.workspace({ name: 'alpha', slug: 'alpha' })
 }
 
-const addPlugin = (workspace: Workspace) => createPluginInstance(h.deps, { type: 'slack', scope: 'workspace', workspaceId: workspace.id, config: {}, secrets: { botToken: 'xoxb-plugin' } })
+const addPlugin = (workspace: Workspace) => kit!.pluginInstance({ type: 'slack', workspace, secrets: { botToken: 'xoxb-plugin' } })
 
 const delivery = (workspace: Workspace, destination: NotificationDelivery['destination']): NotificationDelivery =>
   ({ workspaceId: workspace.id, kind: 'incident.opened', destination, title: 'API <down>', url: 'http://web.test/p/alpha' }) as NotificationDelivery
 
 describe('the Slack notification channel', () => {
   it('describes no sender, then the project plugin, then the first bot the source names', async () => {
-    const workspace = await setup()
+    const workspace = setup()
     expect(channel(null).describe(workspace)).toEqual({
       label: 'Slack',
       sender: null,
@@ -74,7 +76,7 @@ describe('the Slack notification channel', () => {
   })
 
   it('declines without a sender, posts through the plugin without bots, and prefers the first bot with a token', async () => {
-    const workspace = await setup()
+    const workspace = setup()
     const signal = new AbortController().signal
     expect(await channel(null).deliver(delivery(workspace, { channelId: 'C1' }), signal)).toBe(false)
     expect(calls).toEqual([])

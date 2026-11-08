@@ -2,7 +2,7 @@ import { CANDY_MOUNTAIN_PRODUCT } from '@candy-mountain/candy-mountain'
 import { createApp, startPlatform, suppliedIds, type AppDeps, type Platform, type PlatformOptions, type Product } from '@candy-mountain/platform-daemon'
 import { CANDY_MOUNTAIN } from '../candy-mountain'
 
-export { platformApp } from '@candy-mountain/platform-daemon'
+export { platformApp } from '@candy-mountain/platform-daemon/testing'
 
 /** Candy Mountain's definitions as the entry point boots them; tests filter or swap entries to build a product. */
 export const CAPABILITY_DEFINITIONS = CANDY_MOUNTAIN.capabilities

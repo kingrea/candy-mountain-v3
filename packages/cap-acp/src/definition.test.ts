@@ -2,28 +2,26 @@ import { WORKSPACES_PATH, type ApiErrorBody } from '@candy-mountain/platform-sdk
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { repositoryDefinition } from '@candy-mountain/plugin-repository'
-import { CapabilityDefinitionError, createTempDataDir, type Platform, platformApp, startTestPlatform, type TempDataDir, type TestPlatformOptions, THREAD_SESSIONS } from '@candy-mountain/platform-daemon'
+import { CapabilityDefinitionError, THREAD_SESSIONS } from '@candy-mountain/platform-daemon'
+import { testKit, type TestKit, type TestKitOptions } from '@candy-mountain/platform-daemon/testing'
 import { fakeBins } from './acp/test-support'
 import { ACP_DECISIONS, ACP_HARNESS, ACP_SESSIONS, acpDefinition } from './definition'
 import { acpServices, acpTestProduct } from './test-support'
 
 describe('the acp definition', () => {
-  let temp: TempDataDir
-  const open: Platform[] = []
+  let kit: TestKit | undefined
 
   afterEach(async () => {
-    for (const platform of open.splice(0)) await platform.close()
-    temp?.cleanup()
+    await kit?.close()
+    kit = undefined
   })
 
-  function start(options: TestPlatformOptions = {}) {
-    temp = createTempDataDir()
-    const platform = startTestPlatform(temp.root, options)
-    open.push(platform)
-    return { platform, app: platformApp(platform) }
+  function start(options: TestKitOptions = {}) {
+    kit = testKit(options)
+    return { platform: kit.platform, app: kit.admin }
   }
 
-  const withAcp = (): TestPlatformOptions => ({ product: acpTestProduct({ acp: { bins: fakeBins, killTimeoutMs: 1000 } }) })
+  const withAcp = (): TestKitOptions => ({ product: acpTestProduct({ acp: { bins: fakeBins, killTimeoutMs: 1000 } }) })
 
   it('offers the session, harness and decision services to the platform and to dependents, and brings no manifest, plugin type or family of its own', () => {
     const { platform } = start(withAcp())
@@ -71,9 +69,8 @@ describe('the acp definition', () => {
   })
 
   it('refuses to boot without the repository capability its sessions run in', () => {
-    temp = createTempDataDir()
-    expect(() => startTestPlatform(temp.root, { capabilities: [acpDefinition()] })).toThrow(CapabilityDefinitionError)
-    expect(() => startTestPlatform(temp.root, { capabilities: [acpDefinition()] })).toThrow("Capability 'acp' depends on 'repository', which is not in the definition list.")
+    expect(() => testKit({ capabilities: [acpDefinition()] })).toThrow(CapabilityDefinitionError)
+    expect(() => testKit({ capabilities: [acpDefinition()] })).toThrow("Capability 'acp' depends on 'repository', which is not in the definition list.")
   })
 
   it('closes decisions, then sessions, then the harness, and the platform waits for it before shutting the database', async () => {

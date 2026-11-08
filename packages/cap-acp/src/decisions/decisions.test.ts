@@ -1,51 +1,35 @@
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { workspaceSessionsPath, sessionDecisionPath, sessionDecisionsPath, sessionEventsPath, sessionPromptPath, sessionCancelPath, type AgentSession, type AgentSessionEvent, type AgentSessionEventKind, type ApiErrorBody, type Decision, type DecisionListResponse, type DecisionResponse, type PluginTypeId, type SessionListResponse, type SessionResponse } from '@candy-mountain/platform-sdk'
-import { eq } from 'drizzle-orm'
+import { workspaceSessionsPath, sessionDecisionPath, sessionDecisionsPath, sessionEventsPath, sessionPromptPath, sessionCancelPath, type AgentSession, type AgentSessionEvent, type AgentSessionEventKind, type ApiErrorBody, type Decision, type DecisionListResponse, type DecisionResponse, type SessionListResponse, type SessionResponse } from '@candy-mountain/platform-sdk'
 import { afterEach, describe, expect, it } from 'vitest'
 import { fakeBins } from '../acp/test-support'
-import { createPluginInstance, createTempDataDir, platformApp, pluginInstances, setEnabledModules, type TempDataDir } from '@candy-mountain/platform-daemon'
 import type { SessionManager } from '../sessions'
-import { startAcpPlatform, type AcpPlatform, type AcpPlatformOptions } from '../test-support'
+import { acpKit, type AcpKit, type AcpKitOptions } from '../test-support'
 import { resolveDecisionSettings } from './config'
 import { DecisionError } from './errors'
-import { createWorkspaceWithRepository } from '@candy-mountain/plugin-repository'
+import { setRepository } from '@candy-mountain/plugin-repository'
 
-let temp: TempDataDir | undefined
-let platform: AcpPlatform | undefined
+let kit: AcpKit | undefined
 
 afterEach(async () => {
-  await platform?.sessions.close()
-  platform?.close()
-  platform = undefined
-  temp?.cleanup()
-  temp = undefined
+  await kit?.close()
+  kit = undefined
 })
 
-async function boot(options: AcpPlatformOptions = {}): Promise<{ p: AcpPlatform, session: AgentSession }> {
-  temp = createTempDataDir()
-  const p = startAcpPlatform(temp.root, { acp: { bins: fakeBins, killTimeoutMs: 1000 }, ...options })
-  platform = p
-  const path = join(temp.root, '..', 'repos', 'alpha')
+async function boot(options: AcpKitOptions = {}): Promise<{ p: AcpKit, session: AgentSession }> {
+  const p = kit = acpKit({ acp: { bins: fakeBins, killTimeoutMs: 1000 }, ...options })
+  const path = join(p.platform.paths.root, '..', 'repos', 'alpha')
   mkdirSync(path, { recursive: true })
-  const project = await createWorkspaceWithRepository(p.db, { name: 'alpha', slug: 'alpha', path })
-  setEnabledModules(p.db, project.id, ['agent-hub'])
-  healthyPlugin(p, project.id, 'codex')
+  const project = p.workspace({ name: 'alpha', slug: 'alpha', modules: ['agent-hub'] })
+  await setRepository(p.db, project.id, { kind: 'local-path', path })
+  p.pluginInstance({ type: 'codex', workspace: project })
   const res = await call(p, 'POST', workspaceSessionsPath('alpha'), { family: 'codex' })
   expect(res.status).toBe(201)
   return { p, session: ((await res.json()) as SessionResponse).session }
 }
 
-/** Stands in for a passing connection test: the chat gate only reads the stored result. */
-function healthyPlugin(p: AcpPlatform, projectId: string, type: PluginTypeId): void {
-  const instance = createPluginInstance({ db: p.db, pluginTypes: p.pluginTypes, secrets: p.secrets.writeOnly }, { type, scope: 'workspace', workspaceId: projectId, config: {}, secrets: {} })
-  p.db.update(pluginInstances).set({ health: { healthy: true }, healthCheckedAt: new Date().toISOString() }).where(eq(pluginInstances.id, instance.id)).run()
-}
-
-const appOf = (p: AcpPlatform) => platformApp(p)
-
-function call(p: AcpPlatform, method: string, path: string, body?: unknown) {
-  return appOf(p).request(path, body === undefined ? { method } : { method, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+function call(p: AcpKit, method: string, path: string, body?: unknown) {
+  return p.admin.request(path, body === undefined ? { method } : { method, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
 }
 
 async function errorOf(res: Response) {
@@ -64,7 +48,7 @@ function waitFor(sessions: SessionManager, id: string, kind: AgentSessionEventKi
   })
 }
 
-async function promptForDecision(p: AcpPlatform, session: AgentSession, text: string): Promise<Decision> {
+async function promptForDecision(p: AcpKit, session: AgentSession, text: string): Promise<Decision> {
   const opened = waitFor(p.sessions, session.id, 'decision_opened')
   expect((await call(p, 'POST', sessionPromptPath('alpha', session.id), { text })).status).toBe(202)
   const event = await opened
@@ -72,11 +56,11 @@ async function promptForDecision(p: AcpPlatform, session: AgentSession, text: st
   return event.decision
 }
 
-function answer(p: AcpPlatform, session: AgentSession, decision: Decision, body: unknown) {
+function answer(p: AcpKit, session: AgentSession, decision: Decision, body: unknown) {
   return call(p, 'POST', sessionDecisionPath('alpha', session.id, decision.id), body)
 }
 
-async function finish(p: AcpPlatform, session: AgentSession, act: () => unknown): Promise<AgentSessionEvent[]> {
+async function finish(p: AcpKit, session: AgentSession, act: () => unknown): Promise<AgentSessionEvent[]> {
   const done = waitFor(p.sessions, session.id, 'turn_end')
   await act()
   await done
@@ -89,7 +73,7 @@ const agentText = (events: AgentSessionEvent[]) => events.flatMap(event => (even
 describe('pending decisions', () => {
   it('streams a permission request as a pending decision after the request row', async () => {
     const { p, session } = await boot()
-    const res = await appOf(p).request(sessionEventsPath('alpha', session.id))
+    const res = await p.admin.request(sessionEventsPath('alpha', session.id))
     const reader = res.body!.getReader()
     const decoder = new TextDecoder()
     const decision = await promptForDecision(p, session, 'guarded-tool')
@@ -222,9 +206,7 @@ describe('pending decisions', () => {
     const decision = await promptForDecision(p, session, 'guarded-tool')
     await finish(p, session, () => answer(p, session, decision, { optionKind: 'allow_once' }))
     await p.sessions.close()
-    p.close()
-    const again = startAcpPlatform(temp!.root, { acp: { bins: fakeBins, killTimeoutMs: 1000 } })
-    platform = again
+    const again = kit = await p.restart()
     const listed = (await (await call(again, 'GET', sessionDecisionsPath('alpha', session.id))).json()) as DecisionListResponse
     expect(listed.decisions).toMatchObject([{ id: decision.id, state: 'answered', answer: { optionKind: 'allow_once', surface: 'web' } }])
     expect(await errorOf(await answer(again, session, decision, { optionKind: 'deny' }))).toEqual({ status: 409, code: 'already_answered' })
@@ -234,7 +216,7 @@ describe('pending decisions', () => {
 describe('never-bypass at session creation', () => {
   it('refuses a Claude Code session whose posture carries a bypass mode', async () => {
     const { p, session } = await boot()
-    healthyPlugin(p, session.workspaceId, 'claude-code')
+    p.pluginInstance({ type: 'claude-code', workspace: { id: session.workspaceId } })
     for (const flags of [['--dangerously-skip-permissions'], ['--permission-mode', 'bypassPermissions'], ['--allowedTools', 'Bash']]) {
       const res = await call(p, 'POST', workspaceSessionsPath('alpha'), { family: 'claude-code', posture: { flags } })
       expect(await errorOf(res)).toEqual({ status: 400, code: 'invalid_request' })

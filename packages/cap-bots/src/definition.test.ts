@@ -4,7 +4,8 @@ import { join } from 'node:path'
 import { WORKSPACES_PATH, type ApiErrorBody } from '@candy-mountain/platform-sdk'
 import { eq } from 'drizzle-orm'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { CapabilityDefinitionError, createTempDataDir, findWorkspaceBySlug, fixtureDefinition, MasterKey, platformApp, startTestPlatform, THREAD_SESSIONS, type Platform, type TempDataDir, type TestPlatformOptions } from '@candy-mountain/platform-daemon'
+import { CapabilityDefinitionError, findWorkspaceBySlug, THREAD_SESSIONS } from '@candy-mountain/platform-daemon'
+import { createTempDataDir, fixtureDefinition, startTestPlatform, testKit, type TempDataDir, type TestKit, type TestKitOptions, type TestPlatformOptions } from '@candy-mountain/platform-daemon/testing'
 import { ACP_SESSIONS, acpDefinition, fakeBins } from '@candy-mountain/cap-acp'
 import { claudeCodeDefinition } from '@candy-mountain/plugin-claude-code'
 import { bots, worktreeLeases } from './schema'
@@ -12,7 +13,7 @@ import { codexPluginType } from '@candy-mountain/plugin-codex'
 import { botsTestProduct } from './test-support'
 import { SLACK_CONNECTIONS, slackDefinition } from '@candy-mountain/plugin-slack'
 import { teamDefinition } from '@candy-mountain/cap-team'
-import { createWorkspaceWithRepository, repositoryDefinition } from '@candy-mountain/plugin-repository'
+import { repositoryDefinition, setRepository } from '@candy-mountain/plugin-repository'
 import { botSecretOwner } from './bots'
 import { createTempGitRepo } from './worktrees/test-repo'
 import { BOT_SESSIONS, BOT_SLACK_DECISIONS, BOT_SLACK_HANDOFFS, BOT_SLACK_ROUTER, BOT_WORKTREE_RECLAIMER, BOT_WORKTREES, botsDefinition } from './definition'
@@ -20,23 +21,23 @@ import { BOT_SESSIONS, BOT_SLACK_DECISIONS, BOT_SLACK_HANDOFFS, BOT_SLACK_ROUTER
 const acp = { bins: fakeBins, killTimeoutMs: 1000 }
 
 describe('the bots definition', () => {
-  let temp: TempDataDir
-  const open: Platform[] = []
+  let temp: TempDataDir | undefined
+  let kit: TestKit | undefined
 
   afterEach(async () => {
-    for (const platform of open.splice(0)) await platform.close()
+    await kit?.close()
+    kit = undefined
     temp?.cleanup()
+    temp = undefined
     vi.restoreAllMocks()
   })
 
-  function start(options: TestPlatformOptions = {}) {
-    temp = createTempDataDir()
-    const platform = startTestPlatform(temp.root, options)
-    open.push(platform)
-    return { platform, app: platformApp(platform) }
+  function start(options: TestKitOptions = {}) {
+    kit = testKit(options)
+    return { kit, platform: kit.platform, app: kit.admin }
   }
 
-  const withAcp = (): TestPlatformOptions => ({ product: botsTestProduct({ acp }) })
+  const withAcp = (): TestKitOptions => ({ product: botsTestProduct({ acp }) })
 
   it('offers the bot session service, its workspace agents, the worktree pool and Slack routing, started after acp, claude-code, slack and team', () => {
     const { platform } = start(withAcp())
@@ -61,10 +62,11 @@ describe('the bots definition', () => {
   })
 
   it('removes a deleted project\'s bots, their secrets, its worktree leases and, once committed, its worktree directories', async () => {
-    const { platform, app } = start({ ...withAcp(), secretsKey: MasterKey.generate() })
+    const { kit, platform, app } = start(withAcp())
     const repo = createTempGitRepo()
     try {
-      const project = await createWorkspaceWithRepository(platform.db, { name: 'alpha', path: repo.clone })
+      const project = kit.workspace({ name: 'alpha', slug: 'alpha' })
+      await setRepository(platform.db, project.id, { kind: 'local-path', path: repo.clone })
       const now = new Date().toISOString()
       const botId = randomUUID()
       platform.db.insert(bots).values({ id: botId, projectId: project.id, name: 'Ana', family: 'claude-code', writeScope: 'read-only', answersIn: { anywhere: true }, createdAt: now, updatedAt: now }).run()
@@ -89,7 +91,7 @@ describe('the bots definition', () => {
   })
 
   it('closes Slack routing, then bot sessions and the reclaimer, before acp closes its sessions and slack its connections', async () => {
-    const { platform } = start(withAcp())
+    const { kit, platform } = start(withAcp())
     const bots = platform.runtime.services('bots')
     const botSessions = bots.get(BOT_SESSIONS)
     const reclaimer = bots.get(BOT_WORKTREE_RECLAIMER)
@@ -111,7 +113,7 @@ describe('the bots definition', () => {
     record(sessions, 'close', 'sessions')
     record(connections, 'close', 'connections')
 
-    await platform.close()
+    await kit.close()
     expect(order).toEqual(['router', 'decisions', 'handoffs', 'bot sessions', 'reclaimer', 'sessions', 'connections'])
   })
 
@@ -139,17 +141,17 @@ describe('the bots definition', () => {
     temp = createTempDataDir()
     // The chat-claude-code stand-in needs claude-code too, so it leaves with it.
     const options: TestPlatformOptions = { product: botsTestProduct({}, ['claude-code', 'chat-claude-code']) }
-    expect(() => startTestPlatform(temp.root, options)).toThrow(CapabilityDefinitionError)
-    expect(() => startTestPlatform(temp.root, options)).toThrow("Capability 'bots' depends on 'claude-code', which is not in the definition list.")
-    expect(existsSync(temp.root)).toBe(false)
+    expect(() => startTestPlatform(temp!.root, options)).toThrow(CapabilityDefinitionError)
+    expect(() => startTestPlatform(temp!.root, options)).toThrow("Capability 'bots' depends on 'claude-code', which is not in the definition list.")
+    expect(existsSync(temp!.root)).toBe(false)
   })
 
   it('refuses a list with bots but without slack, naming both, and touches nothing on disk', () => {
     temp = createTempDataDir()
     const options: TestPlatformOptions = { product: botsTestProduct({}, ['slack']) }
-    expect(() => startTestPlatform(temp.root, options)).toThrow(CapabilityDefinitionError)
-    expect(() => startTestPlatform(temp.root, options)).toThrow("Capability 'bots' depends on 'slack', which is not in the definition list.")
-    expect(existsSync(temp.root)).toBe(false)
+    expect(() => startTestPlatform(temp!.root, options)).toThrow(CapabilityDefinitionError)
+    expect(() => startTestPlatform(temp!.root, options)).toThrow("Capability 'bots' depends on 'slack', which is not in the definition list.")
+    expect(existsSync(temp!.root)).toBe(false)
   })
 
   it('refuses to start when a bot family is not a registered session family', () => {
@@ -157,7 +159,7 @@ describe('the bots definition', () => {
     // A stand-in codex that brings no codex family, so the dependency is met but the family is not.
     const codex = fixtureDefinition('codex', { manifest: null, dependsOn: ['acp'] })
     const options: TestPlatformOptions = { capabilities: [repositoryDefinition(), acpDefinition({ acp }), claudeCodeDefinition(), codex, slackDefinition(), teamDefinition(), botsDefinition()], modules: [], pluginTypes: [codexPluginType], families: [{ id: 'platform', name: 'Platform agent' }] }
-    expect(() => startTestPlatform(temp.root, options)).toThrow(CapabilityDefinitionError)
-    expect(() => startTestPlatform(temp.root, options)).toThrow("Capability 'bots': bot family 'codex' is not a registered session family.")
+    expect(() => startTestPlatform(temp!.root, options)).toThrow(CapabilityDefinitionError)
+    expect(() => startTestPlatform(temp!.root, options)).toThrow("Capability 'bots': bot family 'codex' is not a registered session family.")
   })
 })

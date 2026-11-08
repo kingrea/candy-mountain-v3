@@ -1,46 +1,24 @@
-import { mkdtempSync, rmSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-import type { Actor, ApiErrorBody, ModuleId, Workspace } from '@candy-mountain/platform-sdk'
+import type { ApiErrorBody, ModuleId, Workspace } from '@candy-mountain/platform-sdk'
 import type { Monitor, MonitorSourceListResponse } from './wire'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { addRole, type AuthStrategy, createModuleRegistry, createTestApp, createWorkspace, dataPaths, deleteWorkspace, type PlatformDatabase, productCapabilityRegistry, setEnabledModules, setGrant } from '@candy-mountain/platform-daemon'
-import { openUptimeDatabase, uptimeTestProduct } from './test-support'
+import { deleteWorkspace } from '@candy-mountain/platform-daemon'
+import type { TestActor, TestKit } from '@candy-mountain/platform-daemon/testing'
+import { uptimeRoutesKit } from './test-support'
 import { HTTP_SOURCE, MONITOR_SOURCE_REGISTRY } from './builtin-sources'
 import { MonitorError } from './errors'
-import { uptimeRoutes } from './definition'
 import { createMonitor, listEnabledMonitors, listMonitors, updateMonitor } from './service'
 import { createMonitorSourceRegistry, defineMonitorSource, MonitorSourceError, type MonitorSource } from './sources'
 
-let database: PlatformDatabase
-let root: string
+let kit: TestKit
 beforeEach(() => {
-  database = openUptimeDatabase()
-  root = mkdtempSync(join(tmpdir(), 'candy-mountain-uptime-'))
+  kit = uptimeRoutesKit()
 })
-afterEach(() => {
-  database.close()
-  rmSync(root, { recursive: true, force: true })
-})
+afterEach(() => kit.close())
 
-function project(name: string, modules: ModuleId[] = ['operations']): Workspace {
-  const created = createWorkspace(database.db, { name })
-  setEnabledModules(database.db, created.id, modules)
-  return created
-}
+const project = (name: string, modules: ModuleId[] = ['operations']): Workspace => kit.workspace({ name, slug: name, modules })
 
-function grant(role: string, rung: string) {
-  const product = uptimeTestProduct()
-  const capabilities = productCapabilityRegistry(product)
-  setGrant({ db: database.db, capabilities, modules: createModuleRegistry(product.modules, capabilities) }, { role, target: { kind: 'capability', id: 'uptime' }, rungs: { uptime: rung } })
-}
-
-function app(roles = ['admin']) {
-  const auth: AuthStrategy = { name: 'development', resolve: (): Actor => ({ id: 'u1', username: 'jack', displayName: 'Jack', roles }) }
-  return createTestApp({ db: database.db, paths: dataPaths('/unused'), auth, runtime: uptimeRoutes(), product: uptimeTestProduct() })
-}
-const call = (method: string, path: string, body?: unknown, roles?: string[]) =>
-  app(roles).request(path, { method, headers: { 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) })
+const call = (method: string, path: string, body?: unknown, as: TestActor = kit.admin) =>
+  as.request(path, { method, headers: { 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) })
 const errorCode = async (res: Response) => ((await res.json()) as ApiErrorBody).error.code
 
 const http = { name: 'API', sourceType: 'http', target: 'https://example.com/health', intervalSeconds: 60, options: { expectedStatus: 204 } }
@@ -58,7 +36,7 @@ function thrownCode(fn: () => unknown): string | undefined {
 
 describe('monitor sources', () => {
   it('registers the four built-in sources with their option fields', async () => {
-    const res = await call('GET', '/monitor-sources', undefined, ['viewer'])
+    const res = await call('GET', '/monitor-sources', undefined, kit.actor())
     expect(res.status).toBe(200)
     const { sources } = await res.json() as MonitorSourceListResponse
     expect(sources.map(s => s.id)).toEqual(['http', 'statuspage', 'statusio', 'statping'])
@@ -90,16 +68,16 @@ describe('monitor sources', () => {
 describe('monitor service', () => {
   it('persists an HTTP monitor with its expected status and fills defaults', async () => {
     const alpha = project('alpha')
-    const monitor = createMonitor(database.db, alpha.id, http)
+    const monitor = createMonitor(kit.db, alpha.id, http)
     expect(monitor).toMatchObject({ name: 'API', sourceType: 'http', intervalSeconds: 60, enabled: true, options: { expectedStatus: 204 } })
-    expect(listMonitors(database.db, alpha.id)).toEqual([monitor])
-    const defaulted = createMonitor(database.db, alpha.id, { name: 'Home', sourceType: 'http', target: 'http://localhost:3000/' })
+    expect(listMonitors(kit.db, alpha.id)).toEqual([monitor])
+    const defaulted = createMonitor(kit.db, alpha.id, { name: 'Home', sourceType: 'http', target: 'http://localhost:3000/' })
     expect(defaulted).toMatchObject({ intervalSeconds: 60, options: { expectedStatus: 200 } })
   })
 
   it('validates options against the source type', async () => {
     const alpha = project('alpha')
-    const make = (sourceType: string, options: Record<string, unknown>) => () => createMonitor(database.db, alpha.id, { ...http, sourceType, options })
+    const make = (sourceType: string, options: Record<string, unknown>) => () => createMonitor(kit.db, alpha.id, { ...http, sourceType, options })
     expect(thrownCode(make('ftp', {}))).toBe('unknown_source')
     expect(thrownCode(make('http', { expectedStatus: 99 }))).toBe('invalid_options')
     expect(thrownCode(make('http', { expectedStatus: 200.5 }))).toBe('invalid_options')
@@ -115,26 +93,26 @@ describe('monitor service', () => {
 
   it('revalidates options when the source type changes, and lists enabled monitors', async () => {
     const alpha = project('alpha')
-    const monitor = createMonitor(database.db, alpha.id, http)
-    expect(thrownCode(() => updateMonitor(database.db, alpha.id, monitor.id, { sourceType: 'statuspage' }))).toBe('invalid_options')
-    const moved = updateMonitor(database.db, alpha.id, monitor.id, { sourceType: 'statuspage', options: { componentId: 'abc123' } })
+    const monitor = createMonitor(kit.db, alpha.id, http)
+    expect(thrownCode(() => updateMonitor(kit.db, alpha.id, monitor.id, { sourceType: 'statuspage' }))).toBe('invalid_options')
+    const moved = updateMonitor(kit.db, alpha.id, monitor.id, { sourceType: 'statuspage', options: { componentId: 'abc123' } })
     expect(moved).toMatchObject({ sourceType: 'statuspage', options: { componentId: 'abc123' }, target: http.target })
-    updateMonitor(database.db, alpha.id, monitor.id, { enabled: false })
-    expect(listEnabledMonitors(database.db)).toEqual([])
+    updateMonitor(kit.db, alpha.id, monitor.id, { enabled: false })
+    expect(listEnabledMonitors(kit.db)).toEqual([])
   })
 
   it('is removed with its project', async () => {
     const alpha = project('alpha')
-    createMonitor(database.db, alpha.id, http)
-    deleteWorkspace(database.db, 'alpha')
-    expect(listMonitors(database.db, alpha.id)).toEqual([])
+    createMonitor(kit.db, alpha.id, http)
+    deleteWorkspace(kit.db, 'alpha')
+    expect(listMonitors(kit.db, alpha.id)).toEqual([])
   })
 
   it('accepts a custom registry', async () => {
     const alpha = project('alpha')
     const ping = defineMonitorSource({ id: 'ping', label: 'Ping', description: 'Pings.', targetLabel: 'Host', fields: [], check: HTTP_SOURCE.check })
     const sources = createMonitorSourceRegistry([ping])
-    expect(createMonitor(database.db, alpha.id, { ...http, sourceType: 'ping', options: {} }, sources).sourceType).toBe('ping')
+    expect(createMonitor(kit.db, alpha.id, { ...http, sourceType: 'ping', options: {} }, sources).sourceType).toBe('ping')
     expect(MONITOR_SOURCE_REGISTRY.has('ping')).toBe(false)
   })
 })
@@ -177,8 +155,8 @@ describe('monitor routes', () => {
     for (const body of [{}, { ...http, name: '' }, { ...http, target: 'ftp://x' }, { ...http, target: 'not a url' }, { ...http, intervalSeconds: '60' }, { ...http, enabled: 'yes' }, { ...http, options: [] }]) {
       expect((await call('POST', '/workspaces/alpha/monitors', body)).status).toBe(400)
     }
-    expect((await app().request('/workspaces/alpha/monitors', { method: 'POST', body: '{' })).status).toBe(400)
-    expect(listMonitors(database.db, alpha.id)).toEqual([])
+    expect((await kit.admin.request('/workspaces/alpha/monitors', { method: 'POST', body: '{' })).status).toBe(400)
+    expect(listMonitors(kit.db, alpha.id)).toEqual([])
 
     const { monitor } = await (await call('POST', '/workspaces/alpha/monitors', http)).json() as { monitor: Monitor }
     expect((await call('PATCH', `/workspaces/alpha/monitors/${monitor.id}`, { intervalSeconds: 10 })).status).toBe(400)
@@ -188,17 +166,17 @@ describe('monitor routes', () => {
   it('gates reads on the uptime view, writes on the admin plus the manage tool, and scopes ids to the project', async () => {
     const alpha = project('alpha')
     project('beta')
-    const monitor = createMonitor(database.db, alpha.id, http)
+    const monitor = createMonitor(kit.db, alpha.id, http)
     const reads = ['/workspaces/alpha/monitors', `/workspaces/alpha/monitors/${monitor.id}`, '/workspaces/alpha/uptime/status', `/workspaces/alpha/monitors/${monitor.id}/checks`]
     const writes = [['POST', '/workspaces/alpha/monitors'], ['PATCH', `/workspaces/alpha/monitors/${monitor.id}`], ['DELETE', `/workspaces/alpha/monitors/${monitor.id}`], ['POST', `/workspaces/alpha/monitors/${monitor.id}/disable`], ['POST', `/workspaces/alpha/monitors/${monitor.id}/enable`]] as const
 
-    for (const path of reads) expect((await call('GET', path, undefined, ['viewer'])).status).toBe(403)
-    addRole(database.db, 'viewer')
-    grant('viewer', 'read')
-    for (const path of reads) expect((await call('GET', path, undefined, ['viewer'])).status).toBe(200)
-    grant('viewer', 'manage')
-    for (const [method, path] of writes) expect((await call(method, path, http, ['viewer'])).status).toBe(403)
-    expect((await call('GET', '/monitor-sources', undefined, ['nobody'])).status).toBe(200)
+    const ungranted = kit.actor()
+    for (const path of reads) expect((await call('GET', path, undefined, ungranted)).status).toBe(403)
+    const reader = kit.actor({ rungs: { uptime: 'read' } })
+    for (const path of reads) expect((await call('GET', path, undefined, reader)).status).toBe(200)
+    const manager = kit.actor({ rungs: { uptime: 'manage' } })
+    for (const [method, path] of writes) expect((await call(method, path, http, manager)).status).toBe(403)
+    expect((await call('GET', '/monitor-sources', undefined, kit.actor())).status).toBe(200)
     expect((await call('GET', `/workspaces/beta/monitors/${monitor.id}`)).status).toBe(404)
     expect((await call('POST', `/workspaces/beta/monitors/${monitor.id}/disable`)).status).toBe(404)
     expect((await call('GET', '/workspaces/nope/monitors')).status).toBe(404)
@@ -206,7 +184,7 @@ describe('monitor routes', () => {
 
   it('refuses reads and writes while Operations is not enabled for the project', async () => {
     const alpha = project('alpha', [])
-    const monitor = createMonitor(database.db, alpha.id, http)
+    const monitor = createMonitor(kit.db, alpha.id, http)
     for (const res of [await call('GET', '/workspaces/alpha/uptime/status'), await call('POST', `/workspaces/alpha/monitors/${monitor.id}/disable`)]) {
       expect(res.status).toBe(404)
       expect(await errorCode(res)).toBe('not_enabled')

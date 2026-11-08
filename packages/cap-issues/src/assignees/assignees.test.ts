@@ -1,58 +1,49 @@
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { Actor, ApiErrorBody, Workspace } from '@candy-mountain/platform-sdk'
+import type { ApiErrorBody, Workspace } from '@candy-mountain/platform-sdk'
 import type { ProjectAssigneesResponse } from '../wire'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { createTestApp, type AuthStrategy, dataPaths, deleteWorkspace, type PlatformDatabase, setEnabledModules } from '@candy-mountain/platform-daemon'
-import { issuesRoutes } from '../definition'
-import { issuesTestProduct, openIssuesDatabase } from '../test-support'
+import { deleteWorkspace } from '@candy-mountain/platform-daemon'
+import type { TestKit } from '@candy-mountain/platform-daemon/testing'
+import { issuesKit, workspaceAt } from '../test-support'
 import { addAssignee, listAssignees } from './service'
-import { createWorkspaceWithRepository, repositoryPaths } from '@candy-mountain/plugin-repository'
 
-let database: PlatformDatabase
+let kit: TestKit
 let root: string
 beforeEach(() => {
-  database = openIssuesDatabase()
+  kit = issuesKit()
   root = mkdtempSync(join(tmpdir(), 'candy-mountain-assignees-'))
   mkdirSync(join(root, '.beads'))
 })
-afterEach(() => {
-  database.close()
+afterEach(async () => {
+  await kit.close()
   rmSync(root, { recursive: true, force: true })
 })
 
-async function project(name: string, enable = true): Promise<Workspace> {
-  const created = await createWorkspaceWithRepository(database.db, { name, path: root })
-  if (enable) setEnabledModules(database.db, created.id, ['issues'])
-  return created
-}
+const project = (name: string, enable = true): Promise<Workspace> => workspaceAt(kit, root, { name, slug: name, modules: enable ? ['issues'] : [] })
 
-function app(roles = ['admin']) {
-  const auth: AuthStrategy = { name: 'development', resolve: (): Actor => ({ id: 'u1', username: 'jack', displayName: 'Jack', roles }) }
-  return createTestApp({ product: issuesTestProduct(), db: database.db, paths: dataPaths('/unused'), auth, runtime: issuesRoutes(repositoryPaths(database.db)) })
-}
-const post = (slug: string, body: unknown, roles?: string[]) =>
-  app(roles).request(`/workspaces/${slug}/assignees`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: typeof body === 'string' ? body : JSON.stringify(body) })
+const post = (slug: string, body: unknown, as = kit.admin) =>
+  as.request(`/workspaces/${slug}/assignees`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: typeof body === 'string' ? body : JSON.stringify(body) })
 
 describe('assignee service', () => {
   it('adds, trims, sorts and de-duplicates case-insensitively', async () => {
     const alpha = await project('alpha')
-    expect(listAssignees(database.db, alpha.id)).toEqual([])
-    addAssignee(database.db, alpha.id, '  zoe ')
-    addAssignee(database.db, alpha.id, 'Ana')
-    expect(addAssignee(database.db, alpha.id, 'ZOE')).toEqual({ name: 'zoe' })
-    expect(listAssignees(database.db, alpha.id)).toEqual([{ name: 'Ana' }, { name: 'zoe' }])
+    expect(listAssignees(kit.db, alpha.id)).toEqual([])
+    addAssignee(kit.db, alpha.id, '  zoe ')
+    addAssignee(kit.db, alpha.id, 'Ana')
+    expect(addAssignee(kit.db, alpha.id, 'ZOE')).toEqual({ name: 'zoe' })
+    expect(listAssignees(kit.db, alpha.id)).toEqual([{ name: 'Ana' }, { name: 'zoe' }])
   })
 
   it('keeps names per project and cascades on delete', async () => {
     const [alpha, beta] = [await project('alpha'), await project('beta')]
-    addAssignee(database.db, alpha.id, 'Ana')
-    addAssignee(database.db, beta.id, 'Ben')
-    expect(listAssignees(database.db, alpha.id)).toEqual([{ name: 'Ana' }])
-    deleteWorkspace(database.db, 'alpha')
-    expect(listAssignees(database.db, alpha.id)).toEqual([])
-    expect(listAssignees(database.db, beta.id)).toEqual([{ name: 'Ben' }])
+    addAssignee(kit.db, alpha.id, 'Ana')
+    addAssignee(kit.db, beta.id, 'Ben')
+    expect(listAssignees(kit.db, alpha.id)).toEqual([{ name: 'Ana' }])
+    deleteWorkspace(kit.db, 'alpha')
+    expect(listAssignees(kit.db, alpha.id)).toEqual([])
+    expect(listAssignees(kit.db, beta.id)).toEqual([{ name: 'Ben' }])
   })
 })
 
@@ -63,8 +54,8 @@ describe('assignee routes', () => {
     const created = await post('alpha', { name: 'Ana' })
     expect(created.status).toBe(200)
     expect(await created.json()).toEqual({ assignee: { name: 'Ana' } })
-    expect(await (await app().request('/workspaces/alpha/assignees')).json() as ProjectAssigneesResponse).toEqual({ assignees: [{ name: 'Ana' }] })
-    expect(await (await app().request('/workspaces/beta/assignees')).json() as ProjectAssigneesResponse).toEqual({ assignees: [] })
+    expect(await (await kit.admin.request('/workspaces/alpha/assignees')).json() as ProjectAssigneesResponse).toEqual({ assignees: [{ name: 'Ana' }] })
+    expect(await (await kit.admin.request('/workspaces/beta/assignees')).json() as ProjectAssigneesResponse).toEqual({ assignees: [] })
   })
 
   it('rejects bad bodies and unknown projects', async () => {
@@ -79,10 +70,10 @@ describe('assignee routes', () => {
 
   it('is gated by the issues module and view', async () => {
     await project('off', false)
-    const off = await app().request('/workspaces/off/assignees')
+    const off = await kit.admin.request('/workspaces/off/assignees')
     expect(off.status).toBe(404)
     expect(((await off.json()) as ApiErrorBody).error.code).toBe('not_enabled')
     await project('alpha')
-    expect((await app([]).request('/workspaces/alpha/assignees')).status).toBe(403)
+    expect((await kit.actor().request('/workspaces/alpha/assignees')).status).toBe(403)
   })
 })

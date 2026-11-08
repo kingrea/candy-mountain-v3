@@ -3,17 +3,18 @@ import { join } from 'node:path'
 import type { Workspace } from '@candy-mountain/platform-sdk'
 import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { BOT_WORKTREE_RECLAIMER, BOT_WORKTREES } from '../definition'
-import { createTempDataDir, startTestPlatform, type Platform, type PlatformDatabase, type TempDataDir } from '@candy-mountain/platform-daemon'
+import { BOT_WORKTREE_RECLAIMER } from '../definition'
+import type { PlatformDatabase } from '@candy-mountain/platform-daemon'
+import { createTempDataDir, type TempDataDir } from '@candy-mountain/platform-daemon/testing'
 import { worktreeLeases } from '../schema'
-import { botsTestProduct, openBotsDatabase } from '../test-support'
+import { botsKit, openBotsDatabase, restartBots } from '../test-support'
 import { resolveWorktreeSettings } from './config'
 import { createGitRunner } from './git'
 import { inspectWorktree } from './inspect'
 import { createWorktreePool, type WorktreeHolder, type WorktreePool } from './pool'
 import { startWorktreeReclaimer, type WorktreeReclaimer } from './reclaim'
 import { createTempGitRepo, TEST_GIT_ENV, type TempGitRepo } from './test-repo'
-import { createWorkspaceWithRepository, repositoryPaths } from '@candy-mountain/plugin-repository'
+import { createWorkspaceWithRepository, repositoryPaths, setRepository } from '@candy-mountain/plugin-repository'
 
 const HOUR = 3_600_000
 const holder = (id: string): WorktreeHolder => ({ kind: 'session', id })
@@ -235,31 +236,30 @@ describe('settings and platform', () => {
   })
 
   it('closes missing-path leases at startup and reclaims idle ones on the interval', async () => {
-    const worktreesOf = (platform: Platform) => platform.runtime.services('bots').get(BOT_WORKTREES)
-    const reclaimerOf = (platform: Platform) => platform.runtime.services('bots').get(BOT_WORKTREE_RECLAIMER)
     repo = createTempGitRepo()
-    let platform = startTestPlatform(data.root, { product: botsTestProduct() })
-    const created = await createWorkspaceWithRepository(platform.db, { name: 'beta', path: repo.clone })
-    const gone = await worktreesOf(platform).acquire({ projectId: created.id, holder: holder('gone'), baseBranch: 'main' })
-    const idle = await worktreesOf(platform).acquire({ projectId: created.id, holder: holder('idle'), baseBranch: 'main' })
-    await reclaimerOf(platform).ready
-    await platform.close()
+    const first = botsKit()
+    const created = first.workspace({ name: 'beta' })
+    await setRepository(first.db, created.id, { kind: 'local-path', path: repo.clone })
+    const gone = await first.worktrees.acquire({ projectId: created.id, holder: holder('gone'), baseBranch: 'main' })
+    const idle = await first.worktrees.acquire({ projectId: created.id, holder: holder('idle'), baseBranch: 'main' })
+    await first.platform.runtime.services('bots').get(BOT_WORKTREE_RECLAIMER).ready
+    // The first daemon's reclaimer has already reconciled and its interval is far off, so only the next start sees the gap.
     rmSync(gone.path, { recursive: true, force: true })
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined)
 
-    platform = startTestPlatform(data.root, { product: botsTestProduct({ worktrees: { idleTimeoutMs: HOUR, reclaimIntervalMs: 50 } }) })
+    const kit = await restartBots(first, { worktrees: { idleTimeoutMs: HOUR, reclaimIntervalMs: 50 } })
     try {
-      const report = await reclaimerOf(platform).ready
+      const report = await kit.platform.runtime.services('bots').get(BOT_WORKTREE_RECLAIMER).ready
       expect(report?.closedLeases.map(lease => lease.id)).toEqual([gone.id])
-      expect(worktreesOf(platform).get(gone.id)).toMatchObject({ state: 'released' })
+      expect(kit.worktrees.get(gone.id)).toMatchObject({ state: 'released' })
       expect(logSpy).toHaveBeenCalledWith('Closed 1 worktree lease(s) whose directory was missing')
 
-      platform.db.update(worktreeLeases).set({ lastUsedAt: new Date(Date.now() - 2 * HOUR).toISOString() }).where(eq(worktreeLeases.id, idle.id)).run()
-      await vi.waitFor(() => expect(worktreesOf(platform).get(idle.id)).toMatchObject({ state: 'released' }), { timeout: 10_000, interval: 50 })
+      kit.db.update(worktreeLeases).set({ lastUsedAt: new Date(Date.now() - 2 * HOUR).toISOString() }).where(eq(worktreeLeases.id, idle.id)).run()
+      await vi.waitFor(() => expect(kit.worktrees.get(idle.id)).toMatchObject({ state: 'released' }), { timeout: 10_000, interval: 50 })
       expect(existsSync(idle.path)).toBe(false)
     }
     finally {
-      await platform.close()
+      await kit.close()
       logSpy.mockRestore()
     }
   }, 30_000)

@@ -1,19 +1,17 @@
-import type { Actor, ApiErrorBody, Workspace } from '@candy-mountain/platform-sdk'
+import type { ApiErrorBody, Workspace } from '@candy-mountain/platform-sdk'
 import type { Environment, LiveVersionSourceListResponse, LiveVersionsResponse } from './wire'
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { type AuthStrategy, createPluginTypeRegistry, createTestApp, createWorkspace, dataPaths, deleteWorkspace, lockedSecretsStore, type PlatformDatabase } from '@candy-mountain/platform-daemon'
+import { deleteWorkspace } from '@candy-mountain/platform-daemon'
+import type { TestActor, TestKit } from '@candy-mountain/platform-daemon/testing'
 import { environments } from './schema'
-import { herokuPluginType } from '@candy-mountain/plugin-heroku'
-import { netlifyPluginType } from '@candy-mountain/plugin-netlify'
-import { deploymentsRoutes } from './definition'
-import { openDeploymentsTestDatabase, REPOSITORY_STAND_IN } from './test-support'
+import { deploymentsKit } from './test-support'
 import { CUSTOM_ENDPOINT_SOURCE } from './custom-endpoint'
 import { json, startFakeEndpoint, unreachableUrl, type FakeEndpoint } from './fake-endpoint'
 import { createEnvironment, listEnvironments, readLiveVersions } from './service'
 import { createLiveVersionSourceRegistry, defineLiveVersionSource, LiveVersionSourceError, type LiveVersionDeps, type LiveVersionSource } from './sources'
 
-let database: PlatformDatabase
+let kit: TestKit
 let endpoint: FakeEndpoint
 beforeAll(async () => {
   endpoint = await startFakeEndpoint((req, res) => {
@@ -23,21 +21,15 @@ beforeAll(async () => {
 })
 afterAll(() => endpoint.close())
 beforeEach(() => {
-  database = openDeploymentsTestDatabase()
+  kit = deploymentsKit()
 })
-afterEach(() => {
-  database.close()
-})
+afterEach(() => kit.close())
 
-const instanceDeps = () => ({ db: database.db, pluginTypes: createPluginTypeRegistry([REPOSITORY_STAND_IN, herokuPluginType, netlifyPluginType]), secrets: lockedSecretsStore().writeOnly })
-const project = async (name: string): Promise<Workspace> => createWorkspace(database.db, { name })
+const project = async (name: string): Promise<Workspace> => kit.workspace({ name })
 
-function app(roles = ['admin']) {
-  const auth: AuthStrategy = { name: 'development', resolve: (): Actor => ({ id: 'u1', username: 'jack', displayName: 'Jack', roles }) }
-  return createTestApp({ db: database.db, paths: dataPaths('/unused'), auth, runtime: deploymentsRoutes(lockedSecretsStore()) })
-}
-const call = (method: string, path: string, body?: unknown, roles?: string[]) =>
-  app(roles).request(path, { method, headers: { 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) })
+const viewer = () => kit.actor()
+const call = (method: string, path: string, body?: unknown, as: TestActor = kit.admin) =>
+  as.request(path, { method, headers: { 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) })
 const errorOf = async (res: Response) => ((await res.json()) as ApiErrorBody).error
 
 const mapping = { versionPath: 'commit', branchPath: 'branch', deployedAtPath: 'buildStartedAt', linkPath: 'siteUrl' }
@@ -45,7 +37,7 @@ const production = () => ({ name: 'Production', liveSourceKind: 'custom-endpoint
 
 describe('live-version sources', () => {
   it('lists the custom endpoint source with its fields to any signed-in actor', async () => {
-    const res = await call('GET', '/live-version-sources', undefined, ['viewer'])
+    const res = await call('GET', '/live-version-sources', undefined, viewer())
     expect(res.status).toBe(200)
     const { sources } = await res.json() as LiveVersionSourceListResponse
     expect(sources.map(s => s.id)).toEqual(['custom-endpoint', 'netlify', 'heroku'])
@@ -77,8 +69,8 @@ describe('environments', () => {
     expect(environment).toMatchObject({ name: 'Production', liveSourceKind: 'custom-endpoint', deployKind: null, deploySettings: null })
     expect(environment.liveSourceSettings).toEqual({ url: endpoint.url('/api/debug'), ...mapping })
 
-    expect((await (await call('GET', `/workspaces/${slug}/environments`, undefined, ['viewer'])).json() as { environments: Environment[] }).environments).toEqual([environment])
-    expect((await call('GET', `/workspaces/${slug}/environments/${environment.id}`, undefined, ['viewer'])).status).toBe(200)
+    expect((await (await call('GET', `/workspaces/${slug}/environments`, undefined, viewer())).json() as { environments: Environment[] }).environments).toEqual([environment])
+    expect((await call('GET', `/workspaces/${slug}/environments/${environment.id}`, undefined, viewer())).status).toBe(200)
 
     const renamed = await call('PATCH', `/workspaces/${slug}/environments/${environment.id}`, { name: 'Live', liveSourceSettings: { url: 'https://example.com/v', versionPath: 'version' } })
     expect(renamed.status).toBe(200)
@@ -90,9 +82,9 @@ describe('environments', () => {
 
   it('rejects bad input with the right codes', async () => {
     const { slug } = await project('Shop')
-    const post = (body: unknown, roles?: string[]) => call('POST', `/workspaces/${slug}/environments`, body, roles)
+    const post = (body: unknown, as?: TestActor) => call('POST', `/workspaces/${slug}/environments`, body, as)
 
-    expect((await post(production(), ['viewer'])).status).toBe(403)
+    expect((await post(production(), viewer())).status).toBe(403)
     expect(await errorOf(await post({ liveSourceKind: 'custom-endpoint' }))).toMatchObject({ code: 'invalid_request' })
     expect(await errorOf(await post({ ...production(), liveSourceKind: 'vercel' }))).toMatchObject({ code: 'unknown_source', message: expect.stringMatching(/custom-endpoint/) })
     expect(await errorOf(await post({ ...production(), liveSourceSettings: { versionPath: 'commit' } }))).toMatchObject({ code: 'invalid_settings', message: 'url: Endpoint URL is required.' })
@@ -109,13 +101,13 @@ describe('environments', () => {
     const shop = await project('Shop')
     const blog = await project('Blog')
     const settings = { url: 'https://example.com/v', versionPath: 'version' }
-    const env = createEnvironment(instanceDeps(), shop.id, { name: 'Production', liveSourceKind: 'custom-endpoint', liveSourceSettings: settings })
-    createEnvironment(instanceDeps(), blog.id, { name: 'Production', liveSourceKind: 'custom-endpoint', liveSourceSettings: settings })
+    const env = createEnvironment(kit.deps, shop.id, { name: 'Production', liveSourceKind: 'custom-endpoint', liveSourceSettings: settings })
+    createEnvironment(kit.deps, blog.id, { name: 'Production', liveSourceKind: 'custom-endpoint', liveSourceSettings: settings })
     expect((await call('GET', `/workspaces/${blog.slug}/environments/${env.id}`)).status).toBe(404)
 
-    deleteWorkspace(database.db, shop.slug)
-    expect(listEnvironments(database.db, shop.id)).toEqual([])
-    expect(listEnvironments(database.db, blog.id)).toHaveLength(1)
+    deleteWorkspace(kit.db, shop.slug)
+    expect(listEnvironments(kit.db, shop.id)).toEqual([])
+    expect(listEnvironments(kit.db, blog.id)).toHaveLength(1)
   })
 })
 
@@ -126,7 +118,7 @@ describe('live versions', () => {
     await call('POST', `/workspaces/${slug}/environments`, { name: 'Staging', liveSourceKind: 'custom-endpoint', liveSourceSettings: { url: await unreachableUrl(), ...mapping } })
     await call('POST', `/workspaces/${slug}/environments`, { name: 'Preview', liveSourceKind: 'custom-endpoint', liveSourceSettings: { url: endpoint.url('/missing'), ...mapping } })
 
-    const res = await call('GET', `/workspaces/${slug}/live-versions`, undefined, ['viewer'])
+    const res = await call('GET', `/workspaces/${slug}/live-versions`, undefined, viewer())
     expect(res.status).toBe(200)
     const { environments } = await res.json() as LiveVersionsResponse
     expect(environments.map(e => e.environmentName)).toEqual(['Production', 'Staging', 'Preview'])
@@ -144,11 +136,11 @@ describe('live versions', () => {
     const fixed = defineLiveVersionSource({ id: 'fixed', label: 'Fixed', description: 'Test.', fields: [], read: async () => ({ version: ' v1 ', link: 'not a url', deployedAt: 'nope' }) })
     const broken = defineLiveVersionSource({ id: 'broken', label: 'Broken', description: 'Test.', fields: [], read: async () => { throw new Error('vendor said no') } })
     const sources = createLiveVersionSourceRegistry([fixed, broken])
-    for (const [name, kind] of [['A', 'fixed'], ['B', 'broken']] as const) createEnvironment(instanceDeps(), shop.id, { name, liveSourceKind: kind }, sources)
-    database.db.update(environments).set({ liveSourceKind: 'retired' }).where(eq(environments.name, 'B')).run()
-    createEnvironment(instanceDeps(), shop.id, { name: 'C', liveSourceKind: 'broken' }, sources)
+    for (const [name, kind] of [['A', 'fixed'], ['B', 'broken']] as const) createEnvironment(kit.deps, shop.id, { name, liveSourceKind: kind }, sources)
+    kit.db.update(environments).set({ liveSourceKind: 'retired' }).where(eq(environments.name, 'B')).run()
+    createEnvironment(kit.deps, shop.id, { name: 'C', liveSourceKind: 'broken' }, sources)
 
-    const deps: LiveVersionDeps = { ...instanceDeps(), secretsReader: lockedSecretsStore() }
+    const deps: LiveVersionDeps = kit.deps
     const result = await readLiveVersions(deps, shop, { sources })
     expect(result.map(r => [r.environmentName, r.live])).toEqual([
       ['A', { ok: true, version: { version: 'v1' } }],
@@ -159,7 +151,7 @@ describe('live versions', () => {
     const hang = defineLiveVersionSource({ id: 'hang', label: 'Hang', description: 'Test.', fields: [], read: ({ signal }) => new Promise((_, reject) => signal.addEventListener('abort', () => reject(signal.reason))) })
     const slow = createLiveVersionSourceRegistry([hang])
     const other = await project('Other')
-    createEnvironment(instanceDeps(), other.id, { name: 'Slow', liveSourceKind: 'hang' }, slow)
+    createEnvironment(kit.deps, other.id, { name: 'Slow', liveSourceKind: 'hang' }, slow)
     expect((await readLiveVersions(deps, other, { sources: slow, timeoutMs: 50 }))[0]!.live).toEqual({ ok: false, error: 'No answer within 0.05s.' })
   })
 })

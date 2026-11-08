@@ -229,7 +229,7 @@ describe('layer boundary lint', () => {
       ])
     })
 
-    it('rejects a layer package importing the platform package by name or path instead of its aliases', () => {
+    it('rejects a layer package importing the platform package by name or path instead of its aliases, its test entry included', () => {
       const advice = 'Reach core through its auto-imports, #imports, #components or #layers/platform-web/…; wire types belong in @candy-mountain/platform-sdk.'
       expect(findings('../epsilon-layer/app/utils/platform.ts')).toEqual([
         {
@@ -239,6 +239,24 @@ describe('layer boundary lint', () => {
         {
           rule: 'cm-layers/no-platform-package-import',
           message: `The \`epsilon\` capability layer may not import @fixture/platform-web by package name or path ('../../../platform-layer/app/utils/core'). ${advice}`,
+        },
+        {
+          rule: 'cm-layers/no-platform-package-import',
+          message: `The \`epsilon\` capability layer may not import @fixture/platform-web by package name or path ('@fixture/platform-web/test'). ${advice}`,
+        },
+      ])
+    })
+
+    it('lets a layer package\'s tests import the platform package\'s test entry and nothing else of it', () => {
+      const advice = 'Reach core through #imports, #components or #layers/platform-web/…; wire types belong in @candy-mountain/platform-sdk.'
+      expect(findings('../epsilon-layer/test/unit/page.test.ts')).toEqual([
+        {
+          rule: 'cm-layers/no-platform-package-import',
+          message: `The \`epsilon\` capability layer's tests may import only @fixture/platform-web/test from the platform package ('@fixture/platform-web/app/utils/core'). ${advice}`,
+        },
+        {
+          rule: 'cm-layers/no-platform-package-import',
+          message: `The \`epsilon\` capability layer's tests may import only @fixture/platform-web/test from the platform package ('../../../platform-layer/app/utils/core'). ${advice}`,
         },
       ])
     })

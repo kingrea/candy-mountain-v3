@@ -4,7 +4,8 @@ import { claudeCodeDefinition } from '@candy-mountain/plugin-claude-code'
 import { repositoryDefinition } from '@candy-mountain/plugin-repository'
 import type { ModuleDefinition } from '@candy-mountain/platform-sdk'
 import { defineCapability, defineCapabilityDefinition, type CapabilityDefinition } from '@candy-mountain/platform-sdk/daemon'
-import { definePluginType, resolvePluginInstance, SessionError, startPlatform, testProduct, type Platform, type PlatformOptions, type Product, type ProductParts } from '@candy-mountain/platform-daemon'
+import { definePluginType, resolvePluginInstance, SessionError, type Platform, type Product } from '@candy-mountain/platform-daemon'
+import { testKit, testProduct, type ProductParts, type TestKit, type TestKitOptions } from '@candy-mountain/platform-daemon/testing'
 import { chatClaudeCodeDefinition } from './definition'
 
 export const CODEX_STAND_IN_FAMILY = { id: 'codex', name: 'Codex' } as const
@@ -90,20 +91,40 @@ export function acpServices(platform: Pick<Platform, 'runtime'>): AcpServices {
   return { sessions, decisions, acpHarness }
 }
 
-export type AcpPlatform = Platform & AcpServices
+export interface AcpKitOptions extends Omit<TestKitOptions, 'product' | 'capabilities' | 'modules'>, AcpOptions, Pick<ProductParts, 'capabilities' | 'modules'> {}
 
-export interface AcpPlatformOptions extends Omit<PlatformOptions, 'product'>, AcpOptions, Pick<ProductParts, 'capabilities' | 'modules'> {}
+export interface AcpKit extends TestKit, AcpServices {
+  restart(options?: AcpKitOptions): Promise<AcpKit>
+}
+
+type AcpProductOptions = AcpOptions & Pick<ProductParts, 'capabilities' | 'modules'>
 
 /** The product the tests boot: repository, acp with the given options, claude-code, chat-claude-code and the codex stand-in in the Agent Hub module. */
-export function acpTestProduct({ acp, sessions, decisions, capabilities = [], modules = [] }: Omit<AcpPlatformOptions, keyof PlatformOptions> = {}): Product {
+export function acpTestProduct({ acp, sessions, decisions, capabilities = [], modules = [] }: AcpProductOptions = {}): Product {
   return testProduct({
     capabilities: [repositoryDefinition(), acpDefinition({ acp, sessions, decisions }), claudeCodeDefinition(), chatClaudeCodeDefinition(), ...codexStandInDefinitions(), ...capabilities],
     modules: [AGENT_HUB_MODULE, ...modules],
   })
 }
 
-/** `startPlatform` over `acpTestProduct`, the ACP services pulled out for tests. */
-export function startAcpPlatform(dataDir: string, { acp, sessions, decisions, capabilities, modules, ...options }: AcpPlatformOptions = {}): AcpPlatform {
-  const platform = startPlatform(dataDir, { product: acpTestProduct({ acp, sessions, decisions, capabilities, modules }), ...options })
-  return { ...platform, ...acpServices(platform) }
+function splitOptions({ acp, sessions, decisions, capabilities, modules, ...kit }: AcpKitOptions): [AcpProductOptions, TestKitOptions] {
+  return [{ acp, sessions, decisions, capabilities, modules }, kit]
+}
+
+function withAcpServices(kit: TestKit, product: AcpProductOptions): AcpKit {
+  return {
+    ...kit,
+    ...acpServices(kit.platform),
+    async restart(options = {}) {
+      const [overrides, kitOverrides] = splitOptions(options)
+      const merged = { ...product, ...Object.fromEntries(Object.entries(overrides).filter(([, value]) => value !== undefined)) }
+      return withAcpServices(await kit.restart({ ...kitOverrides, product: acpTestProduct(merged) }), merged)
+    },
+  }
+}
+
+/** `testKit` over `acpTestProduct`, the ACP services pulled out for tests. */
+export function acpKit(options: AcpKitOptions = {}): AcpKit {
+  const [product, kit] = splitOptions(options)
+  return withAcpServices(testKit({ ...kit, product: acpTestProduct(product) }), product)
 }

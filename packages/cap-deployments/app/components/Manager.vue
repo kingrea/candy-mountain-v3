@@ -66,7 +66,7 @@ async function remove(environment: Environment) {
   if (!confirmed || !slug.value) return
   actionError.value = null
   try {
-    await $api(workspaceEnvironmentPath(slug.value, environment.id), { method: 'DELETE' })
+    await $api<unknown>(workspaceEnvironmentPath(slug.value, environment.id), { method: 'DELETE' })
     toast.add({ title: `Deleted ${environment.name}`, color: 'success' })
   }
   catch (error) {

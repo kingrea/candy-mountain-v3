@@ -213,6 +213,28 @@ describe('package boundary lint', () => {
     ])
   })
 
+  it('rejects a capability test file importing a distribution by name, even one its package.json lists', () => {
+    expect(findings('packages/cap-alpha/src/bad-distribution.test.ts')).toEqual([
+      {
+        rule: 'cm-packages/no-distribution-import',
+        message: `Capability package @candy-mountain/cap-alpha may not import '@fixture/daemon': @fixture/daemon is a distribution. A capability's tests take what they need from the platform's test entry, never from an app. ${DIRECTIONS}`,
+      },
+    ])
+  })
+
+  it('rejects a platform package importing a distribution', () => {
+    expect(findings('packages/platform-core/src/uses-distribution.ts')).toEqual([
+      {
+        rule: 'cm-packages/no-distribution-import',
+        message: `Platform package @candy-mountain/platform-core may not import '@fixture/daemon': @fixture/daemon is a distribution, and the platform never depends on one. ${DIRECTIONS}`,
+      },
+      {
+        rule: 'cm-packages/no-unlisted-dependency',
+        message: `Platform package @candy-mountain/platform-core may not import '@fixture/daemon': @fixture/daemon is not in its package.json dependencies or devDependencies. ${DIRECTIONS}`,
+      },
+    ])
+  })
+
   it('holds a distribution to a plugin package\'s root entry', () => {
     expect(findings('apps/daemon/src/bad-plugin.ts')).toEqual([
       {
@@ -258,11 +280,12 @@ describe('workspace packages', () => {
     ])
     expect(packages.get('@candy-mountain/platform-core')).toMatchObject({
       kind: 'platform',
+      distribution: false,
       capabilityId: undefined,
       entries: ['.', './daemon', './eslint', './vitest'],
       presets: ['./eslint', './vitest'],
     })
-    expect(packages.get('@candy-mountain/cap-alpha')).toMatchObject({ kind: 'capability', capabilityId: 'alpha', entries: ['.', './wire'], presets: [] })
+    expect(packages.get('@candy-mountain/cap-alpha')).toMatchObject({ kind: 'capability', distribution: false, capabilityId: 'alpha', entries: ['.', './wire'], presets: [] })
     expect(packages.get('@candy-mountain/cap-beta')).toMatchObject({
       kind: 'capability',
       capabilityId: 'beta',
@@ -275,7 +298,7 @@ describe('workspace packages', () => {
       entries: ['.'],
       dependencies: ['@candy-mountain/cap-alpha', '@candy-mountain/platform-core'],
     })
-    expect(packages.get('@fixture/daemon')).toMatchObject({ kind: 'other', entries: ['.'], presets: [] })
+    expect(packages.get('@fixture/daemon')).toMatchObject({ kind: 'other', distribution: true, entries: ['.'], presets: [] })
     expect(kindOf('@candy-mountain/claude-acp')).toBe('other')
     expect(kindOf('@candy-mountain/plugin-claude-code')).toBe('capability')
     expect(capabilityId('@candy-mountain/cap-chat-claude-code')).toBe('chat-claude-code')

@@ -1,7 +1,8 @@
 import { pluginTypeInfo } from '@candy-mountain/platform-sdk'
 import type { RepositoryHost } from '../wire'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { checkPluginHealth, createPluginTypeRegistry, createTempDataDir, startTestPlatform, type TempDataDir } from '@candy-mountain/platform-daemon'
+import { checkPluginHealth, createPluginTypeRegistry } from '@candy-mountain/platform-daemon'
+import { testKit } from '@candy-mountain/platform-daemon/testing'
 import { repositoryDefinition } from '../definition'
 import { GOOD_TOKEN, json } from './fake-hosts'
 import { stubHosts } from './stub-hosts'
@@ -38,15 +39,13 @@ describe('repository plugin type', () => {
     expect(() => repositoryConfig({ host: 'github', owner: 'jack', repo: 'candy', defaultBranch: 'has space' })).toThrow(/defaultBranch/)
   })
 
-  it('boots the daemon with it registered', () => {
-    const temp: TempDataDir = createTempDataDir()
+  it('boots the daemon with it registered', async () => {
+    const kit = testKit({ capabilities: [repositoryDefinition()] })
     try {
-      const platform = startTestPlatform(temp.root, { capabilities: [repositoryDefinition()] })
-      expect(platform.pluginTypes.ids()).toContain('repository')
-      platform.close()
+      expect(kit.platform.pluginTypes.ids()).toContain('repository')
     }
     finally {
-      temp.cleanup()
+      await kit.close()
     }
   })
 })
