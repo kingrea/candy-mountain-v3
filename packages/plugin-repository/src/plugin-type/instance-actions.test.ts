@@ -1,12 +1,12 @@
-import { PLUGINS_PATH, type PluginInstance, type PluginInstanceResponse } from '@candy-mountain/platform-sdk'
+import { PLUGINS_PATH, type PluginInstance, type PluginInstanceResponse } from '@crab-shack/platform-sdk'
 import type { RepositoryBranchList } from '../wire'
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { testKit, type TestKit } from '@candy-mountain/platform-daemon/testing'
+import { testKit, type TestKit } from '@crab-shack/platform-daemon/testing'
 import { repositoryDefinition } from '../definition'
 import { setRepository } from '../service'
-import { GOOD_TOKEN, json } from './fake-hosts'
+import { GOOD_TOKEN, hostJson as json } from '@candy-mountain/testing'
 import { stubHosts } from './stub-hosts'
 
 let kit: TestKit | undefined

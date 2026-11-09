@@ -1,4 +1,4 @@
-import { chatAgentOptionsPath, type ChatAgentOptionsResponse } from '@candy-mountain/platform-sdk'
+import { chatAgentOptionsPath, type ChatAgentOptionsResponse } from '@crab-shack/platform-sdk'
 
 /** The agent's model and effort choices; a refused or failed lookup reads as none, so the selectors stay hidden. */
 export function useChatCodexOptions(slug: MaybeRefOrGetter<string | null | undefined>, agentId: MaybeRefOrGetter<string | null | undefined>) {

@@ -9,3 +9,10 @@ allowBuilds:
   esbuild: true
   unrs-resolver: false
   vue-demi: false
+
+minimumReleaseAgeExclude:
+  - '@crab-shack/platform-cli@0.3.0'
+  - '@crab-shack/platform-config@0.3.0'
+  - '@crab-shack/platform-daemon@0.3.0'
+  - '@crab-shack/platform-sdk@0.3.0'
+  - '@crab-shack/platform-web@0.3.0'

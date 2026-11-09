@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { runCli } from '@candy-mountain/platform-cli'
+import { runCli } from '@crab-shack/platform-cli'
 import { candyMountain } from './distribution'
 import { REPO_ROOT } from './repo-root'
 

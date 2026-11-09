@@ -1,6 +1,6 @@
-import { MONITOR_OPTION_FIELD_KINDS, MONITOR_OPTION_NAME_PATTERN, validateMonitorOptions } from '@candy-mountain/platform-sdk'
+import { MONITOR_OPTION_FIELD_KINDS, MONITOR_OPTION_NAME_PATTERN, validateMonitorOptions } from '@crab-shack/platform-sdk'
 import { MONITOR_SOURCE_ID_PATTERN, type MonitorSourceInfo } from './wire'
-import { duplicates } from '@candy-mountain/platform-daemon'
+import { duplicates } from '@crab-shack/platform-daemon'
 import type { MonitorCheck } from './check'
 
 /** Kept out of shared so the checker never reaches the web bundle; monitorSourceInfo strips it from the wire. */

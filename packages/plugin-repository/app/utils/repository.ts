@@ -1,4 +1,4 @@
-import type { Workspace } from '@candy-mountain/platform-sdk'
+import type { Workspace } from '@crab-shack/platform-sdk'
 import { repositoryPath, repositoryVerifyPath, type Repository, type RepositoryResponse, type RepositoryVerification } from '../../src/wire'
 import type { Component } from 'vue'
 import * as z from 'zod'

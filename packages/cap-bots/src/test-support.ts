@@ -1,21 +1,29 @@
-import type { ModuleDefinition } from '@candy-mountain/platform-sdk'
+import type { CreateWorkspaceRequest, ModuleDefinition, Workspace } from '@crab-shack/platform-sdk'
 import { vi } from 'vitest'
 import { ACP_DECISIONS, ACP_HARNESS, ACP_SESSIONS, acpDefinition, type AcpHarness, type AcpOptions, type DecisionService, type SessionManager } from '@candy-mountain/cap-acp'
 import { claudeCodeDefinition } from '@candy-mountain/plugin-claude-code'
 import { codexDefinition } from '@candy-mountain/plugin-codex'
-import { createWorkspaceWithRepository, fakeHosts, repositoryDefinition, type FakeHandler } from '@candy-mountain/plugin-repository'
+import { repositoryDefinition, setRepository } from '@candy-mountain/plugin-repository'
+import { fakeHosts, type FakeHandler } from '@candy-mountain/testing'
 import { slackDefinition, type SlackOptions } from '@candy-mountain/plugin-slack'
 import { teamDefinition } from '@candy-mountain/cap-team'
-import { defineCapability, defineCapabilityDefinition, type CapabilityDefinition } from '@candy-mountain/platform-sdk/daemon'
-import { createActivityEventTypeRegistry, declaredActivityEventTypes, overviewDefinition, platformDefinitions, type AnyPluginType, type Platform, type PlatformDatabase, type Product } from '@candy-mountain/platform-daemon'
-import { instanceHarness as platformInstanceHarness, openTestDatabase, testKit, testProduct, type InstanceHarness, type InstanceHarnessOptions, type TestKit, type TestKitOptions } from '@candy-mountain/platform-daemon/testing'
+import { defineCapability, defineCapabilityDefinition, type CapabilityDefinition } from '@crab-shack/platform-sdk/daemon'
+import { createActivityEventTypeRegistry, createWorkspace, declaredActivityEventTypes, overviewDefinition, platformDefinitions, type AnyPluginType, type Db, type Platform, type PlatformDatabase, type Product } from '@crab-shack/platform-daemon'
+import { instanceHarness as platformInstanceHarness, openTestDatabase, testKit, testProduct, type InstanceHarness, type InstanceHarnessOptions, type TestKit, type TestKitOptions } from '@crab-shack/platform-daemon/testing'
 import { BOT_SESSIONS, BOT_WORKTREES, botsDefinition, type BotsOptions } from './definition'
 import type { BotSessionService } from './bot-sessions'
 import type { WorktreePool } from './worktrees'
 
-export { GOOD_TOKEN, hostJson as json } from '@candy-mountain/plugin-repository'
+export { GOOD_TOKEN, hostJson as json } from '@candy-mountain/testing'
 
-/** Stubs global fetch with the repository package's fake GitHub and Bitbucket; tests restore it with vi.unstubAllGlobals(). */
+/** A workspace whose repository is the existing directory at `path`. */
+export async function createWorkspaceWithRepository(db: Db, { path, ...input }: CreateWorkspaceRequest & { path: string }): Promise<Workspace> {
+  const workspace = createWorkspace(db, input)
+  await setRepository(db, workspace.id, { kind: 'local-path', path })
+  return workspace
+}
+
+/** Stubs global fetch with a fake GitHub and Bitbucket; tests restore it with vi.unstubAllGlobals(). */
 export function stubHosts(override?: FakeHandler) {
   const { requests, fetch } = fakeHosts(override)
   const fetchMock = vi.fn(fetch)

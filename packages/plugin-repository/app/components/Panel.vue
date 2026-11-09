@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { PluginInstance, PluginTypeInfo } from '@candy-mountain/platform-sdk'
+import type { PluginInstance, PluginTypeInfo } from '@crab-shack/platform-sdk'
 import type { RepositoryBranchList } from '../../src/wire'
 
 const props = defineProps<{

@@ -1,4 +1,4 @@
-import base from '@candy-mountain/platform-config/eslint'
-import { layerPackageConfig } from '@candy-mountain/platform-web/eslint'
+import base from '@crab-shack/platform-config/eslint'
+import { layerPackageConfig } from '@crab-shack/platform-web/eslint'
 
 export default layerPackageConfig(import.meta.url, ...base)

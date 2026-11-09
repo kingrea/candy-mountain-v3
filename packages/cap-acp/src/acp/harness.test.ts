@@ -5,7 +5,8 @@ import type { AcpSessionEvent } from './events'
 import { AcpLaunchError } from './families'
 import { createAcpHarness, type AcpHarness } from './harness'
 import { AcpAuthRequiredError, AcpStartError } from './session'
-import { collect, createTempHome, fakeBins, processAlive, textOf, waitForEvent, waitForGone, type TempHome } from './test-support'
+import { collect, createTempHome, processAlive, textOf, waitForEvent, waitForGone, type TempHome } from './test-support'
+import { fakeBins } from '@candy-mountain/testing'
 
 const POLLUTED_ENV: NodeJS.ProcessEnv = {
   ...process.env,

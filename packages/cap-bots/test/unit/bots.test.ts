@@ -1,4 +1,4 @@
-import type { BotSlackConnection, PluginInstance } from '@candy-mountain/platform-sdk'
+import type { BotSlackConnection, PluginInstance } from '@crab-shack/platform-sdk'
 import type { Bot } from '../../src/wire'
 import { describe, expect, it } from 'vitest'
 import {

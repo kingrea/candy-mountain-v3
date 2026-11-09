@@ -1,4 +1,4 @@
-import type { AgentSession, BotSlackConnection, ChatThread, ChatThreadResponse, PluginSecretState, RegistryAgent } from '@candy-mountain/platform-sdk'
+import type { AgentSession, BotSlackConnection, ChatThread, ChatThreadResponse, PluginSecretState, RegistryAgent } from '@crab-shack/platform-sdk'
 
 export const BOT_FAMILIES = ['claude-code', 'codex'] as const
 export type BotFamily = (typeof BOT_FAMILIES)[number]

@@ -1,7 +1,7 @@
-import type { ModuleDefinition, Workspace } from '@candy-mountain/platform-sdk'
+import type { CreateWorkspaceRequest, ModuleDefinition, Workspace } from '@crab-shack/platform-sdk'
 import { repositoryDefinition, setRepository } from '@candy-mountain/plugin-repository'
-import type { PlatformDatabase, Product } from '@candy-mountain/platform-daemon'
-import { openTestDatabase, testKit, testProduct, type TestKit, type TestWorkspaceOptions } from '@candy-mountain/platform-daemon/testing'
+import { createWorkspace, type Db, type PlatformDatabase, type Product } from '@crab-shack/platform-daemon'
+import { openTestDatabase, testKit, testProduct, type TestKit, type TestWorkspaceOptions } from '@crab-shack/platform-daemon/testing'
 import { issuesDefinition, type IssuesOptions } from './definition'
 
 /** A module holding issues, so grants and enablement behave as they do under a product. */
@@ -18,5 +18,12 @@ export const issuesKit = (options?: IssuesOptions): TestKit => testKit({ product
 export async function workspaceAt(kit: TestKit, path: string, options: TestWorkspaceOptions = {}): Promise<Workspace> {
   const workspace = kit.workspace(options)
   await setRepository(kit.db, workspace.id, { kind: 'local-path', path })
+  return workspace
+}
+
+/** A workspace whose repository is the existing directory at `path`. */
+export async function createWorkspaceWithRepository(db: Db, { path, ...input }: CreateWorkspaceRequest & { path: string }): Promise<Workspace> {
+  const workspace = createWorkspace(db, input)
+  await setRepository(db, workspace.id, { kind: 'local-path', path })
   return workspace
 }

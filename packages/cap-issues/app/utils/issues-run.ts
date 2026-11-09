@@ -1,4 +1,4 @@
-import { CHAT_THREAD_TITLE_MAX_LENGTH, type PluginInstance, type PluginTypeInfo, type RegistryResponse } from '@candy-mountain/platform-sdk'
+import { CHAT_THREAD_TITLE_MAX_LENGTH, type PluginInstance, type PluginTypeInfo, type RegistryResponse } from '@crab-shack/platform-sdk'
 import { issuesAgentCreateOptions, type IssuesAgentCreateOption } from './issue-create'
 
 export const ISSUES_RUN_PROMPT_SUFFIX = 'Check to see if you have any skills relevant to running beads.'

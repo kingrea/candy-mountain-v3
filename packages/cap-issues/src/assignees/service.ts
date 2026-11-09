@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { ASSIGNEE_NAME_MAX_LENGTH, type ProjectAssignee } from '../wire'
 import { and, asc, eq, sql } from 'drizzle-orm'
-import type { Db } from '@candy-mountain/platform-daemon'
+import type { Db } from '@crab-shack/platform-daemon'
 import { projectAssignees } from '../schema'
 import { AssigneeError } from './errors'
 

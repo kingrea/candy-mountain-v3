@@ -1,5 +1,5 @@
-import type { PluginInstance } from '@candy-mountain/platform-sdk'
-import { createPluginSecrets, type DataPaths, type PluginInstanceDeps, resolvePluginInstance, type SecretsReader } from '@candy-mountain/platform-daemon'
+import type { PluginInstance } from '@crab-shack/platform-sdk'
+import { createPluginSecrets, type DataPaths, type PluginInstanceDeps, resolvePluginInstance, type SecretsReader } from '@crab-shack/platform-daemon'
 import { claudeCodeConfig, claudeCodePluginType, type ClaudeCodeConfig } from './definition'
 import { CLAUDE_OAUTH_TOKEN_ENV, claudeConfigDir, ensureConfigDir } from './cli'
 

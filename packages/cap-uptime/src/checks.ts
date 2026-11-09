@@ -1,5 +1,5 @@
 import { and, desc, eq, lt, lte, or } from 'drizzle-orm'
-import type { Db } from '@candy-mountain/platform-daemon'
+import type { Db } from '@crab-shack/platform-daemon'
 import { uptimeChecks } from './schema'
 import type { MonitorCheckResult } from './check'
 

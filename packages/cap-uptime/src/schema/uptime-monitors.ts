@@ -1,6 +1,6 @@
-import type { MonitorOptions } from '@candy-mountain/platform-sdk'
+import type { MonitorOptions } from '@crab-shack/platform-sdk'
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
-import { workspaces } from '@candy-mountain/platform-daemon'
+import { workspaces } from '@crab-shack/platform-daemon'
 
 export const uptimeMonitors = sqliteTable('uptime_monitors', {
   id: text('id').primaryKey(),

@@ -1,8 +1,8 @@
 import { join } from 'node:path'
-import type { ApiErrorBody } from '@candy-mountain/platform-sdk'
+import type { ApiErrorBody } from '@crab-shack/platform-sdk'
 import { REPOSITORY_CHECK_PATH, repositoryPath, repositoryVerifyPath, type RepositoryCheckResponse, type RepositoryResponse } from './wire'
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { testKit, type TestKit } from '@candy-mountain/platform-daemon/testing'
+import { testKit, type TestKit } from '@crab-shack/platform-daemon/testing'
 import { repositoryDefinition } from './definition'
 import { createTempRepos } from './test-repos'
 

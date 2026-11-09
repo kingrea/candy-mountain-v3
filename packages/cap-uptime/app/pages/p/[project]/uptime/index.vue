@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { RegistryCapability } from '@candy-mountain/platform-sdk'
+import type { RegistryCapability } from '@crab-shack/platform-sdk'
 import { UPTIME_MANAGE_TOOL, type Monitor } from '../../../../../src/wire'
 
 const { registry } = useProjectRegistry()

@@ -1,4 +1,4 @@
-import type { PluginInstanceHealth, PluginSecretState } from '@candy-mountain/platform-sdk'
+import type { PluginInstanceHealth, PluginSecretState } from '@crab-shack/platform-sdk'
 import { BOT_FAMILY_NAMES, BOT_SECRET_LABELS, BOT_SECRET_NAMES, type BotFamily, type BotPersona, type BotSecretName, type BotStatus } from '../wire'
 
 export interface BotStatusInput {

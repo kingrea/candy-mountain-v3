@@ -1,5 +1,5 @@
-import { validatePluginConfig, type PluginConfigOf, type PluginHealth } from '@candy-mountain/platform-sdk'
-import { definePluginType } from '@candy-mountain/platform-daemon'
+import { validatePluginConfig, type PluginConfigOf, type PluginHealth } from '@crab-shack/platform-sdk'
+import { definePluginType } from '@crab-shack/platform-daemon'
 import { createNetlifyOperations } from './operations'
 
 export const netlifyPluginType = definePluginType({

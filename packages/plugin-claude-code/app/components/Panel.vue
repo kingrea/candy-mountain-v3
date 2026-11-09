@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { PluginInstance, PluginTypeInfo } from '@candy-mountain/platform-sdk'
+import type { PluginInstance, PluginTypeInfo } from '@crab-shack/platform-sdk'
 import { CLAUDE_CODE_ACTIONS, type ClaudeCodeRevokeResponse } from '../../src/wire'
 import ProjectsConfirmModal from '#layers/platform-web/app/components/projects/ProjectsConfirmModal.vue'
 

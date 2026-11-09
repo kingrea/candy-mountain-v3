@@ -1,6 +1,6 @@
 import type { RepositorySource, RepositoryVerification } from '../wire'
 import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
-import { workspaces } from '@candy-mountain/platform-daemon'
+import { workspaces } from '@crab-shack/platform-daemon'
 
 /** The repository capability's: one row per workspace that has a repository, gone with the workspace. */
 export const repositories = sqliteTable('repositories', {

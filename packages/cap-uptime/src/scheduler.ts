@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { readFileSync, rmSync, writeFileSync } from 'node:fs'
 import type { Monitor } from './wire'
-import { type Db, onWorkspaceArchiveChange } from '@candy-mountain/platform-daemon'
+import { type Db, onWorkspaceArchiveChange } from '@crab-shack/platform-daemon'
 import { MONITOR_SOURCE_REGISTRY } from './builtin-sources'
 import { latestMonitorCheckAt, recordMonitorCheck, type UptimeCheck } from './checks'
 import { resolveUptimeSettings } from './config'

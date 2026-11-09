@@ -1,7 +1,7 @@
 import { BOT_SECRET_LABELS, BOT_SECRET_NAMES } from '../wire'
 import type { SlackBotSource, SlackConnectionTarget } from '@candy-mountain/plugin-slack'
 import { eq, sql } from 'drizzle-orm'
-import { resolvePluginInstance, SecretsLockedError, workspaces } from '@candy-mountain/platform-daemon'
+import { resolvePluginInstance, SecretsLockedError, workspaces } from '@crab-shack/platform-daemon'
 import { botSecretOwner, computeBotStatus, createBotSecrets, type BotReadDeps } from '../bots'
 import { bots } from '../schema'
 import { findSlackThreadBySession, slackThreadHolderId } from './threads'

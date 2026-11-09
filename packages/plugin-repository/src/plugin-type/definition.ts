@@ -1,7 +1,7 @@
-import { validatePluginConfig, type PluginConfigOf } from '@candy-mountain/platform-sdk'
+import { validatePluginConfig, type PluginConfigOf } from '@crab-shack/platform-sdk'
 import { clampBranchListLimit, type RepositoryBranchList, type RepositoryErrorCode } from '../wire'
 import type { ContentfulStatusCode } from 'hono/utils/http-status'
-import { definePluginType, PluginActionError } from '@candy-mountain/platform-daemon'
+import { definePluginType, PluginActionError } from '@crab-shack/platform-daemon'
 import { RepositoryHostError } from './client'
 import { createRepositoryOperations, listRepositoryBranches } from './operations'
 

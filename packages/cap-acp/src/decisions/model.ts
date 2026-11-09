@@ -1,6 +1,6 @@
 import type { CreateElicitationResponse, RequestPermissionResponse } from '@agentclientprotocol/sdk'
 import { DECISION_META_KEY } from '@candy-mountain/claude-acp'
-import type { AcpObject, DecisionOption } from '@candy-mountain/platform-sdk'
+import type { AcpObject, DecisionOption } from '@crab-shack/platform-sdk'
 
 export const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
 

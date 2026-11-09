@@ -1,6 +1,6 @@
 import { join } from 'node:path'
 import { MONITOR_SOURCES_PATH } from './wire'
-import { defineCapabilityDefinition, type ActivityEventTypeDeclaration, type CapabilityDefinition, type CapabilityRuntime } from '@candy-mountain/platform-sdk/daemon'
+import { defineCapabilityDefinition, type ActivityEventTypeDeclaration, type CapabilityDefinition, type CapabilityRuntime } from '@crab-shack/platform-sdk/daemon'
 import { MONITOR_SOURCE_REGISTRY } from './builtin-sources'
 import { resolveUptimeSettings } from './config'
 import { uptimeCapability } from './manifest'

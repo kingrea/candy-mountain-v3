@@ -1,6 +1,6 @@
 import type { BotStartErrorReason } from '../wire'
 import type { ContentfulStatusCode } from 'hono/utils/http-status'
-import { WorkspaceAgentError } from '@candy-mountain/platform-daemon'
+import { WorkspaceAgentError } from '@crab-shack/platform-daemon'
 
 const STATUS: Record<BotStartErrorReason, ContentfulStatusCode> = {
   persona_missing: 422,

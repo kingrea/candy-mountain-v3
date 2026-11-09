@@ -1,6 +1,6 @@
 import { CANDY_MOUNTAIN_PRODUCT } from '@candy-mountain/candy-mountain'
-import { resolveDataDir } from '@candy-mountain/platform-config'
-import { dataPaths } from '@candy-mountain/platform-daemon'
+import { resolveDataDir } from '@crab-shack/platform-config'
+import { dataPaths } from '@crab-shack/platform-daemon'
 import { defineConfig } from 'drizzle-kit'
 
 // Studio only: each capability package carries its own config for generate and check.

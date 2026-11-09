@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { fakeHosts, type FakeHandler } from './fake-hosts'
+import { fakeHosts, type FakeHandler } from '@candy-mountain/testing'
 
 /** Stubs global fetch with the fake hosts; tests restore it with vi.unstubAllGlobals(). */
 export function stubHosts(override?: FakeHandler) {

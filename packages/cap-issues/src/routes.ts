@@ -1,4 +1,4 @@
-import type { ApiErrorBody, ScopeLabel } from '@candy-mountain/platform-sdk'
+import type { ApiErrorBody, ScopeLabel } from '@crab-shack/platform-sdk'
 import {
   ISSUE_ID_PATTERN,
   MAX_DEPENDENCY_IDS,
@@ -8,7 +8,7 @@ import {
   type IssueResponse,
 } from './wire'
 import { Hono, type Context } from 'hono'
-import { type AppEnv, type Db, getWorkspaceBySlug, WorkspaceError } from '@candy-mountain/platform-daemon'
+import { type AppEnv, type Db, getWorkspaceBySlug, WorkspaceError } from '@crab-shack/platform-daemon'
 import { RepositoryError, type RepositoryPaths } from '@candy-mountain/plugin-repository'
 import { IssueError } from './errors'
 import { issuesService, type IssueProject, type IssuesService } from './service'

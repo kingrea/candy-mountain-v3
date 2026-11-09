@@ -1,6 +1,6 @@
-import type { AgentSessionEvent, Decision } from '@candy-mountain/platform-sdk'
+import type { AgentSessionEvent, Decision } from '@crab-shack/platform-sdk'
 import { and, eq, sql } from 'drizzle-orm'
-import { agentSessionEvents, type Db, listSessionEvents } from '@candy-mountain/platform-daemon'
+import { agentSessionEvents, type Db, listSessionEvents } from '@crab-shack/platform-daemon'
 
 export function foldDecisions(events: readonly AgentSessionEvent[]): Decision[] {
   const decisions = new Map<string, Decision>()

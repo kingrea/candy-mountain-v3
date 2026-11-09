@@ -1,4 +1,4 @@
-import { threadClosePath, type ChatThreadCloseResponse } from '@candy-mountain/platform-sdk'
+import { threadClosePath, type ChatThreadCloseResponse } from '@crab-shack/platform-sdk'
 import { chatThreadBot } from '../../src/wire'
 
 /** Where a bot thread's current session works, read from the thread the chat panel already fetches. */

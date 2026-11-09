@@ -1,6 +1,6 @@
 import { REPOSITORY_CAPABILITY_ID, REPOSITORY_PATHS } from '@candy-mountain/plugin-repository'
-import { bindService, defineCapabilityDefinition, serviceKey, type CapabilityDefinition, type CapabilityRuntime } from '@candy-mountain/platform-sdk/daemon'
-import { THREAD_SESSIONS, THREADS_CAPABILITY_ID } from '@candy-mountain/platform-daemon'
+import { bindService, defineCapabilityDefinition, serviceKey, type CapabilityDefinition, type CapabilityRuntime } from '@crab-shack/platform-sdk/daemon'
+import { THREAD_SESSIONS, THREADS_CAPABILITY_ID } from '@crab-shack/platform-daemon'
 import { createAcpHarness, type AcpHarness, type AcpHarnessOptions } from './acp'
 import { createDecisionService, decisionRoutes, resolveDecisionSettings, type DecisionService, type DecisionServiceOptions } from './decisions'
 import { createSessionManager, resolveSessionSettings, sessionRoutes, type SessionManager, type SessionManagerOptions } from './sessions'

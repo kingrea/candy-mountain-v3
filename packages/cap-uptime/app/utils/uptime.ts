@@ -1,4 +1,4 @@
-import { validateMonitorOptions, type MonitorOptionError, type MonitorOptionField, type MonitorOptions } from '@candy-mountain/platform-sdk'
+import { validateMonitorOptions, type MonitorOptionError, type MonitorOptionField, type MonitorOptions } from '@crab-shack/platform-sdk'
 import { MONITOR_INTERVAL_DEFAULT_SECONDS, MONITOR_INTERVAL_MAX_SECONDS, MONITOR_INTERVAL_MIN_SECONDS, MONITOR_NAME_MAX_LENGTH, MONITOR_TARGET_MAX_LENGTH, type CreateMonitorRequest, type Monitor, type MonitorCheckRecord, type MonitorIncident, type MonitorSourceInfo, type MonitorState, type MonitorStatus, type UpdateMonitorRequest } from '../../src/wire'
 
 export const UPTIME_SOURCES_DATA_KEY = 'uptime-sources'

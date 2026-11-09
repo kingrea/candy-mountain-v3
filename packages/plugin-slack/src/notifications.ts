@@ -1,5 +1,5 @@
-import { SLACK_CHANNEL_ID_PATTERN, SLACK_MEMBER_ID_PATTERN, workspaceViewRoute, type NotificationChannelDescription, type ScopeLabel } from '@candy-mountain/platform-sdk'
-import { createPluginSecrets, type NotificationChannel, type PluginInstanceDeps, resolvePluginInstance, type SecretsReader } from '@candy-mountain/platform-daemon'
+import { SLACK_CHANNEL_ID_PATTERN, SLACK_MEMBER_ID_PATTERN, workspaceViewRoute, type NotificationChannelDescription, type ScopeLabel } from '@crab-shack/platform-sdk'
+import { createPluginSecrets, type NotificationChannel, type PluginInstanceDeps, resolvePluginInstance, type SecretsReader } from '@crab-shack/platform-daemon'
 import type { SlackConnections } from './manager'
 import { createSlackOperations, type SlackOperations } from './operations'
 import { slackConfig, slackPluginType } from './plugin-type'

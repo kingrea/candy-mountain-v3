@@ -1,7 +1,7 @@
 import { join } from 'node:path'
 import { CANDY_MOUNTAIN_PRODUCT } from '@candy-mountain/candy-mountain'
-import { resolveDataDir } from '@candy-mountain/platform-config'
-import type { Distribution } from '@candy-mountain/platform-cli'
+import { resolveDataDir } from '@crab-shack/platform-config'
+import type { Distribution } from '@crab-shack/platform-cli'
 
 export function candyMountain(repoRoot: string): Distribution {
   return {

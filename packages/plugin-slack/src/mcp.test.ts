@@ -1,4 +1,4 @@
-import type { AgentSession } from '@candy-mountain/platform-sdk'
+import type { AgentSession } from '@crab-shack/platform-sdk'
 import { describe, expect, it } from 'vitest'
 import { createSlackClient } from './client'
 import type { SlackBotSource, SlackSessionThread } from './manager'

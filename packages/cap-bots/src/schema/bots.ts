@@ -1,6 +1,6 @@
 import type { BotAnswersIn, BotFamily, BotPersonaStatus, BotWriteScope } from '../wire'
 import { index, sqliteTable, text } from 'drizzle-orm/sqlite-core'
-import { workspaces } from '@candy-mountain/platform-daemon'
+import { workspaces } from '@crab-shack/platform-daemon'
 
 export const bots = sqliteTable('bots', {
   id: text('id').primaryKey(),

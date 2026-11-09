@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { SLACK_CHANNEL_ID_PATTERN } from '@candy-mountain/platform-sdk'
+import { SLACK_CHANNEL_ID_PATTERN } from '@crab-shack/platform-sdk'
 import { BOT_BASE_BRANCH_PATTERN, BOT_FAMILIES, BOT_NAME_MAX_LENGTH, BOT_PERSONA_NAME_PATTERN, BOT_SECRET_LABELS, BOT_SECRET_NAMES, BOT_SECRET_PREFIXES, BOT_WRITE_SCOPE_NAMES, BOT_WRITE_SCOPES, workspaceBotsPath, type Bot, type BotAnswersIn, type BotFamily, type BotPersonaPreviewRequest, type BotPersonaPreviewResponse, type BotResponse, type BotSecretName, type BotSecretValues, type CreateBotRequest, type UpdateBotRequest } from '../../src/wire'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import * as z from 'zod'

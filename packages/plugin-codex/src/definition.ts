@@ -1,4 +1,4 @@
-import { defineCapabilityDefinition, type CapabilityDefinition } from '@candy-mountain/platform-sdk/daemon'
+import { defineCapabilityDefinition, type CapabilityDefinition } from '@crab-shack/platform-sdk/daemon'
 import { ACP_CAPABILITY_ID, ACP_SESSIONS } from '@candy-mountain/cap-acp'
 import { codexLoginAttempts } from './plugin-type/attempts'
 import { codexPluginType } from './plugin-type/definition'

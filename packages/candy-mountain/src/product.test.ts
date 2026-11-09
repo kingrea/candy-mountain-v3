@@ -1,6 +1,5 @@
-import { chatThreadLink, MANIFEST_ID_PATTERN, registrySystemGroup, workspaceViewRoute } from '@candy-mountain/platform-sdk'
+import { chatThreadLink, MANIFEST_ID_PATTERN, registrySystemGroup, workspaceViewRoute } from '@crab-shack/platform-sdk'
 import { describe, expect, it } from 'vitest'
-import { CANDY_MOUNTAIN_DEVELOPMENT as development, CANDY_MOUNTAIN_DEVELOPMENT_PRODUCT, DEVELOPMENT_MODULES } from './development'
 import { MODULES } from './modules'
 import { CANDY_MOUNTAIN_PRODUCT as product } from './product'
 
@@ -56,28 +55,6 @@ describe('CANDY_MOUNTAIN_PRODUCT', () => {
   })
 })
 
-// A build must not know the development ids; a development run must know every production id.
-describe('CANDY_MOUNTAIN_DEVELOPMENT', () => {
-  it.each(LISTS)('adds valid %s ids the build does not list', (key) => {
-    for (const id of development[key]) {
-      expect(id, id).toMatch(MANIFEST_ID_PATTERN)
-    }
-    expect(development[key].filter(id => product[key].includes(id))).toEqual([])
-    expect(CANDY_MOUNTAIN_DEVELOPMENT_PRODUCT[key]).toEqual([...product[key], ...development[key]])
-  })
-
-  it('keeps a development capability out of the build\'s layers and modules', () => {
-    const capabilities = new Set(development.capabilities)
-    expect(product.layers.filter(id => capabilities.has(id))).toEqual([])
-    expect(MODULES.flatMap(m => m.capabilities.filter(c => capabilities.has(c.capabilityId)).map(c => `${m.id}: ${c.capabilityId}`))).toEqual([])
-  })
-
-  it('includes the template in both apps', () => {
-    expect(development.capabilities).toContain('template')
-    expect(development.layers).toContain('template')
-  })
-})
-
 // The daemon would refuse either drift at boot; catching it here names the data to edit.
 describe('MODULES', () => {
   it('are the modules the product lists', () => {
@@ -87,15 +64,5 @@ describe('MODULES', () => {
   it('hold only capabilities the product lists', () => {
     const unlisted = MODULES.flatMap(m => m.capabilities.filter(c => !product.capabilities.includes(c.capabilityId)).map(c => `${m.id}: ${c.capabilityId}`))
     expect(unlisted).toEqual([])
-  })
-})
-
-describe('DEVELOPMENT_MODULES', () => {
-  it('are the modules the development declaration lists, each holding a capability a development run has', () => {
-    expect(DEVELOPMENT_MODULES.map(m => m.id)).toEqual(development.modules)
-    const known = CANDY_MOUNTAIN_DEVELOPMENT_PRODUCT.capabilities
-    const unlisted = DEVELOPMENT_MODULES.flatMap(m => m.capabilities.filter(c => !known.includes(c.capabilityId)).map(c => `${m.id}: ${c.capabilityId}`))
-    expect(unlisted).toEqual([])
-    expect(DEVELOPMENT_MODULES.flatMap(m => m.capabilities.map(c => c.capabilityId))).toContain('template')
   })
 })

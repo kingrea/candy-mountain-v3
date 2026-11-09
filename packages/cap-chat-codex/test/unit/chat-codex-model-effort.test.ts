@@ -1,4 +1,4 @@
-import type { ChatAgentOptions, ChatThreadSession } from '@candy-mountain/platform-sdk'
+import type { ChatAgentOptions, ChatThreadSession } from '@crab-shack/platform-sdk'
 import { describe, expect, it } from 'vitest'
 import { CHAT_CODEX_OPTION_DEFAULT, chatCodexHasOptions, chatCodexOptionChoice, chatCodexOptionItems, chatCodexOptionValue, chatCodexSessionDividers } from '../../app/utils/chat-codex-model-effort'
 

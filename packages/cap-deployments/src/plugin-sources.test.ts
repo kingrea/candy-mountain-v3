@@ -1,8 +1,8 @@
-import type { ApiErrorBody, Workspace } from '@candy-mountain/platform-sdk'
+import type { ApiErrorBody, Workspace } from '@crab-shack/platform-sdk'
 import type { Environment, LiveVersionsResponse } from './wire'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { deletePluginInstance, testPluginInstance, updatePluginInstance } from '@candy-mountain/platform-daemon'
-import type { TestActor, TestKit } from '@candy-mountain/platform-daemon/testing'
+import { deletePluginInstance, testPluginInstance, updatePluginInstance } from '@crab-shack/platform-daemon'
+import type { TestActor, TestKit } from '@crab-shack/platform-daemon/testing'
 import { deploymentsKit } from './test-support'
 
 const NETLIFY_TOKEN = 'nfp_good-token-123'

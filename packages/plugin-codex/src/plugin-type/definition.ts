@@ -1,6 +1,6 @@
-import { validatePluginConfig, type PluginConfigOf } from '@candy-mountain/platform-sdk'
+import { validatePluginConfig, type PluginConfigOf } from '@crab-shack/platform-sdk'
 import type { CodexLoginAttempt, CodexLoginStatusResponse, CodexRevokeResponse } from '../wire'
-import { definePluginType, PluginActionError } from '@candy-mountain/platform-daemon'
+import { definePluginType, PluginActionError } from '@crab-shack/platform-daemon'
 import { CodexLoginAttempts, codexLoginAttempts } from './attempts'
 import { codexCommand, readCodexLoginState } from './cli'
 import { codexHome, removeCodexHome } from './home'

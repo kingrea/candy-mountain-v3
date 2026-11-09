@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { ApiErrorBody } from '@candy-mountain/platform-sdk'
+import type { ApiErrorBody } from '@crab-shack/platform-sdk'
 import {
   workspaceIssuePath,
   workspaceIssuesPath,
@@ -11,7 +11,7 @@ import {
   type IssueResponse,
 } from './wire'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import type { TestKit } from '@candy-mountain/platform-daemon/testing'
+import type { TestKit } from '@crab-shack/platform-daemon/testing'
 import { issuesKit, workspaceAt } from './test-support'
 import { createTempBeadsWorkspace, hasBd, type TempBeadsWorkspace } from './test-workspace'
 

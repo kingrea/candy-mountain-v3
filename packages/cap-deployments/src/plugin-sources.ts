@@ -1,6 +1,6 @@
-import type { PluginInstance, PluginTypeId } from '@candy-mountain/platform-sdk'
+import type { PluginInstance, PluginTypeId } from '@crab-shack/platform-sdk'
 import { createHerokuOperations, herokuConfig, herokuPluginType } from '@candy-mountain/plugin-heroku'
-import { createPluginSecrets, type PluginInstanceDeps, resolvePluginInstance } from '@candy-mountain/platform-daemon'
+import { createPluginSecrets, type PluginInstanceDeps, resolvePluginInstance } from '@crab-shack/platform-daemon'
 import { createNetlifyOperations, netlifyConfig, netlifyPluginType } from '@candy-mountain/plugin-netlify'
 import { defineLiveVersionSource, type LiveVersionValidateContext } from './sources'
 

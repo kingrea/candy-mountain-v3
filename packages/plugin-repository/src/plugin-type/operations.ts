@@ -1,4 +1,4 @@
-import type { PluginSecrets } from '@candy-mountain/platform-sdk'
+import type { PluginSecrets } from '@crab-shack/platform-sdk'
 import type { RepositoryBranch, RepositoryBranchList, RepositoryHost } from '../wire'
 import type { RepositoryConfig } from './definition'
 import { bitbucketOperations } from './bitbucket'

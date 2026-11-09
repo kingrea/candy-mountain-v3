@@ -31,3 +31,8 @@ if command -v bd >/dev/null 2>&1; then
   if [ $_bd_exit -ne 0 ]; then exit $_bd_exit; fi
 fi
 # --- END BEADS INTEGRATION v1.2.2 ---
+# --- BEGIN platform-check-linked ---
+if [ -x node_modules/.bin/platform-check-linked ]; then
+  node_modules/.bin/platform-check-linked || exit 1
+fi
+# --- END platform-check-linked ---

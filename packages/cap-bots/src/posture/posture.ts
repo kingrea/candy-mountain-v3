@@ -1,6 +1,6 @@
 import { BOT_FAMILIES, BOT_PERSONA_NAME_PATTERN, BOT_WRITE_SCOPES, type BotFamily, type BotWriteScope } from '../wire'
 import { isAbsolute } from 'node:path'
-import { claudeMcpToolRule, type WrappedMcpTool } from '@candy-mountain/platform-daemon'
+import { claudeMcpToolRule, type WrappedMcpTool } from '@crab-shack/platform-daemon'
 import type { CodexLaunchOptions } from '@candy-mountain/cap-acp'
 import { vetCheckoutAgents } from './checkout-agents'
 import { readCheckoutSettings, vetCheckoutSettings, type CheckoutSettingsFile, type NeutralisedItem } from './checkout-settings'

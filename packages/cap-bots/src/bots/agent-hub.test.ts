@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto'
-import { workspaceRegistryPath, type Workspace, type RegistryResponse } from '@candy-mountain/platform-sdk'
+import { workspaceRegistryPath, type Workspace, type RegistryResponse } from '@crab-shack/platform-sdk'
 import { afterEach, describe, expect, it } from 'vitest'
 import { bots } from '../schema'
-import { createPluginInstance, setEnabledModules, testPluginInstance } from '@candy-mountain/platform-daemon'
-import { addRole, fixturePluginType, type InstanceHarness, TEST_PRODUCT_CONFIG } from '@candy-mountain/platform-daemon/testing'
+import { createPluginInstance, setEnabledModules, testPluginInstance } from '@crab-shack/platform-daemon'
+import { addRole, fixturePluginType, type InstanceHarness, TEST_PRODUCT_CONFIG } from '@crab-shack/platform-daemon/testing'
 import { instanceHarness } from '../test-support'
 
 let h: InstanceHarness

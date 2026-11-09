@@ -1,6 +1,6 @@
 import type { Repository, RepositorySource, RepositoryVerification } from './wire'
 import { eq } from 'drizzle-orm'
-import type { Db } from '@candy-mountain/platform-daemon'
+import type { Db } from '@crab-shack/platform-daemon'
 import { repositories } from './schema'
 import { RepositoryError } from './errors'
 import { normaliseRepositoryPath, requireExistingDirectory, verifyPath } from './verification'

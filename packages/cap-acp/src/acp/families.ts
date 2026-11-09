@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, isAbsolute, join } from 'node:path'
-import type { LaunchMcpServer } from '@candy-mountain/platform-daemon'
+import type { LaunchMcpServer } from '@crab-shack/platform-daemon'
 import type { AgentFamily } from './events'
 
 export interface FamilyLaunch {

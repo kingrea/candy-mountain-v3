@@ -1,5 +1,5 @@
 import { ACP_CAPABILITY_ID, ACP_SESSIONS } from '@candy-mountain/cap-acp'
-import { defineCapabilityDefinition, type CapabilityDefinition } from '@candy-mountain/platform-sdk/daemon'
+import { defineCapabilityDefinition, type CapabilityDefinition } from '@crab-shack/platform-sdk/daemon'
 import { claudeLoginAttempts } from './plugin-type/login-attempts'
 import { claudeCodePluginType } from './plugin-type/definition'
 import { claudeCodeLauncher } from './launcher'

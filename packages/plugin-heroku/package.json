@@ -13,13 +13,13 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@candy-mountain/platform-daemon": "workspace:*",
-    "@candy-mountain/platform-sdk": "workspace:*",
+    "@crab-shack/platform-daemon": "0.3.0",
+    "@crab-shack/platform-sdk": "0.3.0",
     "nuxt": "^4.6.2"
   },
   "devDependencies": {
-    "@candy-mountain/platform-config": "workspace:*",
-    "@candy-mountain/platform-web": "workspace:*",
+    "@crab-shack/platform-config": "0.3.0",
+    "@crab-shack/platform-web": "0.3.0",
     "@types/better-sqlite3": "^9.6.0"
   }
 }

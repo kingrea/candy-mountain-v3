@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { PluginInstance, PluginInstanceResponse } from '@candy-mountain/platform-sdk'
+import type { PluginInstance, PluginInstanceResponse } from '@crab-shack/platform-sdk'
 import { CLAUDE_CODE_TYPE_ACTIONS, CLAUDE_INSTALL_COMMAND, type ClaudeCodeAuthMode, type ClaudeExecutableResponse } from '../../src/wire'
 
 const props = defineProps<PluginFormProps>()

@@ -1,4 +1,4 @@
-import type { BotSlackConnection, PluginInstance } from '@candy-mountain/platform-sdk'
+import type { BotSlackConnection, PluginInstance } from '@crab-shack/platform-sdk'
 import { BOT_FAMILIES, BOT_FAMILY_NAMES, BOT_PERSONA_FILE_KEYS, BOT_SECRET_NAMES, botPersonaMissingReason, botPersonaPath, type Bot, type BotFamily, type BotPersonaFiles, type BotStatus } from '../../src/wire'
 
 export const BOTS_DATA_KEY_PREFIX = 'bots:'

@@ -1,4 +1,4 @@
-import type { MonitorOptionField, MonitorOptions } from '@candy-mountain/platform-sdk'
+import type { MonitorOptionField, MonitorOptions } from '@crab-shack/platform-sdk'
 
 export const MONITOR_SOURCES_PATH = '/monitor-sources'
 export const UPTIME_MANAGE_TOOL = 'uptime.manage'

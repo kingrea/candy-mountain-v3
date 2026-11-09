@@ -1,4 +1,4 @@
-import { validateMonitorOptions, type MonitorOptionError, type MonitorOptionField, type MonitorOptions } from '@candy-mountain/platform-sdk'
+import { validateMonitorOptions, type MonitorOptionError, type MonitorOptionField, type MonitorOptions } from '@crab-shack/platform-sdk'
 
 export const LIVE_VERSION_SOURCES_PATH = '/live-version-sources'
 export const workspaceEnvironmentsPath = (slug: string) => `/workspaces/${slug}/environments`

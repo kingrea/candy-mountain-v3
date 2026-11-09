@@ -3,7 +3,8 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { AcpBypassRefusedError, AcpLaunchError, assertClaudeNeverBypass, resolveFamilyLaunch } from './families'
 import { createAcpHarness } from './harness'
-import { createTempHome, fakeBins, type TempHome } from './test-support'
+import { createTempHome, type TempHome } from './test-support'
+import { fakeBins } from '@candy-mountain/testing'
 
 const bins = { claudeShim: { command: '/usr/bin/node', args: ['/shim/cli.mjs'] }, codexAdapter: { command: '/usr/bin/node', args: ['/adapter/index.js'] } }
 

@@ -1,4 +1,4 @@
-import type { AcpObject, AgentSessionEvent } from '@candy-mountain/platform-sdk'
+import type { AcpObject, AgentSessionEvent } from '@crab-shack/platform-sdk'
 import { SLACK_TEXT_MAX, SlackApiError, type SlackClient, splitSlackText } from '@candy-mountain/plugin-slack'
 
 export type SlackProgressMode = 'stream' | 'message'

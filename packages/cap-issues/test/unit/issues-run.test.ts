@@ -1,4 +1,4 @@
-import type { PluginInstance, PluginTypeInfo, RegistryCapability, RegistryResponse } from '@candy-mountain/platform-sdk'
+import type { PluginInstance, PluginTypeInfo, RegistryCapability, RegistryResponse } from '@crab-shack/platform-sdk'
 import { describe, expect, it } from 'vitest'
 import {
   issuesRunAvailability,

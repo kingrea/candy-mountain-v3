@@ -12,7 +12,7 @@ import { repositoryDefinition } from '@candy-mountain/plugin-repository'
 import { slackDefinition } from '@candy-mountain/plugin-slack'
 import { teamDefinition } from '@candy-mountain/cap-team'
 import { uptimeDefinition } from '@candy-mountain/cap-uptime'
-import { overviewDefinition, platformAgentDefinition, type CapabilityRegistryEntry } from '@candy-mountain/platform-daemon'
+import { overviewDefinition, platformAgentDefinition, type CapabilityRegistryEntry } from '@crab-shack/platform-daemon'
 
 /** Candy Mountain's capabilities by id, in registration order; what a build ships. Development-only ones are in development.ts. */
 export const DEFINITIONS = {

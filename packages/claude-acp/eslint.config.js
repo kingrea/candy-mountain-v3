@@ -1,4 +1,4 @@
-import root from '@candy-mountain/platform-config/eslint'
+import root from '@crab-shack/platform-config/eslint'
 
 export default [
   ...root,

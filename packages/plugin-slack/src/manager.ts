@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import type { BotSlackConnection, BotSlackReasonCode } from '@candy-mountain/platform-sdk'
+import type { BotSlackConnection, BotSlackReasonCode } from '@crab-shack/platform-sdk'
 import { createSlackClient, type SlackClient, type SlackClientOptions } from './client'
 import { createSlackEventBus, toSlackBotEvent, type SlackEventBus } from './events'
 import { createSlackOperations, type SlackOperations } from './operations'

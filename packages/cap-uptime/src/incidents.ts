@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { INCIDENTS_DEFAULT_LIMIT, INCIDENTS_MAX_LIMIT, uptimeMonitorLink, type IncidentStatusFilter, type Monitor, type MonitorIncident } from './wire'
 import { and, desc, eq, isNotNull, isNull, type SQL } from 'drizzle-orm'
-import { appendActivityEvent, type Db, findWorkspaceById } from '@candy-mountain/platform-daemon'
+import { appendActivityEvent, type Db, findWorkspaceById } from '@crab-shack/platform-daemon'
 import { uptimeIncidents } from './schema'
 
 export interface ListIncidentsOptions {

@@ -1,6 +1,6 @@
-import { DECISION_OPTION_KINDS, type AnswerDecisionRequest, type ApiErrorBody, type DecisionListResponse, type DecisionResponse } from '@candy-mountain/platform-sdk'
+import { DECISION_OPTION_KINDS, type AnswerDecisionRequest, type ApiErrorBody, type DecisionListResponse, type DecisionResponse } from '@crab-shack/platform-sdk'
 import { Hono, type Context } from 'hono'
-import { type AppEnv, getWorkspaceBySlug, SessionError, WorkspaceError } from '@candy-mountain/platform-daemon'
+import { type AppEnv, getWorkspaceBySlug, SessionError, WorkspaceError } from '@crab-shack/platform-daemon'
 import { requireSessionAccess, type SessionManager } from '../sessions'
 import { DecisionError } from './errors'
 import { isRecord } from './model'

@@ -1,5 +1,5 @@
-import type { PluginInstanceHealth } from '@candy-mountain/platform-sdk'
-import { type DataPaths, type PluginInstanceDeps, resolvePluginInstance } from '@candy-mountain/platform-daemon'
+import type { PluginInstanceHealth } from '@crab-shack/platform-sdk'
+import { type DataPaths, type PluginInstanceDeps, resolvePluginInstance } from '@crab-shack/platform-daemon'
 import { codexConfig } from './definition'
 import { codexHome } from './home'
 

@@ -1,11 +1,12 @@
-import { WORKSPACES_PATH } from '@candy-mountain/platform-sdk'
+import { WORKSPACES_PATH } from '@crab-shack/platform-sdk'
 import { LIVE_VERSION_SOURCES_PATH, type EnvironmentListResponse, type LiveVersionSourceListResponse, type LiveVersionsResponse } from './wire'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createEnvironment } from './service'
 import { createLiveVersionSourceRegistry, defineLiveVersionSource, LiveVersionSourceError } from './sources'
 import { LIVE_VERSION_SOURCES } from './builtin-sources'
-import { testKit, type TestKit, type TestKitOptions } from '@candy-mountain/platform-daemon/testing'
-import { deploymentsDefinition } from './definition'
+import { testKit, type TestKit, type TestKitOptions } from '@crab-shack/platform-daemon/testing'
+import { createActivityEventTypeRegistry } from '@crab-shack/platform-daemon'
+import { deploymentsDefinition, DEPLOYMENT_ACTIVITY_EVENT_TYPES } from './definition'
 import { deploymentsConnections, deploymentsKit, REPOSITORY_STAND_IN } from './test-support'
 
 const pinned = defineLiveVersionSource({
@@ -83,5 +84,15 @@ describe('the deployments definition', () => {
 
     expect(boot).toThrow(LiveVersionSourceError)
     expect(boot).toThrow("Live-version source 'render-deploy': plugin type 'render' is not registered.")
+  })
+})
+
+describe('the deploy notifications', () => {
+  it('raise one kind per outcome and none for an attempt without one', () => {
+    const { notificationKindOf } = createActivityEventTypeRegistry(DEPLOYMENT_ACTIVITY_EVENT_TYPES)
+    expect(notificationKindOf({ type: 'deploy.attempted', payload: { outcome: 'succeeded' } })).toBe('deploy.succeeded')
+    expect(notificationKindOf({ type: 'deploy.attempted', payload: { outcome: 'failed' } })).toBe('deploy.failed')
+    expect(notificationKindOf({ type: 'deploy.attempted', payload: { outcome: 'pending' } })).toBeNull()
+    expect(notificationKindOf({ type: 'deploy.attempted', payload: null })).toBeNull()
   })
 })

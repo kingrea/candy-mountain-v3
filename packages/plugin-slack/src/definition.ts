@@ -1,4 +1,4 @@
-import { bindService, defineCapabilityDefinition, serviceKey, type CapabilityDefinition } from '@candy-mountain/platform-sdk/daemon'
+import { bindService, defineCapabilityDefinition, serviceKey, type CapabilityDefinition } from '@crab-shack/platform-sdk/daemon'
 import { startSlackConnections, type SlackConnections, type SlackConnectionsOptions } from './manager'
 import { slackMcpServer } from './mcp'
 import { slackNotificationChannel } from './notifications'

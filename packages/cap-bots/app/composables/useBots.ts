@@ -1,4 +1,4 @@
-import { PLUGINS_PATH, type BotSlackConnection, type PluginInstanceListResponse } from '@candy-mountain/platform-sdk'
+import { PLUGINS_PATH, type BotSlackConnection, type PluginInstanceListResponse } from '@crab-shack/platform-sdk'
 import { BOT_FAMILIES, workspaceBotsPath, type BotFamily, botSlackConnectionPath, type BotListResponse, type BotSlackConnectionResponse } from '../../src/wire'
 
 export function useBots() {

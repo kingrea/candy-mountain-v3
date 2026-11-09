@@ -1,5 +1,5 @@
 import { index, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
-import { workspaces } from '@candy-mountain/platform-daemon'
+import { workspaces } from '@crab-shack/platform-daemon'
 
 export const projectAssignees = sqliteTable('project_assignees', {
   id: text('id').primaryKey(),

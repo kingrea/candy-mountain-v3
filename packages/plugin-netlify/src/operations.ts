@@ -1,4 +1,4 @@
-import type { PluginSecrets } from '@candy-mountain/platform-sdk'
+import type { PluginSecrets } from '@crab-shack/platform-sdk'
 import type { NetlifyConfig } from './plugin-type'
 import { createNetlifyClient, type NetlifyClientOptions } from './client'
 

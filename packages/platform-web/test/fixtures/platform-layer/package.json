@@ -1,8 +1,0 @@
-{
-  "name": "@fixture/platform-web",
-  "private": true,
-  "type": "module",
-  "exports": {
-    ".": "./nuxt.config.ts"
-  }
-}

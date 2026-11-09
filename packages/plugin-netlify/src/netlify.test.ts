@@ -1,7 +1,7 @@
-import { pluginTypeInfo } from '@candy-mountain/platform-sdk'
+import { pluginTypeInfo } from '@crab-shack/platform-sdk'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { checkPluginHealth, createPluginTypeRegistry } from '@candy-mountain/platform-daemon'
-import { testKit } from '@candy-mountain/platform-daemon/testing'
+import { checkPluginHealth, createPluginTypeRegistry } from '@crab-shack/platform-daemon'
+import { testKit } from '@crab-shack/platform-daemon/testing'
 import { netlifyDefinition } from './definition'
 import { createNetlifyOperations, netlifyConfig, netlifyPluginType, NetlifyApiError } from '.'
 

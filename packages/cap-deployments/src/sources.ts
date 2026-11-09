@@ -1,6 +1,6 @@
-import { MANIFEST_ID_PATTERN, MONITOR_OPTION_FIELD_KINDS, MONITOR_OPTION_NAME_PATTERN, type Workspace } from '@candy-mountain/platform-sdk'
+import { MANIFEST_ID_PATTERN, MONITOR_OPTION_FIELD_KINDS, MONITOR_OPTION_NAME_PATTERN, type Workspace } from '@crab-shack/platform-sdk'
 import { LIVE_VERSION_SOURCE_ID_PATTERN, validateLiveVersionSettings, type LiveVersion, type LiveVersionSettingError, type LiveVersionSettings, type LiveVersionSourceInfo } from './wire'
-import { duplicates, type PluginInstanceDeps, type SecretsReader } from '@candy-mountain/platform-daemon'
+import { duplicates, type PluginInstanceDeps, type SecretsReader } from '@crab-shack/platform-daemon'
 
 /** Enough to resolve the project's plugin instance and its secrets, for sources that read a vendor plugin. */
 export type LiveVersionDeps = PluginInstanceDeps & { secretsReader: SecretsReader }

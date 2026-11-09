@@ -1,4 +1,4 @@
-import type { MonitorOptions } from '@candy-mountain/platform-sdk'
+import type { MonitorOptions } from '@crab-shack/platform-sdk'
 import type { MonitorCheckStatus } from './wire'
 
 export const MONITOR_CHECK_TIMEOUT_MS = 5000

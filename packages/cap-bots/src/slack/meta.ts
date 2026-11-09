@@ -1,5 +1,5 @@
 import { eq, inArray, like, sql } from 'drizzle-orm'
-import { type Db, platformMeta } from '@candy-mountain/platform-daemon'
+import { type Db, platformMeta } from '@crab-shack/platform-daemon'
 import { slackDeliveries, slackThreads, slackTurns } from '../schema'
 
 /** Survives a restart so a message whose decision died with the daemon still gets its outcome. */

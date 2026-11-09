@@ -1,7 +1,7 @@
-import type { ApiErrorBody } from '@candy-mountain/platform-sdk'
+import type { ApiErrorBody } from '@crab-shack/platform-sdk'
 import type { AddAssigneeResponse, ProjectAssigneesResponse } from '../wire'
 import { Hono } from 'hono'
-import { type AppEnv, getWorkspaceBySlug, requireCapability, WorkspaceError } from '@candy-mountain/platform-daemon'
+import { type AppEnv, getWorkspaceBySlug, requireCapability, WorkspaceError } from '@crab-shack/platform-daemon'
 import { AssigneeError } from './errors'
 import { addAssignee, listAssignees, parseAddAssignee } from './service'
 

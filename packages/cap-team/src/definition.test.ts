@@ -1,7 +1,7 @@
-import { WORKSPACES_PATH } from '@candy-mountain/platform-sdk'
-import type { ModuleDefinition } from '@candy-mountain/platform-sdk'
+import { WORKSPACES_PATH } from '@crab-shack/platform-sdk'
+import type { ModuleDefinition } from '@crab-shack/platform-sdk'
 import { afterEach, describe, expect, it } from 'vitest'
-import { fixtureDefinition, testKit, type TestKit } from '@candy-mountain/platform-daemon/testing'
+import { fixtureDefinition, testKit, type TestKit } from '@crab-shack/platform-daemon/testing'
 import { teamDefinition } from './definition'
 import type { TeamMemberListResponse } from './wire'
 

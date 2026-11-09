@@ -1,5 +1,5 @@
-import type { AgentSession } from '@candy-mountain/platform-sdk'
-import type { AgentMcpServerDefinition, WrappedMcpTool } from '@candy-mountain/platform-daemon'
+import type { AgentSession } from '@crab-shack/platform-sdk'
+import type { AgentMcpServerDefinition, WrappedMcpTool } from '@crab-shack/platform-daemon'
 import { SLACK_FALLBACK_TEXT_MAX, validateSlackBlocksPost } from './block-kit'
 import { SlackApiError } from './client'
 import type { SlackConnections } from './manager'

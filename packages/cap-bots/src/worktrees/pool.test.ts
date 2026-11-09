@@ -1,17 +1,17 @@
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import type { Workspace } from '@candy-mountain/platform-sdk'
+import type { Workspace } from '@crab-shack/platform-sdk'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { deleteWorkspace, type PlatformDatabase } from '@candy-mountain/platform-daemon'
-import { createTempDataDir, type TempDataDir } from '@candy-mountain/platform-daemon/testing'
-import { botsKit, openBotsDatabase } from '../test-support'
+import { deleteWorkspace, type PlatformDatabase } from '@crab-shack/platform-daemon'
+import { createTempDataDir, type TempDataDir } from '@crab-shack/platform-daemon/testing'
+import { botsKit, createWorkspaceWithRepository, openBotsDatabase } from '../test-support'
 import { resolveWorktreeSettings } from './config'
 import { WorktreeError } from './errors'
 import { createGitRunner, GitError } from './git'
 import { createKeyedLock } from './lock'
 import { botBranchName, createWorktreePool, type WorktreeHolder, type WorktreePool } from './pool'
 import { createTempGitRepo, TEST_GIT_ENV, type TempGitRepo } from './test-repo'
-import { createWorkspaceWithRepository, repositoryPaths, setRepository } from '@candy-mountain/plugin-repository'
+import { repositoryPaths, setRepository } from '@candy-mountain/plugin-repository'
 
 let database: PlatformDatabase
 let repo: TempGitRepo

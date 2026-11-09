@@ -1,4 +1,4 @@
-import { defineCapabilityDefinition, type CapabilityDefinition } from '@candy-mountain/platform-sdk/daemon'
+import { defineCapabilityDefinition, type CapabilityDefinition } from '@crab-shack/platform-sdk/daemon'
 import { herokuPluginType } from './plugin-type'
 
 export const HEROKU_CAPABILITY_ID = 'heroku'

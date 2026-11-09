@@ -1,3 +1,3 @@
-import { definePackageTestConfig } from '@candy-mountain/platform-config/vitest'
+import { definePackageTestConfig } from '@crab-shack/platform-config/vitest'
 
 export default definePackageTestConfig('candy-mountain')

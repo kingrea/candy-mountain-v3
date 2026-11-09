@@ -27,8 +27,8 @@
     "@candy-mountain/plugin-slack": "workspace:*",
     "@candy-mountain/cap-team": "workspace:*",
     "@candy-mountain/cap-uptime": "workspace:*",
-    "@candy-mountain/platform-sdk": "workspace:*",
-    "@candy-mountain/platform-web": "workspace:*",
+    "@crab-shack/platform-sdk": "0.3.0",
+    "@crab-shack/platform-web": "0.3.0",
     "@iconify-json/lucide": "^1.2.147",
     "@nuxt/ui": "^4.12.0",
     "nuxt": "^4.6.2",
@@ -36,8 +36,7 @@
     "vue-router": "^5.4.0"
   },
   "devDependencies": {
-    "@candy-mountain/cap-template": "workspace:*",
-    "@candy-mountain/platform-config": "workspace:*",
+    "@crab-shack/platform-config": "0.3.0",
     "@nuxt/eslint": "^1.17.0",
     "vue-tsc": "^3.3.13"
   }

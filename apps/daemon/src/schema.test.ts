@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { isCapabilityDefinition, migrationSets, platformDefinitions } from '@candy-mountain/platform-daemon'
+import { isCapabilityDefinition, migrationSets, platformDefinitions } from '@crab-shack/platform-daemon'
 import { generateSQLiteDrizzleJson, generateSQLiteMigration, type DrizzleSQLiteSnapshotJSON } from 'drizzle-kit/api'
 import { getTableConfig, SQLiteTable } from 'drizzle-orm/sqlite-core'
 import { describe, expect, it } from 'vitest'

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { PluginInstance, PluginTypeInfo } from '@candy-mountain/platform-sdk'
+import type { PluginInstance, PluginTypeInfo } from '@crab-shack/platform-sdk'
 import { CODEX_LOGIN_ACTIONS, type CodexLoginAttempt, type CodexLoginStatusResponse, type CodexRevokeResponse } from '../../src/wire'
 import ProjectsConfirmModal from '#layers/platform-web/app/components/projects/ProjectsConfirmModal.vue'
 

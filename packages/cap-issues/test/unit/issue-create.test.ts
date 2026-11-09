@@ -1,4 +1,4 @@
-import type { RegistryCapability, RegistryResponse } from '@candy-mountain/platform-sdk'
+import type { RegistryCapability, RegistryResponse } from '@crab-shack/platform-sdk'
 import type { Issue } from '../../src/wire'
 import { describe, expect, it } from 'vitest'
 import {

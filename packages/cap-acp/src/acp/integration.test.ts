@@ -3,7 +3,8 @@ import { delimiter, join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createAcpHarness, type AcpHarness } from './harness'
 import { AcpAuthRequiredError } from './session'
-import { collect, createTempHome, hasBuiltShim, textOf, type TempHome } from './test-support'
+import { collect, createTempHome, textOf, type TempHome } from './test-support'
+import { hasBuiltShim } from '@candy-mountain/testing'
 
 // Real CLIs. CM_TEST_CLAUDE_BIN names a claude executable (else PATH); CM_TEST_CLAUDE_CONFIG_HOME / CM_TEST_CODEX_HOME
 // name logged-in homes for a real prompt, which costs a model call and is therefore opt-in.

@@ -1,7 +1,7 @@
 import { chmodSync, mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { CLAUDE_FIXTURE, fakeBins } from '@candy-mountain/cap-acp'
+import { CLAUDE_FIXTURE, fakeBins } from '@candy-mountain/testing'
 import { createBot, parseCreateBot, recordBotPersonaCheck } from '../bots'
 import { slackTurns } from '../schema'
 import { GOOD_TOKEN, stubHosts } from '../test-support'

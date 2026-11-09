@@ -1,4 +1,4 @@
-import type { ModuleDefinition } from '@candy-mountain/platform-sdk'
+import type { ModuleDefinition } from '@crab-shack/platform-sdk'
 
 export const ISSUES_MODULE: ModuleDefinition = {
   id: 'issues',

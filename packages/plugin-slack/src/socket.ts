@@ -1,4 +1,4 @@
-import type { BotSlackConnection, BotSlackIdentity, BotSlackReasonCode } from '@candy-mountain/platform-sdk'
+import type { BotSlackConnection, BotSlackIdentity, BotSlackReasonCode } from '@crab-shack/platform-sdk'
 import WebSocket from 'ws'
 import { createSlackClient, SlackApiError } from './client'
 import type { SlackSelf, SocketModeEnvelope } from './events'

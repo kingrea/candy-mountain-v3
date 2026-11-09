@@ -1,4 +1,4 @@
-import { WORKSPACES_PATH } from '@candy-mountain/platform-sdk'
+import { WORKSPACES_PATH } from '@crab-shack/platform-sdk'
 
 /** The product capability owning a workspace's repository; service-only, so it has no manifest. */
 export const REPOSITORY_CAPABILITY_ID = 'repository'

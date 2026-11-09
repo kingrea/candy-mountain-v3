@@ -1,6 +1,6 @@
 import type { BulkUpdateIssuesResponse, CreateIssueResponse, IssueCommentResponse, IssueResponse } from './wire'
 import { Hono, type Context } from 'hono'
-import { type AppEnv, requireCapability } from '@candy-mountain/platform-daemon'
+import { type AppEnv, requireCapability } from '@crab-shack/platform-daemon'
 import type { RepositoryPaths } from '@candy-mountain/plugin-repository'
 import { IssueError } from './errors'
 import { issueProject, onIssueError } from './routes'

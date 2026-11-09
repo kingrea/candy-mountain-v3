@@ -3,7 +3,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { DECISION_META_KEY } from '@candy-mountain/claude-acp'
 import { createAcpHarness, type AcpHarness } from './harness'
 import { AcpAuthRequiredError } from './session'
-import { collect, createTempHome, fakeBins, fakeClaude, textOf, waitForEvent, waitForGone, type TempHome } from './test-support'
+import { collect, createTempHome, textOf, waitForEvent, waitForGone, type TempHome } from './test-support'
+import { fakeBins, fakeClaude } from '@candy-mountain/testing'
 
 interface LaunchSeen {
   args: string[]

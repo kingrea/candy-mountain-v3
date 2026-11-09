@@ -10,15 +10,16 @@
   },
   "scripts": {
     "preinstall": "node scripts/only-pnpm.mjs",
+    "prepare": "platform-check-linked --install-hook",
     "dev": "pnpm --parallel --filter \"./apps/*\" dev",
     "build": "turbo run build",
-    "lint": "turbo run lint lint:root",
+    "lint": "platform-check-linked && turbo run lint lint:root",
     "lint:root": "eslint . --ignore-pattern 'apps/**' --ignore-pattern 'packages/**'",
     "typecheck": "turbo run typecheck --concurrency=1",
     "test": "turbo run test"
   },
   "devDependencies": {
-    "@candy-mountain/platform-config": "workspace:*",
+    "@crab-shack/platform-config": "0.3.0",
     "@types/node": "^22.20.5",
     "eslint": "^10.13.0",
     "happy-dom": "^21.0.4",

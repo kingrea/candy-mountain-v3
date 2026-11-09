@@ -1,4 +1,4 @@
-import type { ProductConfig } from '@candy-mountain/platform-sdk'
+import type { ProductConfig } from '@crab-shack/platform-sdk'
 
 /** What a build of Candy Mountain includes; development-only additions are in development.ts. */
 export const CANDY_MOUNTAIN_PRODUCT: Readonly<ProductConfig> = {

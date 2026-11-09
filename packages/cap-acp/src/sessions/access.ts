@@ -1,6 +1,6 @@
-import { isAdmin, type Actor, type AgentSession, type AgentSessionFamily, type ApiErrorBody, type Workspace } from '@candy-mountain/platform-sdk'
+import { isAdmin, type Actor, type AgentSession, type AgentSessionFamily, type ApiErrorBody, type Workspace } from '@crab-shack/platform-sdk'
 import type { MiddlewareHandler } from 'hono'
-import { type AppEnv, familyCapability, gateChat, type GateResult, getWorkspaceBySlug, type RegistryDeps, SessionError } from '@candy-mountain/platform-daemon'
+import { type AppEnv, familyCapability, gateChat, type GateResult, getWorkspaceBySlug, type RegistryDeps, SessionError } from '@crab-shack/platform-daemon'
 import type { SessionManager } from './manager'
 
 export function gateSessionFamily(deps: RegistryDeps, actor: Actor, workspace: Workspace, family: AgentSessionFamily): GateResult {

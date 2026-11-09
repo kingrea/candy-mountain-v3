@@ -1,8 +1,8 @@
-import type { ApiErrorBody } from '@candy-mountain/platform-sdk'
+import type { ApiErrorBody } from '@crab-shack/platform-sdk'
 import { ISSUE_CHANGED_EVENT, type IssueChangedEvent } from './wire'
 import { Hono, type Context } from 'hono'
 import { streamSSE } from 'hono/streaming'
-import { type AppEnv, getWorkspaceBySlug, WorkspaceError } from '@candy-mountain/platform-daemon'
+import { type AppEnv, getWorkspaceBySlug, WorkspaceError } from '@crab-shack/platform-daemon'
 import type { IssueWatcher } from './watcher'
 
 // Node fetch (the web proxy) drops a response body that stays silent for 300s.

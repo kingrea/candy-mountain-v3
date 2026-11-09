@@ -1,11 +1,12 @@
 import { mkdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
-import { chatAgentOptionsPath, workspaceRegistryPath, workspaceThreadPath, workspaceThreadsPath, threadCancelPath, threadPromptPath, threadReadPath, type AgentSessionEvent, type AgentSessionEventKind, type ApiErrorBody, type ChatAgentOptionsResponse, type ChatThread, type ChatThreadListResponse, type ChatThreadPromptResponse, type ChatThreadResponse, type PluginTypeId, type Workspace, type RegistryResponse } from '@candy-mountain/platform-sdk'
+import { chatAgentOptionsPath, workspaceRegistryPath, workspaceThreadPath, workspaceThreadsPath, threadCancelPath, threadPromptPath, threadReadPath, type AgentSessionEvent, type AgentSessionEventKind, type ApiErrorBody, type ChatAgentOptionsResponse, type ChatThread, type ChatThreadListResponse, type ChatThreadPromptResponse, type ChatThreadResponse, type PluginTypeId, type Workspace, type RegistryResponse } from '@crab-shack/platform-sdk'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { listActivityEvents, pluginInstances, THREAD_SESSIONS, threadTitle } from '@candy-mountain/platform-daemon'
-import { testKit, type TestActor, type TestKit } from '@candy-mountain/platform-daemon/testing'
+import { listActivityEvents, pluginInstances, THREAD_SESSIONS, threadTitle } from '@crab-shack/platform-daemon'
+import { testKit, type TestActor, type TestKit } from '@crab-shack/platform-daemon/testing'
 import { repositoryPaths, setRepository } from '@candy-mountain/plugin-repository'
-import { ACP_SESSIONS, FAKE_ACP_AGENT, fakeBins, fakeClaude, type SessionManager, type SessionMessage } from '@candy-mountain/cap-acp'
+import { ACP_SESSIONS, type SessionManager, type SessionMessage } from '@candy-mountain/cap-acp'
+import { FAKE_ACP_AGENT, fakeBins, fakeClaude } from '@candy-mountain/testing'
 import { acpKit, acpTestProduct, type AcpKit } from './test-support'
 
 let kit: AcpKit | undefined

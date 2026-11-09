@@ -2,7 +2,7 @@ import { BOT_FAMILY_NAMES, type Bot, type BotFamily, type BotWriteScope } from '
 import { HANDOFF_OUTCOMES, type Handoff } from '../handoff'
 import { REPOSITORY_HOST_NAMES, repositoryConfig, type RepositoryHost } from '@candy-mountain/plugin-repository'
 import { SLACK_POST_BLOCKS_TOOL } from '@candy-mountain/plugin-slack'
-import { claudeMcpToolRule, resolvePluginInstance } from '@candy-mountain/platform-daemon'
+import { claudeMcpToolRule, resolvePluginInstance } from '@crab-shack/platform-daemon'
 import type { BotDeps } from './bots'
 import { BotError } from './errors'
 

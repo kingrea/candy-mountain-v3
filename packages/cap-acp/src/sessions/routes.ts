@@ -1,7 +1,7 @@
-import { CODEX_SESSION_MODES, SESSION_EVENT_NAME, SESSION_STATUS_EVENT_NAME, type AgentSession, type AgentSessionFamily, type AgentSessionPosture, type ApiErrorBody, type CreateSessionRequest, type SessionListResponse, type SessionResponse, type SessionStatusEvent } from '@candy-mountain/platform-sdk'
+import { CODEX_SESSION_MODES, SESSION_EVENT_NAME, SESSION_STATUS_EVENT_NAME, type AgentSession, type AgentSessionFamily, type AgentSessionPosture, type ApiErrorBody, type CreateSessionRequest, type SessionListResponse, type SessionResponse, type SessionStatusEvent } from '@crab-shack/platform-sdk'
 import { Hono, type Context } from 'hono'
 import { streamSSE } from 'hono/streaming'
-import { type AppEnv, type GateRefusal, getWorkspaceBySlug, parsePrompt, SessionError, type SessionFamilyRegistry, WorkspaceError } from '@candy-mountain/platform-daemon'
+import { type AppEnv, type GateRefusal, getWorkspaceBySlug, parsePrompt, SessionError, type SessionFamilyRegistry, WorkspaceError } from '@crab-shack/platform-daemon'
 import { canAccessSession, gateSessionFamily, requireSessionAccess } from './access'
 import type { SessionManager, SessionMessage } from './manager'
 

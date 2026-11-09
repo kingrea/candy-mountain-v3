@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm'
 import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
-import { workspaces } from '@candy-mountain/platform-daemon'
+import { workspaces } from '@crab-shack/platform-daemon'
 
 export type WorktreeHolderKind = 'session' | 'bot'
 export type WorktreeLeaseState = 'active' | 'released'

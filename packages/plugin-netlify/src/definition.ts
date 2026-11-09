@@ -1,4 +1,4 @@
-import { defineCapabilityDefinition, type CapabilityDefinition } from '@candy-mountain/platform-sdk/daemon'
+import { defineCapabilityDefinition, type CapabilityDefinition } from '@crab-shack/platform-sdk/daemon'
 import { netlifyPluginType } from './plugin-type'
 
 export const NETLIFY_CAPABILITY_ID = 'netlify'

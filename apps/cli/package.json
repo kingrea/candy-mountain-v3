@@ -14,8 +14,8 @@
   },
   "dependencies": {
     "@candy-mountain/candy-mountain": "workspace:*",
-    "@candy-mountain/platform-cli": "workspace:*",
-    "@candy-mountain/platform-config": "workspace:*"
+    "@crab-shack/platform-cli": "0.3.0",
+    "@crab-shack/platform-config": "0.3.0"
   },
   "devDependencies": {
     "tsdown": "^0.23.2"

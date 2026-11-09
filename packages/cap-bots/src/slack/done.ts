@@ -1,5 +1,5 @@
 import type { BotSessionClose, BotSessionService } from '../bot-sessions'
-import type { Db } from '@candy-mountain/platform-daemon'
+import type { Db } from '@crab-shack/platform-daemon'
 import { closeSlackThread, type SlackThread } from './threads'
 
 export function slackDoneText(result: BotSessionClose | null): string {

@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { statSync, watch, type FSWatcher } from 'node:fs'
 import { readdir, readFile, stat } from 'node:fs/promises'
 import { join } from 'node:path'
-import { type Db, listWorkspaces } from '@candy-mountain/platform-daemon'
+import { type Db, listWorkspaces } from '@crab-shack/platform-daemon'
 import type { RepositoryPaths } from '@candy-mountain/plugin-repository'
 import { invalidateIssueList } from './service'
 

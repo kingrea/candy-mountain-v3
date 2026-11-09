@@ -1,17 +1,17 @@
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
-import { WORKSPACES_PATH, type ApiErrorBody } from '@candy-mountain/platform-sdk'
+import { WORKSPACES_PATH, type ApiErrorBody } from '@crab-shack/platform-sdk'
 import { ISSUE_CHANGED_EVENT, workspaceIssueEventsPath, workspaceIssuePath } from './wire'
 import { Hono } from 'hono'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { type AppEnv, dataPaths, type PlatformDatabase } from '@candy-mountain/platform-daemon'
-import { createTestApp, type TestKit } from '@candy-mountain/platform-daemon/testing'
-import { issuesKit, issuesTestProduct, openIssuesDatabase, workspaceAt } from './test-support'
+import { type AppEnv, dataPaths, type PlatformDatabase } from '@crab-shack/platform-daemon'
+import { createTestApp, type TestKit } from '@crab-shack/platform-daemon/testing'
+import { createWorkspaceWithRepository, issuesKit, issuesTestProduct, openIssuesDatabase, workspaceAt } from './test-support'
 import { ISSUE_WATCHER, issuesRoutes } from './definition'
 import { issueEventRoutes } from './events-routes'
 import { createTempBeadsWorkspace, hasBd, type TempBeadsWorkspace } from './test-workspace'
 import type { IssueChangeListener, IssueWatcher } from './watcher'
-import { createWorkspaceWithRepository, repositoryPaths } from '@candy-mountain/plugin-repository'
+import { repositoryPaths } from '@candy-mountain/plugin-repository'
 
 const execFileAsync = promisify(execFile)
 

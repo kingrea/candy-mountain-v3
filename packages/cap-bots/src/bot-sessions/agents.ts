@@ -1,7 +1,7 @@
-import type { AgentSession } from '@candy-mountain/platform-sdk'
+import type { AgentSession } from '@crab-shack/platform-sdk'
 import { BOT_FAMILY_NAMES, BOT_WRITE_SCOPE_NAMES, botAgentId, botIdOfAgent, type ChatThreadBot, type RegistryAgentBot } from '../wire'
 import { listWorkspaceBotRefs, type BotDeps, type ProjectBotRef } from '../bots/bots'
-import type { WorkspaceAgentListing, WorkspaceAgentSource } from '@candy-mountain/platform-daemon'
+import type { WorkspaceAgentListing, WorkspaceAgentSource } from '@crab-shack/platform-daemon'
 import type { BotSessionService } from './service'
 
 const agentOf = (bot: ProjectBotRef): WorkspaceAgentListing => ({

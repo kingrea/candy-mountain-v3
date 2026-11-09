@@ -1,10 +1,9 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { CapabilityDefinitionError } from '@candy-mountain/platform-daemon'
-import { testKit, type TestKit } from '@candy-mountain/platform-daemon/testing'
-import { fakeBins } from '@candy-mountain/cap-acp'
-import { codexTestCapabilities } from '@candy-mountain/plugin-codex'
+import { CapabilityDefinitionError } from '@crab-shack/platform-daemon'
+import { testKit, type TestKit } from '@crab-shack/platform-daemon/testing'
+import { fakeBins } from '@candy-mountain/testing'
 import { chatCodexDefinition } from './definition'
-import { chatCodexKit } from './test-support'
+import { chatCodexKit, codexTestCapabilities } from './test-support'
 
 const acp = { bins: fakeBins, killTimeoutMs: 1000 }
 

@@ -1,5 +1,5 @@
 {
-  "extends": "@candy-mountain/platform-config/tsconfig.base.json",
+  "extends": "@crab-shack/platform-config/tsconfig.base.json",
   "compilerOptions": {
     "types": ["node"]
   },

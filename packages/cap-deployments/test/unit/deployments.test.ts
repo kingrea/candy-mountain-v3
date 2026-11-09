@@ -1,4 +1,4 @@
-import type { PluginInstance } from '@candy-mountain/platform-sdk'
+import type { PluginInstance } from '@crab-shack/platform-sdk'
 import type { Environment, LiveVersionSourceField, LiveVersionSourceInfo } from '../../src/wire'
 import { describe, expect, it } from 'vitest'
 import {

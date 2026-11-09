@@ -1,6 +1,6 @@
-import { validatePluginConfig, type PluginConfigOf, type PluginHealth } from '@candy-mountain/platform-sdk'
+import { validatePluginConfig, type PluginConfigOf, type PluginHealth } from '@crab-shack/platform-sdk'
 import { CLAUDE_CODE_ACTIONS, CLAUDE_CODE_TYPE_ACTIONS, type ClaudeCodeRevokeResponse, type ClaudeCodeStartLoginResponse, type ClaudeCodeSubmitCodeRequest, type ClaudeCodeSubmitCodeResponse, type ClaudeExecutableResponse } from '../wire'
-import { definePluginType, PluginActionError } from '@candy-mountain/platform-daemon'
+import { definePluginType, PluginActionError } from '@crab-shack/platform-daemon'
 import { claudeConfigDir, configDirExists, ensureConfigDir, readClaudeAuthStatus, removeConfigDir, type ClaudeAuthStatus } from './cli'
 import { probeClaudeExecutable } from './executable'
 import { claudeLoginAttempts, LOGIN_FAILURES, type LoginAttemptView } from './login-attempts'

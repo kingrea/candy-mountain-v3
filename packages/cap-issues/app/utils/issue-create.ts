@@ -1,4 +1,4 @@
-import type { AgentSessionFamily, CapabilityId, RegistryResponse } from '@candy-mountain/platform-sdk'
+import type { AgentSessionFamily, CapabilityId, RegistryResponse } from '@crab-shack/platform-sdk'
 import type { CreateIssueRequest, Issue, IssueType } from '../../src/wire'
 
 export interface IssuesAgentCreateOption {

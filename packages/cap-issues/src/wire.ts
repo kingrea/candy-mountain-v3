@@ -1,4 +1,4 @@
-import { WORKSPACES_PATH } from '@candy-mountain/platform-sdk'
+import { WORKSPACES_PATH } from '@crab-shack/platform-sdk'
 
 export function workspaceIssuesPath(projectSlug: string): string {
   return `${WORKSPACES_PATH}/${encodeURIComponent(projectSlug)}/issues`

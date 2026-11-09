@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { layerRegistry, renderLayerPage } from '@candy-mountain/platform-web/test'
+import { layerRegistry, renderLayerPage } from '@crab-shack/platform-web/test'
 import { describe, expect, it } from 'vitest'
 import TeamPage from '../../app/pages/p/[project]/team/index.vue'
 

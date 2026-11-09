@@ -1,5 +1,5 @@
 import { assertCodexLaunchOptions, type SessionLauncher } from '@candy-mountain/cap-acp'
-import { SessionError } from '@candy-mountain/platform-daemon'
+import { SessionError } from '@crab-shack/platform-daemon'
 import { codexLaunchContext } from './plugin-type/launch'
 
 export const codexLauncher: SessionLauncher = {

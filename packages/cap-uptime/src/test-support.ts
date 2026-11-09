@@ -1,7 +1,7 @@
-import type { ModuleDefinition } from '@candy-mountain/platform-sdk'
-import { defineCapabilityDefinition, type CapabilityDefinition } from '@candy-mountain/platform-sdk/daemon'
-import type { PlatformDatabase } from '@candy-mountain/platform-daemon'
-import { openTestDatabase, testKit, testProduct, type TestKit } from '@candy-mountain/platform-daemon/testing'
+import type { ModuleDefinition } from '@crab-shack/platform-sdk'
+import { defineCapabilityDefinition, type CapabilityDefinition } from '@crab-shack/platform-sdk/daemon'
+import type { PlatformDatabase } from '@crab-shack/platform-daemon'
+import { openTestDatabase, testKit, testProduct, type TestKit } from '@crab-shack/platform-daemon/testing'
 import { uptimeDefinition, uptimeRoutes } from './definition'
 
 /** A module holding uptime, so grants and enablement behave as they do under a product. */

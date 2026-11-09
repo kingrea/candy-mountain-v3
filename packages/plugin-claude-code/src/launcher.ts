@@ -1,5 +1,5 @@
 import { assertClaudeNeverBypass, type SessionLauncher } from '@candy-mountain/cap-acp'
-import { SessionError } from '@candy-mountain/platform-daemon'
+import { SessionError } from '@crab-shack/platform-daemon'
 import { claudeCodeLaunchContext } from './plugin-type/launch'
 
 const errorMessage = (error: unknown) => (error instanceof Error ? error.message : String(error))

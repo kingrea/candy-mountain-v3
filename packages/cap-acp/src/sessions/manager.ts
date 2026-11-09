@@ -1,10 +1,10 @@
 import type { CreateElicitationResponse, RequestPermissionResponse, SessionConfigOption } from '@agentclientprotocol/sdk'
-import type { AgentSession, AgentSessionEvent, AgentSessionEventPayload, AgentSessionFamily, AgentSessionPosture } from '@candy-mountain/platform-sdk'
+import type { AgentSession, AgentSessionEvent, AgentSessionEventPayload, AgentSessionFamily, AgentSessionPosture } from '@crab-shack/platform-sdk'
 import { AcpAuthRequiredError, AcpLaunchError, isAgentFamily, type AcpHarness, type AcpSession, type AcpSessionEvent, type AgentFamily, type LaunchMcpServer, type StartSessionOptions } from '../acp'
-import { createSessionFamilyRegistry, type CreateSessionInput, type DataPaths, type NativeTurnRunner, type PluginInstanceDeps, type SecretsReader, SESSION_FAMILIES, SessionError, type SessionFamilyRegistry, type SessionListener, type SessionObserver, type SessionStore } from '@candy-mountain/platform-daemon'
+import { createSessionFamilyRegistry, type CreateSessionInput, type DataPaths, type NativeTurnRunner, type PluginInstanceDeps, type SecretsReader, SESSION_FAMILIES, SessionError, type SessionFamilyRegistry, type SessionListener, type SessionObserver, type SessionStore } from '@crab-shack/platform-daemon'
 import { DEFAULT_SESSION_IDLE_TIMEOUT, DEFAULT_SESSION_MAX_LIVE, resolveSessionSettings, type SessionSettings } from './config'
 
-export type { CreateSessionInput, NativeTurn, NativeTurnRunner, SessionListener, SessionMessage, SessionObserver } from '@candy-mountain/platform-daemon'
+export type { CreateSessionInput, NativeTurn, NativeTurnRunner, SessionListener, SessionMessage, SessionObserver } from '@crab-shack/platform-daemon'
 
 export interface SessionManagerDeps extends PluginInstanceDeps {
   paths: DataPaths

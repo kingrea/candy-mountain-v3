@@ -12,9 +12,9 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@candy-mountain/platform-sdk": "workspace:*"
+    "@crab-shack/platform-sdk": "0.3.0"
   },
   "devDependencies": {
-    "@candy-mountain/platform-config": "workspace:*"
+    "@crab-shack/platform-config": "0.3.0"
   }
 }

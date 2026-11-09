@@ -4,12 +4,12 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { archiveWorkspace, deleteWorkspace, type PlatformDatabase, unarchiveWorkspace } from '@candy-mountain/platform-daemon'
-import { openIssuesDatabase } from './test-support'
+import { archiveWorkspace, deleteWorkspace, type PlatformDatabase, unarchiveWorkspace } from '@crab-shack/platform-daemon'
+import { createWorkspaceWithRepository, openIssuesDatabase } from './test-support'
 import { runBd } from './bd-runner'
 import { createTempBeadsWorkspace, hasBd, type TempBeadsWorkspace } from './test-workspace'
 import { ISSUE_WATCH_MIN_INTERVAL_MS, startIssueWatcher, type IssueWatcher } from './watcher'
-import { createWorkspaceWithRepository, repositoryPaths } from '@candy-mountain/plugin-repository'
+import { repositoryPaths } from '@candy-mountain/plugin-repository'
 
 const execFileAsync = promisify(execFile)
 

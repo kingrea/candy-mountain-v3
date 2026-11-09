@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { desc, eq, inArray } from 'drizzle-orm'
-import type { Db } from '@candy-mountain/platform-daemon'
+import type { Db } from '@crab-shack/platform-daemon'
 import { slackTurns, type SlackTurnState } from '../schema'
 import type { SlackProgressMode, SlackTurnMessage } from './progress'
 

@@ -1,5 +1,0 @@
-# The fixture workspace: a layer package linted from its own root finds its app and its siblings here.
-packages:
-  - layered-app
-  - delta-layer
-  - epsilon-layer

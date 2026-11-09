@@ -1,15 +1,10 @@
 import { existsSync } from 'node:fs'
-import { CANDY_MOUNTAIN_DEVELOPMENT, CANDY_MOUNTAIN_DEVELOPMENT_PRODUCT, CANDY_MOUNTAIN_PRODUCT, DEVELOPMENT_MODULES, MODULES } from '@candy-mountain/candy-mountain'
-import { CAPABILITY_CATALOG_PATH, MODULES_PATH, WORKSPACES_PATH, workspaceActivityPath, workspaceRegistryPath, workspaceViewRoute, type ActivityListResponse, type CapabilityCatalogResponse, type ModuleListResponse, type RegistryResponse } from '@candy-mountain/platform-sdk'
-import { ACP_SESSIONS } from '@candy-mountain/cap-acp'
-import { BOT_SESSIONS, BOT_SLACK_ROUTER } from '@candy-mountain/cap-bots'
-import { NOTE_CREATED_EVENT, workspaceTemplateNotesPath } from '@candy-mountain/cap-template'
-import { assertProduct, createCapabilityRegistry, createModuleRegistry, isCapabilityDefinition, platformDefinitions, productCapabilityRegistry, ProductError, startPlatform, type Platform, type Product } from '@candy-mountain/platform-daemon'
-import { testKit, type TestKit } from '@candy-mountain/platform-daemon/testing'
+import { CANDY_MOUNTAIN_PRODUCT, MODULES } from '@candy-mountain/candy-mountain'
+import { CAPABILITY_CATALOG_PATH, MODULES_PATH, WORKSPACES_PATH, type CapabilityCatalogResponse, type ModuleListResponse } from '@crab-shack/platform-sdk'
+import { assertProduct, createCapabilityRegistry, createModuleRegistry, isCapabilityDefinition, platformDefinitions, productCapabilityRegistry, ProductError, startPlatform, type Platform, type Product } from '@crab-shack/platform-daemon'
 import { afterEach, describe, expect, it } from 'vitest'
 import { CANDY_MOUNTAIN } from './candy-mountain'
 import { capabilityDefinitions, DEFINITIONS } from './definitions'
-import { candyMountainDevelopmentProduct, DEVELOPMENT_DEFINITIONS } from './development'
 import { CAPABILITY_DEFINITIONS, createTempDataDir, platformApp, startTestPlatform, testMigrationSets, type TempDataDir, withoutCapabilities } from './testing'
 
 const definitions = CAPABILITY_DEFINITIONS.filter(isCapabilityDefinition)
@@ -19,6 +14,21 @@ const sorted = (ids: readonly string[]) => [...ids].sort()
 const dependencies = [...new Set(definitions.flatMap(d => d.dependsOn ?? []))]
   .filter(id => CANDY_MOUNTAIN_PRODUCT.capabilities.includes(id))
   .map(id => [id, definitions.filter(d => d.dependsOn?.includes(id)).map(d => d.id).join(', ')] as const)
+
+/** A capability with everything that cannot boot without it: its dependents, and those requiring a workspace fact or plugin type only it brings. */
+function leaving(id: string): string[] {
+  const gone = new Set([id])
+  for (let grown = true; grown;) {
+    grown = false
+    const facts = new Set(definitions.filter(d => gone.has(d.id)).flatMap(d => d.workspaceFacts ?? []).map(f => f.id))
+    const types = new Set(definitions.filter(d => gone.has(d.id)).flatMap(d => d.pluginTypes ?? []).map(t => t.id))
+    for (const d of definitions) {
+      if (gone.has(d.id)) continue
+      if (d.dependsOn?.some(dep => gone.has(dep)) || d.manifest?.requiresWorkspaceFacts?.some(fact => facts.has(fact)) || d.manifest?.requiresPlugins?.some(type => types.has(type))) grown = gone.add(d.id).size > 0
+    }
+  }
+  return [...gone]
+}
 
 /** Capabilities whose removal leaves every other part of the product as it was: nothing depends on them and they bring no fact, plugin type or family. */
 const leaves = definitions
@@ -77,23 +87,28 @@ describe('the Candy Mountain product', () => {
     expect(existsSync(temp.root)).toBe(false)
   })
 
-  it('boots without acp: claude-code, chat-claude-code, bots, codex, chat-codex and team leave with it, Slack routing stays off and the rest still serves', async () => {
+  it.each(dependencies.map(([id]) => id))('boots without %s and everything that needs it, and the rest still serves', async (id) => {
     temp = createTempDataDir()
-    // The chat capabilities, codex and bots depend on acp, and team on the hasBots fact bots declares, so a product without it leaves them out too.
-    const gone = ['acp', 'claude-code', 'chat-claude-code', 'bots', 'codex', 'chat-codex', 'team']
+    const gone = leaving(id)
     const platform = startTestPlatform(temp.root, withoutCapabilities(...gone))
     try {
-      expect(platform.runtime.service(ACP_SESSIONS)).toBeUndefined()
-      expect(platform.runtime.service(BOT_SESSIONS)).toBeUndefined()
-      expect(platform.runtime.service(BOT_SLACK_ROUTER)).toBeUndefined()
-      expect(platform.pluginTypes.has('claude-code')).toBe(false)
-      expect(platform.families.list().map(f => f.id)).toEqual(['platform'])
-      expect(sorted(platform.runtime.started.map(s => s.definition.id))).toEqual(sorted(['threads', ...CAPABILITY_DEFINITIONS.map(d => d.id).filter(id => !gone.includes(id))]))
-      const app = platformApp(platform)
-      const sessions = await app.request(`${WORKSPACES_PATH}/nope/sessions`)
+      expect(sorted(platform.runtime.started.map(s => s.definition.id))).toEqual(sorted(['threads', ...CAPABILITY_DEFINITIONS.map(d => d.id).filter(other => !gone.includes(other))]))
+      expect(sorted(platform.families.list().map(f => f.id))).toEqual(sorted([...new Set(['platform', ...definitions.filter(d => !gone.includes(d.id)).flatMap(d => d.sessionFamilies ?? []).map(f => f.id)])]))
+      for (const type of definitions.filter(d => gone.includes(d.id)).flatMap(d => d.pluginTypes ?? [])) expect(platform.pluginTypes.has(type.id)).toBe(false)
+      expect((await platformApp(platform).request(WORKSPACES_PATH)).status).toBe(200)
+    }
+    finally {
+      await platform.close()
+    }
+  })
+
+  it.skipIf(!CANDY_MOUNTAIN_PRODUCT.capabilities.includes('acp'))('serves no session routes without acp', async () => {
+    temp = createTempDataDir()
+    const platform = startTestPlatform(temp.root, withoutCapabilities(...leaving('acp')))
+    try {
+      const sessions = await platformApp(platform).request(`${WORKSPACES_PATH}/nope/sessions`)
       expect(sessions.status).toBe(404)
       expect(await sessions.text()).toBe('404 Not Found')
-      expect((await app.request(WORKSPACES_PATH)).status).toBe(200)
     }
     finally {
       await platform.close()
@@ -162,70 +177,5 @@ describe('daemon boot from the capability definition list', () => {
       families: full.families,
       catalog: drop(full.catalog),
     })
-  })
-})
-
-// src/dev.ts boots this product and src/index.ts never imports development.ts, so the build is the product above and nothing of this.
-describe('the development product', () => {
-  let temp: TempDataDir | undefined
-  let kit: TestKit | undefined
-  afterEach(async () => {
-    await kit?.close()
-    kit = undefined
-    temp?.cleanup()
-    temp = undefined
-  })
-
-  it('is the build\'s product plus the development declaration\'s parts, and matches its configuration', () => {
-    const product = candyMountainDevelopmentProduct()
-    expect(() => assertProduct(product)).not.toThrow()
-    expect(product.config).toBe(CANDY_MOUNTAIN_DEVELOPMENT_PRODUCT)
-    expect(product.capabilities.map(d => d.id)).toEqual([...Object.keys(DEFINITIONS), ...Object.keys(DEVELOPMENT_DEFINITIONS)])
-    expect(product.modules.map(m => m.id)).toEqual([...MODULES, ...DEVELOPMENT_MODULES].map(m => m.id))
-    expect(Object.keys(DEVELOPMENT_DEFINITIONS)).toEqual([...CANDY_MOUNTAIN_DEVELOPMENT.capabilities])
-  })
-
-  it('shares nothing with the build: the build lists no development definition and the two definition lists have no id in common', () => {
-    expect(Object.keys(DEVELOPMENT_DEFINITIONS).filter(id => id in DEFINITIONS)).toEqual([])
-    expect(CANDY_MOUNTAIN.capabilities.map(d => d.id).filter(id => CANDY_MOUNTAIN_DEVELOPMENT.capabilities.includes(id))).toEqual([])
-    expect(CANDY_MOUNTAIN.modules.map(m => m.id).filter(id => CANDY_MOUNTAIN_DEVELOPMENT.modules.includes(id))).toEqual([])
-  })
-
-  it('refuses to boot when the definitions and the configuration disagree about the development parts, in either direction', () => {
-    temp = createTempDataDir()
-    const definitionsAhead: Product = { ...candyMountainDevelopmentProduct(), config: CANDY_MOUNTAIN_PRODUCT }
-    expect(() => startPlatform(temp!.root, { product: definitionsAhead })).toThrow(ProductError)
-    expect(() => startPlatform(temp!.root, { product: definitionsAhead })).toThrow('capability \'template\' is supplied but not listed; module \'template\' is supplied but not listed.')
-    const configurationAhead: Product = { ...CANDY_MOUNTAIN, config: CANDY_MOUNTAIN_DEVELOPMENT_PRODUCT }
-    expect(() => startPlatform(temp!.root, { product: configurationAhead })).toThrow('capability \'template\' is listed but no definition supplies it; module \'template\' is listed but no module definition supplies it.')
-    expect(existsSync(temp!.root)).toBe(false)
-  })
-
-  it('boots the template under its module: its table and service, its view in the sidebar once the module is enabled, its event in the activity feed', async () => {
-    kit = testKit({ product: candyMountainDevelopmentProduct() })
-    const { platform, admin } = kit
-    expect(platform.capabilities.has('template')).toBe(true)
-    expect(platform.modules.get('template').capabilities.map(c => c.capabilityId)).toEqual(['template'])
-    expect(platform.migrationSets.map(set => set.id)).toContain('template')
-    expect(platform.runtime.started.map(s => s.definition.id)).toContain('template')
-    expect(platform.workspaceFacts.has('hasTemplateNotes')).toBe(true)
-    expect(platform.activityEventTypes.has(NOTE_CREATED_EVENT)).toBe(true)
-
-    const registry = async (slug: string) => (await (await admin.request(workspaceRegistryPath(slug))).json()) as RegistryResponse
-    const without = kit.workspace({ modules: ['issues'] })
-    expect((await registry(without.slug)).groups.map(g => g.id)).not.toContain('template')
-
-    const workspace = kit.workspace({ modules: ['template'] })
-    const to = workspaceViewRoute(CANDY_MOUNTAIN_PRODUCT.scope.urlPrefix, workspace.slug, 'template')
-    const enabled = await registry(workspace.slug)
-    expect(enabled.modules).toEqual(['template'])
-    expect(enabled.groups.find(g => g.id === 'template')).toMatchObject({ kind: 'module', label: 'Template', entries: [expect.objectContaining({ id: 'template', to })] })
-    expect(enabled.views).toContainEqual(expect.objectContaining({ id: 'template', capabilityId: 'template', to, ready: true }))
-
-    const created = await admin.request(workspaceTemplateNotesPath(workspace.slug), { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text: 'Seen running' }) })
-    expect(created.status).toBe(201)
-    const activity = (await (await admin.request(workspaceActivityPath(workspace.slug))).json()) as ActivityListResponse
-    expect(activity.events).toEqual([expect.objectContaining({ type: NOTE_CREATED_EVENT, link: to })])
-    expect(platform.workspaceFacts.compute(kit.db, workspace).hasTemplateNotes).toBe(true)
   })
 })

@@ -1,4 +1,4 @@
-import type { Db } from '@candy-mountain/platform-daemon'
+import type { Db } from '@crab-shack/platform-daemon'
 import type { UptimeScheduler } from './scheduler'
 import { listEnabledMonitors } from './service'
 import { reconcileMonitorIncident } from './state'

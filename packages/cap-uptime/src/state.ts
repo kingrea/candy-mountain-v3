@@ -1,5 +1,5 @@
 import { MONITOR_DOWN_THRESHOLD, MONITOR_SLOW_LATENCY_MS, type Monitor, type MonitorState, type MonitorStatus } from './wire'
-import type { Db } from '@candy-mountain/platform-daemon'
+import type { Db } from '@crab-shack/platform-daemon'
 import { listMonitorChecks, type UptimeCheck } from './checks'
 import { closeIncident, findOpenIncident, openIncident } from './incidents'
 

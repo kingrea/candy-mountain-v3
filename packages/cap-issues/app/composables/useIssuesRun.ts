@@ -1,4 +1,4 @@
-import { PLUGINS_PATH, type ChatThread, type PluginInstanceListResponse } from '@candy-mountain/platform-sdk'
+import { PLUGINS_PATH, type ChatThread, type PluginInstanceListResponse } from '@crab-shack/platform-sdk'
 import type { IssuesRunAgent } from '#layers/issues/app/utils/issues-run'
 
 export interface IssuesRunStarted {

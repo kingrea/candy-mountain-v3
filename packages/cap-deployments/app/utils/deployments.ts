@@ -1,4 +1,4 @@
-import type { PluginInstance } from '@candy-mountain/platform-sdk'
+import type { PluginInstance } from '@crab-shack/platform-sdk'
 import {
   validateLiveVersionSettings,
   type CreateEnvironmentRequest,

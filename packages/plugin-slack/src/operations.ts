@@ -1,4 +1,4 @@
-import type { PluginSecrets } from '@candy-mountain/platform-sdk'
+import type { PluginSecrets } from '@crab-shack/platform-sdk'
 import type { SlackConfig } from './plugin-type'
 import { createSlackClient, type SlackClientOptions } from './client'
 

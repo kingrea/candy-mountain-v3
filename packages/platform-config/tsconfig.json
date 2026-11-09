@@ -1,8 +1,0 @@
-{
-  "extends": "./presets/tsconfig.base.json",
-  "compilerOptions": {
-    "types": ["node"]
-  },
-  "include": ["src", "presets", "eslint", "test", "vitest.config.ts"],
-  "exclude": ["test/fixtures"]
-}

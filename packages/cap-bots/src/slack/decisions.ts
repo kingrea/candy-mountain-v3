@@ -1,6 +1,6 @@
-import type { AnswerDecisionRequest, Decision } from '@candy-mountain/platform-sdk'
+import type { AnswerDecisionRequest, Decision } from '@crab-shack/platform-sdk'
 import { eq, like } from 'drizzle-orm'
-import { type Db, platformMeta } from '@candy-mountain/platform-daemon'
+import { type Db, platformMeta } from '@crab-shack/platform-daemon'
 import { DecisionError, type DecisionService, type SessionManager, type SessionMessage } from '@candy-mountain/cap-acp'
 import { addSlackReaction, postToSlackThread, type SlackClient, type SlackConnections, type SlackInteractiveBotEvent, type SlackMessageBotEvent } from '@candy-mountain/plugin-slack'
 import { mayMemberTalkToBot, touchMemberActivity } from '@candy-mountain/cap-team'

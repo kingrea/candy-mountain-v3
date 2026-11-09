@@ -1,6 +1,6 @@
 import type { LiveVersionSettings } from '../wire'
 import { sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
-import { workspaces } from '@candy-mountain/platform-daemon'
+import { workspaces } from '@crab-shack/platform-daemon'
 
 export const environments = sqliteTable('environments', {
   id: text('id').primaryKey(),

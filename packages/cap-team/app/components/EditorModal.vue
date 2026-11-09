@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { SLACK_MEMBER_ID_PATTERN } from '@candy-mountain/platform-sdk'
+import { SLACK_MEMBER_ID_PATTERN } from '@crab-shack/platform-sdk'
 import {
   workspaceTeamPath,
   TEAM_EMAIL_MAX_LENGTH,

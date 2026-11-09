@@ -1,4 +1,4 @@
-import { SLACK_MEMBER_ID_PATTERN } from '@candy-mountain/platform-sdk'
+import { SLACK_MEMBER_ID_PATTERN } from '@crab-shack/platform-sdk'
 import {
   TEAM_EMAIL_MAX_LENGTH, TEAM_NAME_MAX_LENGTH,
   type CreateTeamMemberRequest, type TeamBotScope, type UpdateTeamMemberRequest,

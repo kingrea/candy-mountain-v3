@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm'
 import { index, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 import { uptimeMonitors } from './uptime-monitors'
-import { chatThreads, workspaces } from '@candy-mountain/platform-daemon'
+import { chatThreads, workspaces } from '@crab-shack/platform-daemon'
 
 export const uptimeIncidents = sqliteTable('uptime_incidents', {
   id: text('id').primaryKey(),

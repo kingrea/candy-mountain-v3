@@ -1,8 +1,7 @@
 {
-  "extends": "@candy-mountain/platform-config/tsconfig.base.json",
+  "extends": "@crab-shack/platform-config/tsconfig.base.json",
   "compilerOptions": {
     "types": ["node"]
   },
-  // The layer's utils are plain TypeScript, so its unit tests typecheck here; app/ components and composables need Nuxt's generated types, which the distribution's nuxt typecheck covers.
-  "include": ["src", "app/utils", "test", "vitest.config.ts"]
+  "include": ["src", "vitest.config.ts"]
 }
