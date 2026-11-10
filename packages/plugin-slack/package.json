@@ -13,14 +13,14 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@crab-shack/platform-daemon": "0.3.0",
-    "@crab-shack/platform-sdk": "0.3.0",
+    "@crab-shack/platform-daemon": "0.4.0",
+    "@crab-shack/platform-sdk": "0.4.0",
     "nuxt": "^4.6.2",
     "ws": "^8.22.0"
   },
   "devDependencies": {
-    "@crab-shack/platform-config": "0.3.0",
-    "@crab-shack/platform-web": "0.3.0",
+    "@crab-shack/platform-config": "0.4.0",
+    "@crab-shack/platform-web": "0.4.0",
     "@types/better-sqlite3": "^9.6.0",
     "@types/ws": "^8.18.2"
   }

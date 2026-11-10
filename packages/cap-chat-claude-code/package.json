@@ -14,8 +14,8 @@
   },
   "dependencies": {
     "@candy-mountain/cap-acp": "workspace:*",
-    "@crab-shack/platform-daemon": "0.3.0",
-    "@crab-shack/platform-sdk": "0.3.0",
+    "@crab-shack/platform-daemon": "0.4.0",
+    "@crab-shack/platform-sdk": "0.4.0",
     "@candy-mountain/plugin-claude-code": "workspace:*",
     "@candy-mountain/plugin-repository": "workspace:*",
     "drizzle-orm": "^0.45.4",
@@ -23,8 +23,8 @@
   },
   "devDependencies": {
     "@candy-mountain/testing": "workspace:*",
-    "@crab-shack/platform-config": "0.3.0",
-    "@crab-shack/platform-web": "0.3.0",
+    "@crab-shack/platform-config": "0.4.0",
+    "@crab-shack/platform-web": "0.4.0",
     "@types/better-sqlite3": "^9.6.0"
   }
 }

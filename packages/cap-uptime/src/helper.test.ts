@@ -25,7 +25,7 @@ describe('a definition written with the helper alone', () => {
   it('expresses uptime with the helper alone: routes, services and close', async () => {
     database = openUptimeDatabase()
     root = mkdtempSync(join(tmpdir(), 'candy-mountain-definition-'))
-    const paths = ensureDataDir(join(root, 'data'))
+    const paths = ensureDataDir(join(root, 'data'), 'Candy Mountain')
 
     const uptime = defineCapabilityDefinition({
       id: 'uptime',

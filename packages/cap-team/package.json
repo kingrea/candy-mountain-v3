@@ -15,8 +15,8 @@
     "db:check": "drizzle-kit check"
   },
   "dependencies": {
-    "@crab-shack/platform-daemon": "0.3.0",
-    "@crab-shack/platform-sdk": "0.3.0",
+    "@crab-shack/platform-daemon": "0.4.0",
+    "@crab-shack/platform-sdk": "0.4.0",
     "@iconify-json/lucide": "^1.2.147",
     "@nuxt/ui": "^4.12.0",
     "drizzle-orm": "^0.45.4",
@@ -26,8 +26,8 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@crab-shack/platform-config": "0.3.0",
-    "@crab-shack/platform-web": "0.3.0",
+    "@crab-shack/platform-config": "0.4.0",
+    "@crab-shack/platform-web": "0.4.0",
     "@types/better-sqlite3": "^9.6.0",
     "drizzle-kit": "^0.31.11"
   }
