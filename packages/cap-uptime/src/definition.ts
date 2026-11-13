@@ -28,6 +28,8 @@ export function uptimeRoutes(sources: MonitorSourceRegistry = MONITOR_SOURCE_REG
 export function uptimeDefinition(options: UptimeSchedulerOptions = {}): CapabilityDefinition {
   return defineCapabilityDefinition({
     id: uptimeCapability.id,
+    package: '@candy-mountain/cap-uptime',
+    sdkMajor: 0,
     manifest: uptimeCapability,
     schema: { schema: uptimeSchema, migrationsFolder: srcPath('migrations') },
     activityEventTypes: UPTIME_ACTIVITY_EVENT_TYPES,

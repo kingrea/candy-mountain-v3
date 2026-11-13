@@ -22,6 +22,8 @@ export function issuesRoutes(repository: RepositoryPaths, watcher?: IssueWatcher
 export function issuesDefinition(options: IssuesOptions = {}): CapabilityDefinition {
   return defineCapabilityDefinition({
     id: issuesCapability.id,
+    package: '@candy-mountain/cap-issues',
+    sdkMajor: 0,
     manifest: issuesCapability,
     schema: { schema: issuesSchema, migrationsFolder: srcPath('migrations') },
     dependsOn: [REPOSITORY_CAPABILITY_ID],

@@ -1,5 +1,5 @@
 export { beadsEnvForWorktree, type WorktreeBeadsEnv } from './bd-env'
-export { DEFAULT_WORKTREE_IDLE_TIMEOUT, DEFAULT_WORKTREE_RECLAIM_INTERVAL, DEFAULT_WORKTREES_PER_PROJECT, resolveWorktreeSettings, WORKTREE_IDLE_TIMEOUT_ENV, WORKTREE_RECLAIM_INTERVAL_ENV, WORKTREES_PER_PROJECT_ENV, type WorktreeSettings } from './config'
+export { BOTS_SETTINGS, DEFAULT_WORKTREE_SETTINGS, worktreeSettings, type BotsSettings, type WorktreeSettings } from './config'
 export { WORKTREE_ERROR_CODES, WorktreeError, type WorktreeErrorCode } from './errors'
 export { inspectWorktree, type InspectWorktreeOptions, type WorktreeInspection } from './inspect'
 export { createGitRunner, GIT_TIMEOUT_MS, GitError, type GitRunner, type GitRunOptions } from './git'

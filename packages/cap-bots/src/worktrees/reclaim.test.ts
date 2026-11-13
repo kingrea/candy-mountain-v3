@@ -8,7 +8,6 @@ import type { PlatformDatabase } from '@crab-shack/platform-daemon'
 import { createTempDataDir, type TempDataDir } from '@crab-shack/platform-daemon/testing'
 import { worktreeLeases } from '../schema'
 import { botsKit, createWorkspaceWithRepository, openBotsDatabase, restartBots } from '../test-support'
-import { resolveWorktreeSettings } from './config'
 import { createGitRunner } from './git'
 import { inspectWorktree } from './inspect'
 import { createWorktreePool, type WorktreeHolder, type WorktreePool } from './pool'
@@ -229,10 +228,10 @@ describe('reconcile', () => {
 })
 
 describe('settings and platform', () => {
-  it('reads the idle timeout and reclaim interval from the environment', () => {
-    expect(resolveWorktreeSettings({ CM_WORKTREE_IDLE_TIMEOUT: '30m', CM_WORKTREE_RECLAIM_INTERVAL: '45s' })).toEqual({ maxPerProject: 4, idleTimeoutMs: 1_800_000, reclaimIntervalMs: 45_000 })
-    expect(() => resolveWorktreeSettings({ CM_WORKTREE_IDLE_TIMEOUT: '2 hours' })).toThrow('CM_WORKTREE_IDLE_TIMEOUT')
-    expect(() => resolveWorktreeSettings({ CM_WORKTREE_RECLAIM_INTERVAL: '0m' })).toThrow('CM_WORKTREE_RECLAIM_INTERVAL')
+  it('refuses a bad idle timeout or reclaim interval at boot, naming bots and the key', () => {
+    expect(() => botsKit({ settings: { bots: { worktreeIdleTimeoutMs: '2h' } } })).toThrow("capability 'bots' setting 'worktreeIdleTimeoutMs' must be a whole number from 1 to 2592000000, not \"2h\"")
+    expect(() => botsKit({ settings: { bots: { worktreeReclaimIntervalMs: 0 } } })).toThrow("capability 'bots' setting 'worktreeReclaimIntervalMs' must be a whole number from 1 to 2592000000, not 0")
+    expect(() => botsKit({ settings: { bots: { worktreeReclaimIntervalMs: 31 * 24 * HOUR } } })).toThrow("capability 'bots' setting 'worktreeReclaimIntervalMs'")
   })
 
   it('closes missing-path leases at startup and reclaims idle ones on the interval', async () => {
@@ -247,7 +246,7 @@ describe('settings and platform', () => {
     rmSync(gone.path, { recursive: true, force: true })
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined)
 
-    const kit = await restartBots(first, { worktrees: { idleTimeoutMs: HOUR, reclaimIntervalMs: 50 } })
+    const kit = await restartBots(first, { settings: { bots: { worktreeIdleTimeoutMs: HOUR, worktreeReclaimIntervalMs: 50 } } })
     try {
       const report = await kit.platform.runtime.services('bots').get(BOT_WORKTREE_RECLAIMER).ready
       expect(report?.closedLeases.map(lease => lease.id)).toEqual([gone.id])

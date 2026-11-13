@@ -12,6 +12,8 @@ export const CODEX_FAMILY = { id: 'codex', name: 'Codex' } as const
 export function codexDefinition(): CapabilityDefinition {
   return defineCapabilityDefinition({
     id: CODEX_CAPABILITY_ID,
+    package: '@candy-mountain/plugin-codex',
+    sdkMajor: 0,
     dependsOn: [ACP_CAPABILITY_ID],
     pluginTypes: [codexPluginType],
     sessionFamilies: [CODEX_FAMILY],

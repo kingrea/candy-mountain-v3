@@ -5,7 +5,7 @@ import { and, asc, eq, lte } from 'drizzle-orm'
 import { type DataPaths, type Db, listWorkspaces } from '@crab-shack/platform-daemon'
 import { worktreeLeases } from '../schema'
 import type { RepositoryPaths } from '@candy-mountain/plugin-repository'
-import { resolveWorktreeSettings } from './config'
+import { DEFAULT_WORKTREE_SETTINGS } from './config'
 import { inspectWorktree } from './inspect'
 import type { WorktreeLease, WorktreePool } from './pool'
 
@@ -51,9 +51,7 @@ export interface WorktreeReclaimer {
   close(): void
 }
 
-const defaults = resolveWorktreeSettings({})
-
-export function startWorktreeReclaimer({ db, paths, pool, repository, now = () => new Date(), log = console }: WorktreeReclaimerDeps, { idleTimeoutMs = defaults.idleTimeoutMs, reclaimIntervalMs = defaults.reclaimIntervalMs, reconcileOnStart = true }: WorktreeReclaimerOptions = {}): WorktreeReclaimer {
+export function startWorktreeReclaimer({ db, paths, pool, repository, now = () => new Date(), log = console }: WorktreeReclaimerDeps, { idleTimeoutMs = DEFAULT_WORKTREE_SETTINGS.idleTimeoutMs, reclaimIntervalMs = DEFAULT_WORKTREE_SETTINGS.reclaimIntervalMs, reconcileOnStart = true }: WorktreeReclaimerOptions = {}): WorktreeReclaimer {
   let closed = false
 
   const activeLeases = (projectId?: string) => db

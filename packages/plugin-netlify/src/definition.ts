@@ -7,6 +7,8 @@ export const NETLIFY_CAPABILITY_ID = 'netlify'
 export function netlifyDefinition(): CapabilityDefinition {
   return defineCapabilityDefinition({
     id: NETLIFY_CAPABILITY_ID,
+    package: '@candy-mountain/plugin-netlify',
+    sdkMajor: 0,
     pluginTypes: [netlifyPluginType],
   })
 }

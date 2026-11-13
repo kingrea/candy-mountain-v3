@@ -24,6 +24,8 @@ export const REPOSITORY_WORKSPACE_FACTS: readonly WorkspaceFactDeclaration[] = [
 export function repositoryDefinition(): CapabilityDefinition {
   return defineCapabilityDefinition({
     id: REPOSITORY_CAPABILITY_ID,
+    package: '@candy-mountain/plugin-repository',
+    sdkMajor: 0,
     schema: { schema: repositorySchema, migrationsFolder: srcPath('migrations') },
     provides: [REPOSITORY_PATHS],
     pluginTypes: [repositoryPluginType],

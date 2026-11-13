@@ -1,6 +1,6 @@
 import { basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { capabilityDependencyDrift, capabilityKindProblems, workspacePackages, workspaceRoot } from '@crab-shack/platform-config/package-boundaries'
+import { capabilityDependencyDrift, capabilityKindProblems, capabilitySdkDrift, workspacePackages, workspaceRoot } from '@crab-shack/platform-config/package-boundaries'
 import { describe, expect, it } from 'vitest'
 import { capabilityDefinitions, DEFINITIONS } from './definitions'
 
@@ -33,6 +33,14 @@ describe('capability packages', () => {
       const definition = definitions.get(pkg.capabilityId!)
       if (!definition) return [`the distribution lists no definition with id '${pkg.capabilityId}' for ${pkg.name}`]
       return capabilityDependencyDrift(pkg, definition, packages)
+    })
+    expect(problems).toEqual([])
+  })
+
+  it('state the SDK major they target as the same major in a package.json peer range and in the definition, which names the package', () => {
+    const problems = capabilities.flatMap((pkg) => {
+      const definition = definitions.get(pkg.capabilityId!)
+      return definition ? capabilitySdkDrift(pkg, definition) : []
     })
     expect(problems).toEqual([])
   })

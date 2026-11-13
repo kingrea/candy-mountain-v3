@@ -22,8 +22,8 @@ describe('CANDY_MOUNTAIN_PRODUCT', () => {
     expect(product.theme.hex).toMatch(/^#[0-9a-f]{6}$/)
   })
 
-  it('has the mountain icon as its logo', () => {
-    expect(product.theme.logo).toEqual({ name: 'i-lucide-mountain-snow' })
+  it('uses the approved candy mountain logo', () => {
+    expect(product.theme.logo).toEqual({ src: '/brand/candy-mountain-128.png' })
   })
 
   it('follows the system colour mode and lets the user switch it', () => {

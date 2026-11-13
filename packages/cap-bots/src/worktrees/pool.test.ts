@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { deleteWorkspace, type PlatformDatabase } from '@crab-shack/platform-daemon'
 import { createTempDataDir, type TempDataDir } from '@crab-shack/platform-daemon/testing'
 import { botsKit, createWorkspaceWithRepository, openBotsDatabase } from '../test-support'
-import { resolveWorktreeSettings } from './config'
+import { DEFAULT_WORKTREE_SETTINGS } from './config'
 import { WorktreeError } from './errors'
 import { createGitRunner, GitError } from './git'
 import { createKeyedLock } from './lock'
@@ -266,11 +266,21 @@ describe('keyed lock', () => {
 })
 
 describe('settings and platform', () => {
-  it('reads the cap from the environment', () => {
-    expect(resolveWorktreeSettings({})).toEqual({ maxPerProject: 4, idleTimeoutMs: 7_200_000, reclaimIntervalMs: 600_000 })
-    expect(resolveWorktreeSettings({ CM_WORKTREES_PER_PROJECT: '2' })).toMatchObject({ maxPerProject: 2 })
-    expect(() => resolveWorktreeSettings({ CM_WORKTREES_PER_PROJECT: '0' })).toThrow('CM_WORKTREES_PER_PROJECT')
-    expect(() => resolveWorktreeSettings({ CM_WORKTREES_PER_PROJECT: 'two' })).toThrow('CM_WORKTREES_PER_PROJECT')
+  it('takes the cap from the product\'s bots settings, refusing a bad one at boot', async () => {
+    expect(DEFAULT_WORKTREE_SETTINGS).toEqual({ maxPerProject: 4, idleTimeoutMs: 7_200_000, reclaimIntervalMs: 600_000 })
+    expect(() => botsKit({ settings: { bots: { worktreesPerProject: 0 } } })).toThrow("capability 'bots' setting 'worktreesPerProject' must be a whole number of at least 1, not 0")
+    expect(() => botsKit({ settings: { bots: { worktreesPerProject: 'two' } } })).toThrow("capability 'bots' setting 'worktreesPerProject' must be a whole number of at least 1, not \"two\"")
+    const kit = botsKit({ settings: { bots: { worktreesPerProject: 1 } } })
+    try {
+      repo = createTempGitRepo()
+      const created = kit.workspace({ name: 'gamma' })
+      await setRepository(kit.db, created.id, { kind: 'local-path', path: repo.clone })
+      await kit.worktrees.acquire({ projectId: created.id, holder: holder('s1'), baseBranch: 'main' })
+      expect(await failure(kit.worktrees.acquire({ projectId: created.id, holder: holder('s2'), baseBranch: 'main' }))).toMatchObject({ code: 'cap_reached' })
+    }
+    finally {
+      await kit.close()
+    }
   })
 
   it('exposes the pool through the bots definition under the data directory', async () => {

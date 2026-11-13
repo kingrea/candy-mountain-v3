@@ -15,8 +15,8 @@
     "db:check": "drizzle-kit check"
   },
   "dependencies": {
-    "@crab-shack/platform-daemon": "0.4.0",
-    "@crab-shack/platform-sdk": "0.4.0",
+    "@crab-shack/platform-daemon": "0.5.0",
+    "@crab-shack/platform-sdk": "0.5.0",
     "@candy-mountain/plugin-heroku": "workspace:*",
     "@candy-mountain/plugin-netlify": "workspace:*",
     "@nuxt/ui": "^4.12.0",
@@ -25,9 +25,12 @@
     "nuxt": "^4.6.2",
     "vue": "^3.5.44"
   },
+  "peerDependencies": {
+    "@crab-shack/platform-sdk": "0.x"
+  },
   "devDependencies": {
-    "@crab-shack/platform-config": "0.4.0",
-    "@crab-shack/platform-web": "0.4.0",
+    "@crab-shack/platform-config": "0.5.0",
+    "@crab-shack/platform-web": "0.5.0",
     "@types/better-sqlite3": "^9.6.0",
     "drizzle-kit": "^0.31.11"
   }

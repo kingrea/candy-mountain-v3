@@ -5,7 +5,7 @@ import { and, asc, eq } from 'drizzle-orm'
 import type { DataPaths, Db } from '@crab-shack/platform-daemon'
 import { worktreeLeases, type WorktreeHolderKind, type WorktreeLeaseState } from '../schema'
 import type { RepositoryPaths } from '@candy-mountain/plugin-repository'
-import { DEFAULT_WORKTREES_PER_PROJECT, type WorktreeSettings } from './config'
+import { DEFAULT_WORKTREE_SETTINGS, type WorktreeSettings } from './config'
 import { WorktreeError } from './errors'
 import { createGitRunner, GitError, type GitRunner } from './git'
 import { inspectWorktree } from './inspect'
@@ -112,7 +112,7 @@ export function defaultBranchName(holder: WorktreeHolder): string {
   return `${WORKTREE_BRANCH_PREFIX}/${holder.kind}/${holder.id}`
 }
 
-export function createWorktreePool({ db, paths, repository, git = createGitRunner(), now = () => new Date(), installer = installWorktreeDependencies }: WorktreePoolDeps, { maxPerProject = DEFAULT_WORKTREES_PER_PROJECT, dependencyInstallTimeoutMs = DEPENDENCY_INSTALL_TIMEOUT_MS }: WorktreePoolOptions = {}): WorktreePool {
+export function createWorktreePool({ db, paths, repository, git = createGitRunner(), now = () => new Date(), installer = installWorktreeDependencies }: WorktreePoolDeps, { maxPerProject = DEFAULT_WORKTREE_SETTINGS.maxPerProject, dependencyInstallTimeoutMs = DEPENDENCY_INSTALL_TIMEOUT_MS }: WorktreePoolOptions = {}): WorktreePool {
   const lock = createKeyedLock()
   const withProjectLock = <T>(projectId: string, fn: () => Promise<T>) => lock(projectId, fn)
 

@@ -7,6 +7,8 @@ import { chatCodexCapability } from './manifest'
 export function chatCodexDefinition(): CapabilityDefinition {
   return defineCapabilityDefinition({
     id: chatCodexCapability.id,
+    package: '@candy-mountain/cap-chat-codex',
+    sdkMajor: 0,
     manifest: chatCodexCapability,
     dependsOn: [ACP_CAPABILITY_ID, CODEX_CAPABILITY_ID],
   })

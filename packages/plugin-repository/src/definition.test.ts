@@ -23,7 +23,7 @@ describe('the repository definition', () => {
 
   it('is required by its dependents: a product without it refuses to boot, naming the dependency', () => {
     temp = createTempDataDir()
-    const dependent = defineCapabilityDefinition({ id: 'dependent', dependsOn: [REPOSITORY_CAPABILITY_ID], start: () => ({}) })
+    const dependent = defineCapabilityDefinition({ id: 'dependent', sdkMajor: 0, dependsOn: [REPOSITORY_CAPABILITY_ID], start: () => ({}) })
     expect(() => startTestPlatform(temp!.root, { capabilities: [dependent] })).toThrow(CapabilityDefinitionError)
     expect(() => startTestPlatform(temp!.root, { capabilities: [dependent] })).toThrow('Capability \'dependent\' depends on \'repository\', which is not in the definition list.')
     expect(existsSync(temp.root)).toBe(false)

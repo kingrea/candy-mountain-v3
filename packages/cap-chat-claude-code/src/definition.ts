@@ -8,6 +8,8 @@ import { chatClaudeCodeCapability } from './manifest'
 export function chatClaudeCodeDefinition(): CapabilityDefinition {
   return defineCapabilityDefinition({
     id: chatClaudeCodeCapability.id,
+    package: '@candy-mountain/cap-chat-claude-code',
+    sdkMajor: 0,
     manifest: chatClaudeCodeCapability,
     dependsOn: [ACP_CAPABILITY_ID, CLAUDE_CODE_CAPABILITY_ID, REPOSITORY_CAPABILITY_ID],
   })

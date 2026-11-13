@@ -12,6 +12,8 @@ export function teamRoutes(): Pick<CapabilityRuntime, 'workspaceRoutes'> {
 export function teamDefinition(): CapabilityDefinition {
   return defineCapabilityDefinition({
     id: teamCapability.id,
+    package: '@candy-mountain/cap-team',
+    sdkMajor: 0,
     manifest: teamCapability,
     schema: { schema: teamSchema, migrationsFolder: srcPath('migrations') },
     start: () => teamRoutes(),

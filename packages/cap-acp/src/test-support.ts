@@ -86,6 +86,7 @@ const codexStandInLauncher: SessionLauncher = {
 function chatStandInDefinitions(manifest: AnyCapabilityManifest, pluginType: AnyPluginType, family: StandInFamily, launcher: SessionLauncher): CapabilityDefinition[] {
   const connection = defineCapabilityDefinition({
     id: pluginType.id,
+    sdkMajor: 0,
     dependsOn: [ACP_CAPABILITY_ID],
     pluginTypes: [pluginType],
     sessionFamilies: [family],
@@ -94,7 +95,7 @@ function chatStandInDefinitions(manifest: AnyCapabilityManifest, pluginType: Any
       return {}
     },
   })
-  return [connection, defineCapabilityDefinition({ id: manifest.id, manifest, dependsOn: [connection.id] })]
+  return [connection, defineCapabilityDefinition({ id: manifest.id, sdkMajor: 0, manifest, dependsOn: [connection.id] })]
 }
 
 /** What claude-code and chat-claude-code contribute, without either: a connection on acp bringing the claude-code family, and its chat capability. */

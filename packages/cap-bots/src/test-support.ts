@@ -48,7 +48,7 @@ const chatClaudeCodeStandInCapability = defineCapability({
 })
 
 export function chatClaudeCodeStandInDefinition(): CapabilityDefinition {
-  return defineCapabilityDefinition({ id: chatClaudeCodeStandInCapability.id, manifest: chatClaudeCodeStandInCapability, dependsOn: ['acp', 'claude-code'] })
+  return defineCapabilityDefinition({ id: chatClaudeCodeStandInCapability.id, sdkMajor: 0, manifest: chatClaudeCodeStandInCapability, dependsOn: ['acp', 'claude-code'] })
 }
 
 /** The module bots and team sit in under a product, with the chat capabilities the bot families need. */

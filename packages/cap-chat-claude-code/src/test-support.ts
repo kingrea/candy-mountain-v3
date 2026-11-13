@@ -54,6 +54,7 @@ const codexStandInLauncher: SessionLauncher = {
 export function codexStandInDefinitions(): CapabilityDefinition[] {
   const connection = defineCapabilityDefinition({
     id: codexStandInPluginType.id,
+    sdkMajor: 0,
     dependsOn: ['acp'],
     pluginTypes: [codexStandInPluginType],
     sessionFamilies: [CODEX_STAND_IN_FAMILY],
@@ -62,7 +63,7 @@ export function codexStandInDefinitions(): CapabilityDefinition[] {
       return {}
     },
   })
-  return [connection, defineCapabilityDefinition({ id: codexStandInCapability.id, manifest: codexStandInCapability, dependsOn: [connection.id] })]
+  return [connection, defineCapabilityDefinition({ id: codexStandInCapability.id, sdkMajor: 0, manifest: codexStandInCapability, dependsOn: [connection.id] })]
 }
 
 export const AGENT_HUB_MODULE: ModuleDefinition = {

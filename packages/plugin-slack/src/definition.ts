@@ -21,6 +21,8 @@ export interface SlackOptions {
 export function slackDefinition(options: SlackOptions = {}): CapabilityDefinition {
   return defineCapabilityDefinition({
     id: SLACK_CAPABILITY_ID,
+    package: '@candy-mountain/plugin-slack',
+    sdkMajor: 0,
     pluginTypes: [slackPluginType],
     provides: [SLACK_CONNECTIONS],
     start({ db, secrets, pluginTypes, scopeUrlPrefix, scopeLabel }) {

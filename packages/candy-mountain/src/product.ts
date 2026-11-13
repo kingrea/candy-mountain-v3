@@ -7,7 +7,7 @@ export const CANDY_MOUNTAIN_PRODUCT: Readonly<ProductConfig> = {
   theme: {
     colors: { primary: 'pink', neutral: 'neutral' },
     hex: '#ec4899',
-    logo: { name: 'i-lucide-mountain-snow' },
+    logo: { src: '/brand/candy-mountain-128.png' },
     colorMode: { default: 'system', switchable: true },
   },
   scope: {

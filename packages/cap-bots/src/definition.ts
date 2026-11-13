@@ -14,7 +14,7 @@ import { slackBotSource } from './slack/bot-source'
 import { startSlackHandoffs, type SlackHandoffs, type SlackHandoffsOptions } from './slack/handoffs'
 import { startSlackRouter, type SlackRouter, type SlackRouterOptions, type SlackTurnEnd } from './slack/router'
 import { slackRoutes } from './slack/routes'
-import { createWorktreePool, resolveWorktreeSettings, startWorktreeReclaimer, type WorktreePool, type WorktreePoolOptions, type WorktreeReclaimer, type WorktreeReclaimerOptions } from './worktrees'
+import { BOTS_SETTINGS, createWorktreePool, startWorktreeReclaimer, worktreeSettings, type WorktreePool, type WorktreePoolOptions, type WorktreeReclaimer, type WorktreeReclaimerOptions } from './worktrees'
 import { deleteProjectBots, hasWorkspaceBots } from './bots'
 import { botsCapability } from './manifest'
 import { botRoutes } from './bots/routes'
@@ -66,6 +66,8 @@ export function botsRoutes({ db, secrets }: BotsRoutesDeps, sessions?: BotSessio
 export function botsDefinition(options: BotsOptions = {}): CapabilityDefinition {
   return defineCapabilityDefinition({
     id: botsCapability.id,
+    package: '@candy-mountain/cap-bots',
+    sdkMajor: 0,
     manifest: botsCapability,
     schema: { schema: botsSchema, migrationsFolder: srcPath('migrations') },
     // No claude-code or codex service is read, but bots of each family need the family and plugin type its connection package brings; the Slack router reads the team roster.
@@ -73,13 +75,14 @@ export function botsDefinition(options: BotsOptions = {}): CapabilityDefinition 
     provides: [BOT_SESSIONS, BOT_WORKTREES, BOT_WORKTREE_RECLAIMER, BOT_SLACK_ROUTER, BOT_SLACK_DECISIONS, BOT_SLACK_HANDOFFS],
     activityEventTypes: BOT_ACTIVITY_EVENT_TYPES,
     workspaceFacts: BOT_WORKSPACE_FACTS,
-    start({ db, paths, secrets, pluginTypes, families, scopeUrlPrefix, service }) {
+    settings: BOTS_SETTINGS,
+    start({ db, paths, secrets, pluginTypes, families, scopeUrlPrefix, service, settings }) {
       // BOT_FAMILIES is still a closed list, so a product that drops one of them must fail here rather than at the first bot.
       for (const family of BOT_FAMILIES) {
         if (!families.has(family)) throw new CapabilityDefinitionError(`Capability '${botsCapability.id}': bot family '${family}' is not a registered session family.`)
       }
       const repository = service(REPOSITORY_PATHS)
-      const worktreeOptions = { ...resolveWorktreeSettings(), ...options.worktrees }
+      const worktreeOptions = { ...worktreeSettings(settings), ...options.worktrees }
       const worktrees = createWorktreePool({ db, paths, repository }, worktreeOptions)
       const sessions = service(ACP_SESSIONS)
       const slack = service(SLACK_CONNECTIONS)

@@ -14,15 +14,18 @@
   },
   "dependencies": {
     "@candy-mountain/cap-acp": "workspace:*",
-    "@crab-shack/platform-daemon": "0.4.0",
-    "@crab-shack/platform-sdk": "0.4.0",
+    "@crab-shack/platform-daemon": "0.5.0",
+    "@crab-shack/platform-sdk": "0.5.0",
     "@candy-mountain/plugin-codex": "workspace:*",
     "vue": "^3.5.44"
   },
+  "peerDependencies": {
+    "@crab-shack/platform-sdk": "0.x"
+  },
   "devDependencies": {
     "@candy-mountain/testing": "workspace:*",
-    "@crab-shack/platform-config": "0.4.0",
-    "@crab-shack/platform-web": "0.4.0",
+    "@crab-shack/platform-config": "0.5.0",
+    "@crab-shack/platform-web": "0.5.0",
     "@types/better-sqlite3": "^9.6.0"
   }
 }

@@ -5,6 +5,7 @@ export function repositoryStandInDefinition(): CapabilityDefinition {
   const paths = serviceKey<{ find(workspaceId: string): string | null, get(workspaceId: string): string }>('repository.paths')
   return defineCapabilityDefinition({
     id: 'repository',
+    sdkMajor: 0,
     provides: [paths],
     start: () => ({
       services: [bindService(paths, {
@@ -19,5 +20,5 @@ export function repositoryStandInDefinition(): CapabilityDefinition {
 
 /** Registers the claude-code family the way the definition bringing it does, without plugin-claude-code. */
 export function claudeCodeFamilyStandInDefinition(): CapabilityDefinition {
-  return defineCapabilityDefinition({ id: 'claude-code', dependsOn: ['acp'], sessionFamilies: [{ id: 'claude-code', name: 'Claude Code' }] })
+  return defineCapabilityDefinition({ id: 'claude-code', sdkMajor: 0, dependsOn: ['acp'], sessionFamilies: [{ id: 'claude-code', name: 'Claude Code' }] })
 }

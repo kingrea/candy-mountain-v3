@@ -49,6 +49,8 @@ export function liveVersionSourceRegistryFor(sources: readonly LiveVersionSource
 export function deploymentsDefinition({ sources = LIVE_VERSION_SOURCES, fetch }: DeploymentsOptions = {}): CapabilityDefinition {
   return defineCapabilityDefinition({
     id: deploymentsCapability.id,
+    package: '@candy-mountain/cap-deployments',
+    sdkMajor: 0,
     manifest: deploymentsCapability,
     dependsOn: [HEROKU_CAPABILITY_ID, NETLIFY_CAPABILITY_ID],
     schema: { schema: deploymentsSchema, migrationsFolder: srcPath('migrations') },

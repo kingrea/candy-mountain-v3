@@ -26,6 +26,8 @@ export function acpRoutes(sessions: SessionManager, decisions: DecisionService):
 export function acpDefinition(options: AcpOptions = {}): CapabilityDefinition {
   return defineCapabilityDefinition({
     id: ACP_CAPABILITY_ID,
+    package: '@candy-mountain/cap-acp',
+    sdkMajor: 0,
     dependsOn: [THREADS_CAPABILITY_ID, REPOSITORY_CAPABILITY_ID],
     provides: [ACP_SESSIONS, ACP_HARNESS, ACP_DECISIONS],
     start({ db, paths, secrets, pluginTypes, families, agentMcp, service }) {

@@ -7,6 +7,8 @@ export const HEROKU_CAPABILITY_ID = 'heroku'
 export function herokuDefinition(): CapabilityDefinition {
   return defineCapabilityDefinition({
     id: HEROKU_CAPABILITY_ID,
+    package: '@candy-mountain/plugin-heroku',
+    sdkMajor: 0,
     pluginTypes: [herokuPluginType],
   })
 }

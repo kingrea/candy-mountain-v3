@@ -9,11 +9,12 @@ export const CAPABILITY_DEFINITIONS = CANDY_MOUNTAIN.capabilities
 
 export type ProductParts = Partial<Pick<Product, 'capabilities' | 'modules' | 'pluginTypes'>>
 
-/** Candy Mountain with parts swapped; the configuration's ids follow them, so only the parts themselves are validated. */
+/** Candy Mountain with parts swapped; the configuration's ids and settings blocks follow them, so only the parts themselves are validated. */
 export function candyMountainWith(parts: ProductParts): Product {
   const product = { ...CANDY_MOUNTAIN, ...parts }
   const ids = suppliedIds(product)
-  return { ...product, config: { ...CANDY_MOUNTAIN_PRODUCT, capabilities: ids.capabilities, modules: ids.modules, pluginTypes: [...new Set(ids.pluginTypes)] } }
+  const settings = Object.fromEntries(Object.entries(CANDY_MOUNTAIN.settings ?? {}).filter(([id]) => ids.capabilities.includes(id)))
+  return { ...product, settings, config: { ...CANDY_MOUNTAIN_PRODUCT, capabilities: ids.capabilities, modules: ids.modules, pluginTypes: [...new Set(ids.pluginTypes)] } }
 }
 
 /** Candy Mountain's definitions without the given ids, with the modules that list them trimmed and any left empty dropped. */

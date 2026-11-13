@@ -12,6 +12,8 @@ export const CLAUDE_CODE_FAMILY = { id: 'claude-code', name: 'Claude Code' } as 
 export function claudeCodeDefinition(): CapabilityDefinition {
   return defineCapabilityDefinition({
     id: CLAUDE_CODE_CAPABILITY_ID,
+    package: '@candy-mountain/plugin-claude-code',
+    sdkMajor: 0,
     dependsOn: [ACP_CAPABILITY_ID],
     pluginTypes: [claudeCodePluginType],
     sessionFamilies: [CLAUDE_CODE_FAMILY],
