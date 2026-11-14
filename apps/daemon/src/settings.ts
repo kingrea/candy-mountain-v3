@@ -1,4 +1,4 @@
-import { BOTS_SETTINGS } from '@candy-mountain/cap-bots'
+import { BOTS_SETTINGS } from '@crab-shack/cap-bots'
 import { CANDY_MOUNTAIN_SETTINGS } from '@candy-mountain/candy-mountain'
 import { ProductError } from '@crab-shack/platform-daemon'
 import type { ProductSettings } from '@crab-shack/platform-sdk'

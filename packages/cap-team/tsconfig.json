@@ -1,7 +1,0 @@
-{
-  "extends": "@crab-shack/platform-config/tsconfig.base.json",
-  "compilerOptions": {
-    "types": ["node"]
-  },
-  "include": ["src", "drizzle.config.ts", "vitest.config.ts"]
-}

@@ -6,6 +6,6 @@ export default defineConfig({
   platform: 'node',
   target: 'node22',
   dts: false,
-  // Workspace packages ship TypeScript source, so they must be bundled rather than imported at runtime.
+  // The product package ships TypeScript source, so it is bundled; the installed capabilities are built and stay imports.
   deps: { alwaysBundle: [/^@candy-mountain\//] },
 })

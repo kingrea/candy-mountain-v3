@@ -16,7 +16,7 @@
     },
     "test": {
       "dependsOn": ["^transit"],
-      "env": ["CM_*", "CLAUDE_ACP_TEST_BIN"]
+      "env": ["CM_*"]
     },
     "lint": {
       "dependsOn": ["^transit"]

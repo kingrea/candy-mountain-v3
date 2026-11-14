@@ -1,10 +1,10 @@
 import { existsSync } from 'node:fs'
 import { CANDY_MOUNTAIN_SETTINGS } from '@candy-mountain/candy-mountain'
-import { BOTS_SETTINGS } from '@candy-mountain/cap-bots'
+import { BOTS_SETTINGS } from '@crab-shack/cap-bots'
 import { isCapabilityDefinition, productSettings, ProductError, startPlatform, type Product } from '@crab-shack/platform-daemon'
+import { createTempDataDir, type TempDataDir } from '@crab-shack/platform-daemon/testing'
 import { afterEach, describe, expect, it } from 'vitest'
 import { CANDY_MOUNTAIN, candyMountainProduct } from './candy-mountain'
-import { createTempDataDir, type TempDataDir } from './testing'
 
 const botsSettings = (product: Product) => productSettings(product, product.capabilities.filter(isCapabilityDefinition)).get('bots')
 

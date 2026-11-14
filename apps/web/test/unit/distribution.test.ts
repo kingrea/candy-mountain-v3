@@ -52,7 +52,6 @@ describe('the Candy Mountain web distribution', () => {
     expect(sorted(CANDY_MOUNTAIN_PRODUCT.layers)).toEqual(sorted([...packages.keys(), ...platformLayers()]))
     const own = CANDY_MOUNTAIN_PRODUCT.layers.filter(id => !platformLayers().includes(id))
     expect(listLayers(CANDY_MOUNTAIN_PRODUCT.layers, webRoot).map(([dir]) => dir)).toEqual(own.map(id => packages.get(id)?.dir))
-    expect([...packages.values()].map(pkg => pkg.name).filter(name => !name.startsWith('@candy-mountain/'))).toEqual([])
   })
 
   it.each(['production', 'development'] as const)('serves the shell pages and every layer\'s pages under /p/ in %s, with the product', async (envName) => {
