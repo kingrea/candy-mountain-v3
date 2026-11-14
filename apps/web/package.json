@@ -21,7 +21,7 @@
     "@crab-shack/cap-deployments": "0.1.1",
     "@crab-shack/cap-issues": "0.1.0",
     "@crab-shack/cap-team": "0.1.1",
-    "@crab-shack/cap-uptime": "0.1.1",
+    "@crab-shack/cap-uptime": "0.1.3",
     "@crab-shack/platform-sdk": "0.9.1",
     "@crab-shack/platform-web": "0.9.1",
     "@crab-shack/plugin-claude-code": "0.1.0",
