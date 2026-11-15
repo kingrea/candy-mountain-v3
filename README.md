@@ -37,7 +37,7 @@ A fix a capability needs is made in the capabilities repository and released, ne
 
 Capabilities have independent versions, so one can move without the others.
 
-1. See what exists. `pnpm view @crab-shack/cap-team versions` lists the published versions of one package (it uses your `~/.npmrc` token); the organisation's packages page, `https://github.com/orgs/crab-shack/packages`, lists them all, and the README of the capabilities repository has a generated catalogue of every package with its current version. From platform 0.10.0, `pnpm platform-list` lists the published capabilities from inside a product (this repository is on 0.9.1, so it does not have it yet).
+1. See what exists. `pnpm view @crab-shack/cap-team versions` lists the published versions of one package (it uses your `~/.npmrc` token); the organisation's packages page, `https://github.com/orgs/crab-shack/packages`, lists them all, and the README of the capabilities repository has a generated catalogue of every package with its current version. `pnpm platform-list` lists them from inside this repository: every published capability and connection with its current version, marking the ones Candy Mountain has and, when it is behind, the version it is on.
 2. Read what changed. Each package's `CHANGELOG.md` sits beside it in the capabilities repository (`packages/cap-<id>/CHANGELOG.md`) and is published inside the package, so after an install it is also at `node_modules/@crab-shack/cap-<id>/CHANGELOG.md`.
 3. Change its version in both places Candy Mountain lists it, the same version in each: `apps/daemon/package.json` and `apps/web/package.json`. To find them:
 
