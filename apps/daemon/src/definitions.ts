@@ -1,4 +1,5 @@
 import { acpDefinition } from '@crab-shack/cap-acp'
+import { agentsDefinition } from '@crab-shack/cap-agents'
 import { botsDefinition } from '@crab-shack/cap-bots'
 import { chatClaudeCodeDefinition } from '@crab-shack/cap-chat-claude-code'
 import { chatCodexDefinition } from '@crab-shack/cap-chat-codex'
@@ -12,6 +13,7 @@ import { repositoryDefinition } from '@crab-shack/plugin-repository'
 import { slackDefinition } from '@crab-shack/plugin-slack'
 import { teamDefinition } from '@crab-shack/cap-team'
 import { uptimeDefinition } from '@crab-shack/cap-uptime'
+import { worktreesDefinition } from '@crab-shack/cap-worktrees'
 import { overviewDefinition, platformAgentDefinition, type CapabilityRegistryEntry } from '@crab-shack/platform-daemon'
 
 /** Candy Mountain's capabilities by id, in registration order; what a build ships. Development-only ones are in development.ts. */
@@ -21,12 +23,14 @@ export const DEFINITIONS = {
   'issues': issuesDefinition,
   'slack': slackDefinition,
   'acp': acpDefinition,
-  'bots': botsDefinition,
-  'team': teamDefinition,
+  'worktrees': worktreesDefinition,
   'claude-code': claudeCodeDefinition,
   'chat-claude-code': chatClaudeCodeDefinition,
   'codex': codexDefinition,
   'chat-codex': chatCodexDefinition,
+  'agents': agentsDefinition,
+  'team': teamDefinition,
+  'bots': botsDefinition,
   'uptime': uptimeDefinition,
   'heroku': herokuDefinition,
   'netlify': netlifyDefinition,

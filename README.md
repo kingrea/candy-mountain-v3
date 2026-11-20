@@ -21,8 +21,8 @@ Candy Mountain's capabilities and connections are the shared ones. They are deve
 
 | Kind | Packages |
 | --- | --- |
-| Feature capability | `@crab-shack/cap-issues`, `@crab-shack/cap-chat-claude-code`, `@crab-shack/cap-chat-codex`, `@crab-shack/cap-bots`, `@crab-shack/cap-team`, `@crab-shack/cap-uptime`, `@crab-shack/cap-deployments` |
-| Service-only capability | `@crab-shack/cap-acp` |
+| Feature capability | `@crab-shack/cap-issues`, `@crab-shack/cap-chat-claude-code`, `@crab-shack/cap-chat-codex`, `@crab-shack/cap-agents`, `@crab-shack/cap-bots`, `@crab-shack/cap-team`, `@crab-shack/cap-uptime`, `@crab-shack/cap-deployments` |
+| Service-only capability | `@crab-shack/cap-acp`, `@crab-shack/cap-worktrees` |
 | Connection, bringing the plugin type its id names | `@crab-shack/plugin-repository`, `@crab-shack/plugin-slack`, `@crab-shack/plugin-claude-code`, `@crab-shack/plugin-codex`, `@crab-shack/plugin-heroku`, `@crab-shack/plugin-netlify` |
 
 Each is pinned to one exact version in `apps/daemon/package.json` and in `apps/web/package.json`, the same version in both; taking a new version of a capability is changing those two lines and running `pnpm install` ([below](#taking-a-new-version-of-a-capability)). The Claude Code ACP shim, `@crab-shack/claude-acp`, is not listed: it arrives as a dependency of `@crab-shack/cap-acp` and `@crab-shack/cap-bots`, at the version `pnpm-lock.yaml` records.

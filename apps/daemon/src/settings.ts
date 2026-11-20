@@ -1,4 +1,4 @@
-import { BOTS_SETTINGS } from '@crab-shack/cap-bots'
+import { WORKTREES_SETTINGS } from '@crab-shack/cap-worktrees'
 import { CANDY_MOUNTAIN_SETTINGS } from '@candy-mountain/candy-mountain'
 import { ProductError } from '@crab-shack/platform-daemon'
 import type { ProductSettings } from '@crab-shack/platform-sdk'
@@ -14,27 +14,27 @@ function durationMs(value: string): number {
 
 interface SettingVariable {
   name: string
-  key: keyof typeof BOTS_SETTINGS
+  key: keyof typeof WORKTREES_SETTINGS
   expected: string
   parse(value: string): number
 }
 
-/** Deployments set these before bots declared its settings, so they keep their names and formats and win over the product's values. */
-export const BOTS_SETTING_VARIABLES: readonly SettingVariable[] = [
-  { name: 'CM_WORKTREES_PER_PROJECT', key: 'worktreesPerProject', expected: 'a positive integer', parse: Number },
-  { name: 'CM_WORKTREE_IDLE_TIMEOUT', key: 'worktreeIdleTimeoutMs', expected: DURATION, parse: durationMs },
-  { name: 'CM_WORKTREE_RECLAIM_INTERVAL', key: 'worktreeReclaimIntervalMs', expected: DURATION, parse: durationMs },
+/** Deployments set these before the settings were declared, so they keep their names and formats and win over the product's values. */
+export const WORKTREES_SETTING_VARIABLES: readonly SettingVariable[] = [
+  { name: 'CM_WORKTREES_PER_PROJECT', key: 'maxPerWorkspace', expected: 'a positive integer', parse: Number },
+  { name: 'CM_WORKTREE_IDLE_TIMEOUT', key: 'idleTimeoutMs', expected: DURATION, parse: durationMs },
+  { name: 'CM_WORKTREE_RECLAIM_INTERVAL', key: 'reclaimIntervalMs', expected: DURATION, parse: durationMs },
 ]
 
 /** The product's settings with any environment overrides applied; an empty variable leaves the product's value. */
 export function candyMountainSettings(env: NodeJS.ProcessEnv = {}): ProductSettings {
-  const bots: Record<string, number> = { ...CANDY_MOUNTAIN_SETTINGS.bots }
-  for (const { name, key, expected, parse } of BOTS_SETTING_VARIABLES) {
+  const worktrees: Record<string, number> = { ...CANDY_MOUNTAIN_SETTINGS.worktrees }
+  for (const { name, key, expected, parse } of WORKTREES_SETTING_VARIABLES) {
     const raw = env[name]
     if (!raw) continue
     const value = parse(raw)
-    if (settingValueProblem(BOTS_SETTINGS[key], value)) throw new ProductError(`Capability 'bots' setting '${key}': ${name} must be ${expected}, got "${raw}".`)
-    bots[key] = value
+    if (settingValueProblem(WORKTREES_SETTINGS[key], value)) throw new ProductError(`Capability 'worktrees' setting '${key}': ${name} must be ${expected}, got "${raw}".`)
+    worktrees[key] = value
   }
-  return { ...CANDY_MOUNTAIN_SETTINGS, bots }
+  return { ...CANDY_MOUNTAIN_SETTINGS, worktrees }
 }

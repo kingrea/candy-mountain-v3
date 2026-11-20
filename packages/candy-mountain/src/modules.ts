@@ -16,6 +16,7 @@ export const AGENT_HUB_MODULE: ModuleDefinition = {
   description: 'Chat with coding agents and run bots for the project.',
   icon: 'i-lucide-bot',
   capabilities: [
+    { capabilityId: 'agents', defaultRung: 'manage' },
     { capabilityId: 'bots', defaultRung: 'manage' },
     { capabilityId: 'team', defaultRung: 'manage' },
     { capabilityId: 'chat-claude-code', defaultRung: 'chat' },

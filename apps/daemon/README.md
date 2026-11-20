@@ -50,27 +50,27 @@ A product may include a capability only in development through `developmentProdu
 | `CM_AUTH_LOGIN_MAX_FAILURES` | `10` | Password strategy: failed logins allowed per username and per client IP within the window before `429` |
 | `CM_AUTH_LOGIN_WINDOW` | `1m` | Password strategy: the failed-login window, same duration format as the session TTL |
 | `CM_AUTH_COOKIE_SECURE` | `false` | `true` adds `Secure` to the session cookie; set it when the web app is served over https |
-| `CM_WORKTREES_PER_PROJECT` | `4` | Worktrees: active worktree leases allowed per project; an acquire beyond it is refused. Overrides the bots setting `worktreesPerProject`; see [Product settings](#product-settings) |
-| `CM_WORKTREE_IDLE_TIMEOUT` | `2h` | Worktrees: a lease unused this long is reclaimed if its worktree holds no uncommitted or unpushed work (`90s`, `15m`, `2h`, `1d`; at most `30d`). Overrides the bots setting `worktreeIdleTimeoutMs` |
-| `CM_WORKTREE_RECLAIM_INTERVAL` | `10m` | Worktrees: how often the idle reclaim pass runs, in the same duration format. Overrides the bots setting `worktreeReclaimIntervalMs` |
+| `CM_WORKTREES_PER_PROJECT` | `4` | Worktrees: active worktree leases allowed per project; an acquire beyond it is refused. Overrides the worktrees setting `maxPerWorkspace`; see [Product settings](#product-settings) |
+| `CM_WORKTREE_IDLE_TIMEOUT` | `2h` | Worktrees: a lease unused this long is reclaimed if its worktree holds no uncommitted or unpushed work (`90s`, `15m`, `2h`, `1d`; at most `30d`). Overrides the worktrees setting `idleTimeoutMs` |
+| `CM_WORKTREE_RECLAIM_INTERVAL` | `10m` | Worktrees: how often the idle reclaim pass runs, in the same duration format. Overrides the worktrees setting `reclaimIntervalMs` |
 | `CM_WEB_URL` | `http://127.0.0.1:4300` | Origin of the web app, used to build the absolute links in Slack notifications. See [Notifications](#notifications) |
 
 The platform reads the address, data directory, secrets key, auth, admin password and `CM_WEB_URL` in `loadDaemonConfig`. `CM_WORKTREE*` are Candy Mountain's own: they override product settings (below). A capability reads its own variables when its definition starts, so an invalid value still fails the daemon at boot, and a variable of a capability the product does not list is ignored: `CM_SESSION_IDLE_TIMEOUT`, `CM_SESSION_MAX_LIVE` and `CM_DECISION_TIMEOUT` (`@crab-shack/cap-acp`), `CM_UPTIME_HISTORY_MAX` and `CM_UPTIME_HISTORY_MAX_AGE` (`@crab-shack/cap-uptime`). Their defaults and formats are in those packages' READMEs. Options a test hands a definition override its variables.
 
 ### Product settings
 
-A capability can declare product-level settings; the platform checks the product's block for it at boot, before anything touches disk, and hands the values to its `start` as `context.settings`. A wrong type, a value out of range, an undeclared key or a block for a capability the product does not list stops the daemon naming the capability and the key, for example `Product 'Candy Mountain' settings do not match its capabilities: capability 'bots' setting 'worktreesPerProject' must be a whole number of at least 1, not 0.`
+A capability can declare product-level settings; the platform checks the product's block for it at boot, before anything touches disk, and hands the values to its `start` as `context.settings`. A wrong type, a value out of range, an undeclared key or a block for a capability the product does not list stops the daemon naming the capability and the key, for example `Product 'Candy Mountain' settings do not match its capabilities: capability 'worktrees' setting 'maxPerWorkspace' must be a whole number of at least 1, not 0.`
 
 | Capability | Setting | Default | Environment override |
 |---|---|---|---|
-| `bots` | `worktreesPerProject` | `4` | `CM_WORKTREES_PER_PROJECT` |
-| `bots` | `worktreeIdleTimeoutMs` | `7200000` (2h) | `CM_WORKTREE_IDLE_TIMEOUT` |
-| `bots` | `worktreeReclaimIntervalMs` | `600000` (10m) | `CM_WORKTREE_RECLAIM_INTERVAL` |
+| `worktrees` | `maxPerWorkspace` | `4` | `CM_WORKTREES_PER_PROJECT` |
+| `worktrees` | `idleTimeoutMs` | `7200000` (2h) | `CM_WORKTREE_IDLE_TIMEOUT` |
+| `worktrees` | `reclaimIntervalMs` | `600000` (10m) | `CM_WORKTREE_RECLAIM_INTERVAL` |
 
-- Declared by `@crab-shack/cap-bots` (`BOTS_SETTINGS`, exported from its root entry and described under "Settings" in its README; the durations are integers of milliseconds from 1 to 30 days).
+- Declared by `@crab-shack/cap-worktrees` (`WORKTREES_SETTINGS`, exported from its root entry and described under "Settings" in its README; the durations are integers of milliseconds from 1 to 30 days).
 - Candy Mountain's values are `CANDY_MOUNTAIN_SETTINGS` in `packages/candy-mountain/src/settings.ts`; change them there.
-- The environment is read in `apps/daemon/src/settings.ts` (`candyMountainSettings(env)`), which the entry point calls with `process.env` through `candyMountainProduct({}, process.env)`. A set variable wins over the product's value, keeps its old format (a positive integer; `90s`, `15m`, `2h`, `1d` up to `30d`) and is checked against the declaration, so a bad one stops the boot with, for example, `Capability 'bots' setting 'worktreeIdleTimeoutMs': CM_WORKTREE_IDLE_TIMEOUT must be a duration such as 90s, 15m or 2h, at most 30d, got "2 hours".` An empty variable leaves the product's value. Tests boot `CANDY_MOUNTAIN` without the environment.
-- `capabilityDefinitions({ bots: { worktrees } })` options still override the settings, for tests.
+- The environment is read in `apps/daemon/src/settings.ts` (`candyMountainSettings(env)`), which the entry point calls with `process.env` through `candyMountainProduct({}, process.env)`. A set variable wins over the product's value, keeps its old format (a positive integer; `90s`, `15m`, `2h`, `1d` up to `30d`) and is checked against the declaration, so a bad one stops the boot with, for example, `Capability 'worktrees' setting 'idleTimeoutMs': CM_WORKTREE_IDLE_TIMEOUT must be a duration such as 90s, 15m or 2h, at most 30d, got "2 hours".` An empty variable leaves the product's value. Tests boot `CANDY_MOUNTAIN` without the environment.
+- `capabilityDefinitions({ worktrees: { pool } })` options still override the settings, for tests.
 
 `~/.candy-mountain` is not used because Candy Mountain v2 owns it. Keep the data directory outside any repository.
 
@@ -82,7 +82,9 @@ Each installed package carries its own `README.md` (in crab-shack/capabilities u
 |---|---|
 | The workspace's checkout and its verification, the `repository` plugin type (GitHub and Bitbucket) and its branches action | `@crab-shack/plugin-repository` |
 | Issues read and written through the checkout's `.beads` tracker, the event stream, assignees | `@crab-shack/cap-issues` |
-| Bots, bot sessions, bot posture, Slack routing, turn progress, decisions and handoffs, worktrees and their reclaim | `@crab-shack/cap-bots` |
+| Agents, their definitions and write scopes, the Agents page, an agent as a chat agent | `@crab-shack/cap-agents` |
+| An agent's Slack half: bot sessions, Slack routing, turn progress, decisions and handoffs | `@crab-shack/cap-bots` |
+| Worktrees and their reclaim | `@crab-shack/cap-worktrees` |
 | The team roster | `@crab-shack/cap-team` |
 | Uptime monitors, their sources, checks, state and incidents | `@crab-shack/cap-uptime` |
 | Environments and live versions | `@crab-shack/cap-deployments` |
@@ -121,10 +123,13 @@ The sets Candy Mountain boots:
 | `platform` | organisations, workspaces, workspace_modules, users, user_passwords, user_roles, roles, auth_sessions, role_grants, plugin_instances, platform_meta, activity_events, chat_threads, chat_thread_sessions, agent_sessions, agent_session_events |
 | `repository` | repositories |
 | `issues` | project_assignees |
-| `bots` | bots, worktree_leases, slack_threads, slack_turns, slack_deliveries |
+| `agents` | agents, agents_removed |
+| `bots` | bot_settings, slack_threads, slack_turns, slack_deliveries |
+| `worktrees` | worktrees_leases, worktrees_workspace_caps |
 | `team` | team_members |
 | `uptime` | uptime_monitors, uptime_checks, uptime_incidents |
-| `deployments` | environments |
+| `acp` | acp_session_places |
+| `deployments` | environments, deploy_attempts |
 
 - Platform schema: the platform's `packages/platform-daemon/src/db/schema/`, one file per table group, each re-exported from its `index.ts`; migrations in `src/db/migrations/`, drizzle-kit config the platform's `packages/platform-daemon/drizzle.config.ts`.
 - `apps/daemon/drizzle.config.ts` only points Drizzle Studio (`pnpm --filter @candy-mountain/daemon db:studio`) at the product's database.
@@ -335,7 +340,7 @@ Routes, all under `/workspaces/:slug/threads` and gated by the chat rung of the 
 Stream a thread with the session events route on its `currentSessionId`. Model and effort: Claude Code offers the CLI aliases `opus`, `sonnet`, `haiku` (a full `claude-*` id is accepted too), passed as `--model`, and effort `low`/`medium`/`high`, passed as `--settings {"effortLevel":...}`. Codex offers what its adapter reported: `AcpSession.configOptions` holds the `configOptions` of `session/new`/`session/load` (and later `config_option_update`s), the session manager keeps them per project and family in memory, one set per model the agent ran with (`SessionManager.configOptions`), and the options route returns the latest `model` list plus every `reasoning_effort` seen. Before a Codex session has started in this project since boot both lists are empty, so the selectors stay hidden. A choice is checked against those lists (an effort a known model does not list is refused; a value the thread already has stays accepted after a restart empties them) and launches a new session with posture `codex: { model, reasoningEffort }`, which the launcher passes as `CODEX_CONFIG` `model`/`model_reasoning_effort`; nothing calls `session/set_config_option`. Errors add `unsupported_agent` 422 and `thread_busy` 409 to the session codes and the gate's `not_enabled`/`not_granted`/`not_ready`.
 A family may run in-process instead of through the harness: `ThreadService.prompt(thread, text, actor)` looks the session's family up in `ThreadServiceOptions.native` (the `chatFamilies` of every started definition, each checked at boot against the registered session families; a `NativeFamilyRunner` per family) and, when one is registered, calls `sessions.run(sessionId, text, runner)`, which logs the prompt, sets the status to `prompting`, lets the runner append rows through `emit`, then appends `turn_end` (`end_turn`, `cancelled` after a cancel, `error` when the runner threw, with an `error` row first) and returns the status to `idle`. Cancel aborts the runner's `signal`. Everything else (working and unread, SSE, the chat panel) is unchanged because the rows and status changes are the same ones a harness session produces. A family without a runner that no harness launches (`platform` on the plain session routes) is `family_unavailable` 422.
 
-Bots appear as chat agents too; `@crab-shack/cap-bots`'s README describes which bots are listed and how their threads differ.
+A workspace's agents appear as chat agents too; `@crab-shack/cap-agents`'s README describes which are listed and how their threads start.
 
 ## Platform agent
 
