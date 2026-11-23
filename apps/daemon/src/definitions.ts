@@ -16,7 +16,7 @@ import { uptimeDefinition } from '@crab-shack/cap-uptime'
 import { worktreesDefinition } from '@crab-shack/cap-worktrees'
 import { overviewDefinition, platformAgentDefinition, type CapabilityRegistryEntry } from '@crab-shack/platform-daemon'
 
-/** Candy Mountain's capabilities by id, in registration order; what a build ships. Development-only ones are in development.ts. */
+/** Candy Mountain's capabilities by id, in registration order; what a build ships. */
 export const DEFINITIONS = {
   'overview': overviewDefinition,
   'repository': repositoryDefinition,

@@ -1,5 +1,9 @@
 # Agent Instructions
 
+## Source of truth
+
+The architecture overview at <https://github.com/crab-shack/platform/blob/main/docs/architecture.md> is the source of truth, above this repository's conventions and older plans. When the two disagree, follow the overview and tell Jack what disagreed. The code's words differ from the overview's until the renames land; the glossary at <https://github.com/crab-shack/platform/blob/main/docs/architecture-glossary.md> translates them.
+
 This project uses **bd** (beads) for issue tracking. Run `bd prime` for full workflow context.
 
 > **Architecture in one line:** Issues live in a local Dolt database
