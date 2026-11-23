@@ -46,3 +46,12 @@ describe('the worktrees settings', () => {
     expect(existsSync(temp.root)).toBe(false)
   })
 })
+
+describe('the platform agent settings', () => {
+  it('tell the agent what Candy Mountain is and to say issue, never bead', () => {
+    expect(productSettings(CANDY_MOUNTAIN, CANDY_MOUNTAIN.capabilities.filter(isCapabilityDefinition)).get('platform-agent')).toEqual({
+      about: 'Candy Mountain is a platform for managing codebases.',
+      instructions: ['Say "issue", never "bead".'],
+    })
+  })
+})

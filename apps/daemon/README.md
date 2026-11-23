@@ -68,6 +68,7 @@ A capability can declare product-level settings; the platform checks the product
 | `worktrees` | `reclaimIntervalMs` | `600000` (10m) | `CM_WORKTREE_RECLAIM_INTERVAL` |
 
 - Declared by `@crab-shack/cap-worktrees` (`WORKTREES_SETTINGS`, exported from its root entry and described under "Settings" in its README; the durations are integers of milliseconds from 1 to 30 days).
+- `platform-agent` takes `about` and `instructions`, declared by `@crab-shack/platform-daemon` (`PLATFORM_AGENT_SETTINGS`; the base's `docs/product-file.md`, "The platform agent"). Candy Mountain sets them so its agent is told what Candy Mountain is and to say "issue", never "bead". No variable overrides them.
 - Candy Mountain's values are `CANDY_MOUNTAIN_SETTINGS` in `packages/candy-mountain/src/settings.ts`; change them there.
 - The environment is read in `apps/daemon/src/settings.ts` (`candyMountainSettings(env)`), which the entry point calls with `process.env` through `candyMountainProduct({}, process.env)`. A set variable wins over the product's value, keeps its old format (a positive integer; `90s`, `15m`, `2h`, `1d` up to `30d`) and is checked against the declaration, so a bad one stops the boot with, for example, `Capability 'worktrees' setting 'idleTimeoutMs': CM_WORKTREE_IDLE_TIMEOUT must be a duration such as 90s, 15m or 2h, at most 30d, got "2 hours".` An empty variable leaves the product's value. Tests boot `CANDY_MOUNTAIN` without the environment.
 - `capabilityDefinitions({ worktrees: { pool } })` options still override the settings, for tests.
