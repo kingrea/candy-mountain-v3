@@ -9,7 +9,7 @@ describe('CANDY_MOUNTAIN_PRODUCT', () => {
   it('has a name and a label in every form', () => {
     expect(product.name.trim()).not.toBe('')
     expect(product.description.trim()).not.toBe('')
-    for (const form of Object.values(product.scope.label)) {
+    for (const form of Object.values(product.workspace.label)) {
       expect(form.trim()).not.toBe('')
     }
   })
@@ -35,14 +35,14 @@ describe('CANDY_MOUNTAIN_PRODUCT', () => {
   })
 
   it('prefixes workspaces and names their list page with single lowercase path segments', () => {
-    expect(product.scope.urlPrefix).toMatch(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
-    expect(product.scope.listPath).toMatch(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+    expect(product.workspace.urlPrefix).toMatch(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+    expect(product.workspace.listPath).toMatch(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
   })
 
   it('keeps project links under /p/ and the project list at /projects', () => {
-    expect(workspaceViewRoute(product.scope.urlPrefix, 'acme', '')).toBe('/p/acme')
-    expect(chatThreadLink(product.scope.urlPrefix, 'acme', 't1')).toBe('/p/acme?thread=t1')
-    expect(registrySystemGroup(product.scope.label, product.scope.listPath).entries[0]).toMatchObject({ id: 'projects', label: 'Projects', to: '/projects' })
+    expect(workspaceViewRoute(product.workspace.urlPrefix, 'acme', '')).toBe('/p/acme')
+    expect(chatThreadLink(product.workspace.urlPrefix, 'acme', 't1')).toBe('/p/acme?thread=t1')
+    expect(registrySystemGroup(product.workspace.label, product.workspace.listPath).entries[0]).toMatchObject({ id: 'projects', label: 'Projects', to: '/projects' })
   })
 
   it.each(LISTS)('lists valid, unique %s ids', (key) => {
@@ -61,8 +61,8 @@ describe('MODULES', () => {
     expect(MODULES.map(m => m.id)).toEqual(product.modules)
   })
 
-  it('hold only capabilities the product lists', () => {
-    const unlisted = MODULES.flatMap(m => m.capabilities.filter(c => !product.capabilities.includes(c.capabilityId)).map(c => `${m.id}: ${c.capabilityId}`))
+  it('hold only plugins the product lists', () => {
+    const unlisted = MODULES.flatMap(m => m.plugins.filter(p => !product.capabilities.includes(p.pluginId)).map(p => `${m.id}: ${p.pluginId}`))
     expect(unlisted).toEqual([])
   })
 })

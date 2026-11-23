@@ -5,8 +5,8 @@ export const ISSUES_MODULE: ModuleDefinition = {
   label: 'Issues',
   description: 'The project\'s issues.',
   icon: 'i-lucide-list-todo',
-  capabilities: [
-    { capabilityId: 'issues', defaultRung: 'write' },
+  plugins: [
+    { pluginId: 'issues', defaultAccessLevel: 'write' },
   ],
 }
 
@@ -15,12 +15,12 @@ export const AGENT_HUB_MODULE: ModuleDefinition = {
   label: 'Agent Hub',
   description: 'Chat with coding agents and run bots for the project.',
   icon: 'i-lucide-bot',
-  capabilities: [
-    { capabilityId: 'agents', defaultRung: 'manage' },
-    { capabilityId: 'bots', defaultRung: 'manage' },
-    { capabilityId: 'team', defaultRung: 'manage' },
-    { capabilityId: 'chat-claude-code', defaultRung: 'chat' },
-    { capabilityId: 'chat-codex', defaultRung: 'chat' },
+  plugins: [
+    { pluginId: 'agents', defaultAccessLevel: 'manage' },
+    { pluginId: 'bots', defaultAccessLevel: 'manage' },
+    { pluginId: 'team', defaultAccessLevel: 'manage' },
+    { pluginId: 'chat-claude-code', defaultAccessLevel: 'chat' },
+    { pluginId: 'chat-codex', defaultAccessLevel: 'chat' },
   ],
 }
 
@@ -29,11 +29,11 @@ export const OPERATIONS_MODULE: ModuleDefinition = {
   label: 'Operations',
   description: 'Uptime and deployments for the project.',
   icon: 'i-lucide-activity',
-  capabilities: [
-    { capabilityId: 'uptime', defaultRung: 'manage' },
-    { capabilityId: 'deployments', defaultRung: 'manage' },
+  plugins: [
+    { pluginId: 'uptime', defaultAccessLevel: 'manage' },
+    { pluginId: 'deployments', defaultAccessLevel: 'manage' },
   ],
 }
 
-/** Add a capability to a module by listing it in `capabilities` with its default rung. */
+/** Add a plugin to a module by listing it in `plugins` with its default access level. */
 export const MODULES: readonly ModuleDefinition[] = [ISSUES_MODULE, AGENT_HUB_MODULE, OPERATIONS_MODULE]

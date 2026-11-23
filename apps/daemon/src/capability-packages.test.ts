@@ -11,7 +11,7 @@ const problems = capabilityPackageProblems(packages, { daemon: packages.get('@ca
 
 /** The lint allows what package.json lists; the runtime starts what dependsOn names. They must be the same list. */
 describe('capability packages', () => {
-  it('live, in the workspace, in packages/cap-<id> or packages/connection-<id> after their name, and expose one root entry', () => {
+  it('live, in the workspace, in packages/plugin-<id> or packages/connection-<id> after their name, and expose one root entry', () => {
     expect(problems.placement).toEqual([])
   })
 

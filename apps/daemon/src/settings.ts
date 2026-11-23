@@ -1,4 +1,4 @@
-import { WORKTREES_SETTINGS } from '@crab-shack/cap-worktrees'
+import { WORKTREES_SETTINGS } from '@crab-shack/plugin-worktrees'
 import { CANDY_MOUNTAIN_SETTINGS } from '@candy-mountain/candy-mountain'
 import { ProductError } from '@crab-shack/platform-daemon'
 import type { ProductSettings } from '@crab-shack/platform-sdk'

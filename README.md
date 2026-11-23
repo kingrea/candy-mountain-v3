@@ -4,7 +4,7 @@
 
 The architecture overview at <https://github.com/crab-shack/platform/blob/main/docs/architecture.md> is the source of truth, above this repository's conventions and older plans. When the two disagree, follow the overview and tell Jack what disagreed. The code's words differ from the overview's until the renames land; the glossary at <https://github.com/crab-shack/platform/blob/main/docs/architecture-glossary.md> translates them.
 
-A product built on the Crab Shack platform: its description as data, its brand, and thin apps that assemble the installed platform with the installed capabilities. A pnpm workspace (`apps/*`, `packages/*`) whose tasks run through [Turborepo](https://turborepo.com). Neither the platform nor the capabilities are here. Both are installed from the private registry: the platform as the `@crab-shack/platform-*` packages (see [The platform](#the-platform)), and each capability and connection as its own `@crab-shack/cap-*` or `@crab-shack/connection-*` package (see [The capabilities](#the-capabilities)).
+A product built on the Crab Shack platform: its description as data, its brand, and thin apps that assemble the installed platform with the installed capabilities. A pnpm workspace (`apps/*`, `packages/*`) whose tasks run through [Turborepo](https://turborepo.com). Neither the platform nor the capabilities are here. Both are installed from the private registry: the platform as the `@crab-shack/platform-*` packages (see [The platform](#the-platform)), and each plugin and connection as its own `@crab-shack/plugin-*` or `@crab-shack/connection-*` package (see [The capabilities](#the-capabilities)).
 
 ## Layout
 
@@ -21,39 +21,39 @@ Dependencies point one way: the apps depend on the product package, the platform
 
 ## The capabilities
 
-Candy Mountain's capabilities and connections are the shared ones. They are developed in [crab-shack/capabilities](https://github.com/crab-shack/capabilities) and published to GitHub Packages one package each, every package at its own version:
+Candy Mountain's plugins and connections are the shared ones. They are developed in [crab-shack/capabilities](https://github.com/crab-shack/capabilities) and published to GitHub Packages one package each, every package at its own version:
 
 | Kind | Packages |
 | --- | --- |
-| Feature capability | `@crab-shack/cap-issues`, `@crab-shack/cap-chat-claude-code`, `@crab-shack/cap-chat-codex`, `@crab-shack/cap-agents`, `@crab-shack/cap-bots`, `@crab-shack/cap-team`, `@crab-shack/cap-uptime`, `@crab-shack/cap-deployments` |
-| Service-only capability | `@crab-shack/cap-acp`, `@crab-shack/cap-worktrees` |
+| Plugin | `@crab-shack/plugin-issues`, `@crab-shack/plugin-chat-claude-code`, `@crab-shack/plugin-chat-codex`, `@crab-shack/plugin-agents`, `@crab-shack/plugin-bots`, `@crab-shack/plugin-team`, `@crab-shack/plugin-uptime`, `@crab-shack/plugin-deployments` |
+| Plugin with no screen | `@crab-shack/plugin-acp`, `@crab-shack/plugin-worktrees` |
 | Connection, bringing the connection type its id names | `@crab-shack/connection-repository`, `@crab-shack/connection-slack`, `@crab-shack/connection-claude-code`, `@crab-shack/connection-codex`, `@crab-shack/connection-heroku`, `@crab-shack/connection-netlify` |
 
-Each is pinned to one exact version in `apps/daemon/package.json` and in `apps/web/package.json`, the same version in both; taking a new version of a capability is changing those two lines and running `pnpm install` ([below](#taking-a-new-version-of-a-capability)). The Claude Code ACP shim, `@crab-shack/claude-acp`, is not listed: it arrives as a dependency of `@crab-shack/cap-acp` and `@crab-shack/cap-bots`, at the version `pnpm-lock.yaml` records.
+Each is pinned to one exact version in `apps/daemon/package.json` and in `apps/web/package.json`, the same version in both; taking a new version of a capability is changing those two lines and running `pnpm install` ([below](#taking-a-new-version-of-a-capability)). The Claude Code ACP shim, `@crab-shack/claude-acp`, is not listed: it arrives as a dependency of `@crab-shack/plugin-acp` and `@crab-shack/plugin-bots`, at the version `pnpm-lock.yaml` records.
 
-A capability is part of Candy Mountain when every list names it: the two dependency lines, its entry in `apps/daemon/src/definitions.ts`, and its ids in the product package (`capabilities`, `layers`, `connectionTypes` for a connection, and a module for a feature). A missed list names itself: the daemon refuses to boot while the product data and the definitions disagree, naming the capability; `apps/daemon/src/capability-packages.test.ts` fails, naming the package, when a capability is installed but not in the definitions; and a capability the definitions import that the daemon's `package.json` does not list fails `pnpm lint` and `pnpm test`, by name too. `apps/daemon/README.md` has the steps for adding and removing one.
+A capability is part of Candy Mountain when every list names it: the two dependency lines, its entry in `apps/daemon/src/definitions.ts`, and its ids in the product package (`capabilities`, `layers`, `connectionTypes` for a connection, and a module for a plugin with a screen). A missed list names itself: the daemon refuses to boot while the product data and the definitions disagree, naming the capability; `apps/daemon/src/capability-packages.test.ts` fails, naming the package, when a capability is installed but not in the definitions; and a capability the definitions import that the daemon's `package.json` does not list fails `pnpm lint` and `pnpm test`, by name too. `apps/daemon/README.md` has the steps for adding and removing one.
 
-How a capability behaves (its routes, background work, tables, settings and environment variables) is described in its package's `README.md`, in the capabilities repository and in the installed package under `node_modules`. A capability's identity in a database is its id, never its package name: the capability ids, connection type ids, layer ids, table names and migration histories are the ones these packages had when they lived in this repository, so a data directory from before then starts on this build without a migration.
+How a capability behaves (its routes, background work, tables, settings and environment variables) is described in its package's `README.md`, in the capabilities repository and in the installed package under `node_modules`. A capability's identity in a database is its id, never its package name: the capability ids, connection type ids, layer ids, table names and migration histories are the ones these packages had when they lived in this repository, so a data directory from before then starts on this build without a migration. Renaming the `cap-<id>` packages to `plugin-<id>` changed no id either.
 
-A fix a capability needs is made in the capabilities repository and released, never patched, vendored or overridden here. A capability particular to Candy Mountain would live here, as `packages/cap-<id>` or `packages/connection-<id>` under the `@candy-mountain` scope, beside the installed ones; there is none today.
+A fix a capability needs is made in the capabilities repository and released, never patched, vendored or overridden here. A capability particular to Candy Mountain would live here, as `packages/plugin-<id>` or `packages/connection-<id>` under the `@candy-mountain` scope, beside the installed ones; there is none today.
 
 ### Taking a new version of a capability
 
 Capabilities have independent versions, so one can move without the others.
 
-1. See what exists. `pnpm view @crab-shack/cap-team versions` lists the published versions of one package (it uses your `~/.npmrc` token); the organisation's packages page, `https://github.com/orgs/crab-shack/packages`, lists them all, and the README of the capabilities repository has a generated catalogue of every package with its current version. `pnpm platform-list` lists them from inside this repository: every published capability and connection with its current version, marking the ones Candy Mountain has and, when it is behind, the version it is on.
-2. Read what changed. Each package's `CHANGELOG.md` sits beside it in the capabilities repository (`packages/cap-<id>/CHANGELOG.md`) and is published inside the package, so after an install it is also at `node_modules/@crab-shack/cap-<id>/CHANGELOG.md`.
+1. See what exists. `pnpm view @crab-shack/plugin-team versions` lists the published versions of one package (it uses your `~/.npmrc` token); the organisation's packages page, `https://github.com/orgs/crab-shack/packages`, lists them all, and the README of the capabilities repository has a generated catalogue of every package with its current version. `pnpm platform-list` lists them from inside this repository: every published plugin and connection with its current version, marking the ones Candy Mountain has and, when it is behind, the version it is on.
+2. Read what changed. Each package's `CHANGELOG.md` sits beside it in the capabilities repository (`packages/plugin-<id>/CHANGELOG.md` or `packages/connection-<id>/CHANGELOG.md`) and is published inside the package, so after an install it is also at `node_modules/@crab-shack/<name>/CHANGELOG.md`.
 3. Change its version in both places Candy Mountain lists it, the same version in each: `apps/daemon/package.json` and `apps/web/package.json`. To find them:
 
    ```sh
-   grep -rn '"@crab-shack/cap-team"' --include=package.json . --exclude-dir=node_modules
+   grep -rn '"@crab-shack/plugin-team"' --include=package.json . --exclude-dir=node_modules
    ```
 
-   A new version may raise a peer range on another capability (`cap-chat-claude-code` 0.1.7 wants `connection-repository` `^0.2.0`); that one moves in both places too.
+   A new version may raise a peer range on another capability (`plugin-chat-claude-code` 0.2.0 wants `connection-claude-code` `^0.2.2`); that one moves in both places too.
 4. `pnpm install`. The lockfile changes; commit it with the two lines.
 5. Run `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build`.
 
-The Claude Code shim, `@crab-shack/claude-acp`, is not a line here: it arrives as a dependency of `@crab-shack/cap-acp` and `@crab-shack/cap-bots`, so it moves when one of those does.
+The Claude Code shim, `@crab-shack/claude-acp`, is not a line here: it arrives as a dependency of `@crab-shack/plugin-acp` and `@crab-shack/plugin-bots`, so it moves when one of those does.
 
 ### Trying an unreleased capability change
 
@@ -73,7 +73,7 @@ A fix a capability needs is made in the capabilities repository and released, th
 
 ## The platform
 
-The daemon platform, the web shell, the SDK, the tooling presets and the CLI live in the base repository, [crab-shack/platform](https://github.com/crab-shack/platform), and are published to GitHub Packages as `@crab-shack/platform-daemon`, `@crab-shack/platform-web`, `@crab-shack/platform-sdk`, `@crab-shack/platform-config` and `@crab-shack/platform-cli`. They share one version line and this repository pins them to one exact version in every `package.json` that uses them; upgrading is changing that version everywhere and running `pnpm install`, as the base's `docs/upgrade-path.md` describes. Their READMEs are the conventions documents: `packages/platform-daemon/README.md` for a capability's daemon half, `packages/platform-web/README.md` for its layer and the theme contract, and `packages/cap-template/README.md` for the capability author's guide, all in the base.
+The daemon platform, the web shell, the SDK, the tooling presets and the CLI live in the base repository, [crab-shack/platform](https://github.com/crab-shack/platform), and are published to GitHub Packages as `@crab-shack/platform-daemon`, `@crab-shack/platform-web`, `@crab-shack/platform-sdk`, `@crab-shack/platform-config` and `@crab-shack/platform-cli`. They share one version line and this repository pins them to one exact version in every `package.json` that uses them; upgrading is changing that version everywhere and running `pnpm install`, as the base's `docs/upgrade-path.md` describes. Their READMEs are the conventions documents: `packages/platform-daemon/README.md` for a capability's daemon half, `packages/platform-web/README.md` for its layer and the theme contract, and `packages/plugin-template/README.md` for the plugin author's guide, all in the base.
 
 The committed `.npmrc` maps the `@crab-shack` scope to `https://npm.pkg.github.com`, which serves the platform and the capabilities alike; everything else resolves from the public registry. Installing needs a read-only token in your user-level `~/.npmrc` (never in this repository), as the base's `docs/registry-access.md` describes:
 

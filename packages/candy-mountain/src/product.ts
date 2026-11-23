@@ -10,7 +10,7 @@ export const CANDY_MOUNTAIN_PRODUCT: Readonly<ProductConfig> = {
     logo: { src: '/brand/candy-mountain-128.png' },
     colorMode: { default: 'system', switchable: true },
   },
-  scope: {
+  workspace: {
     label: { singular: 'project', plural: 'projects', singularTitle: 'Project', pluralTitle: 'Projects' },
     urlPrefix: 'p',
     listPath: 'projects',

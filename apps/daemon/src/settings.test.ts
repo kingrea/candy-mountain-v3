@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs'
 import { CANDY_MOUNTAIN_SETTINGS } from '@candy-mountain/candy-mountain'
-import { WORKTREES_SETTINGS } from '@crab-shack/cap-worktrees'
+import { WORKTREES_SETTINGS } from '@crab-shack/plugin-worktrees'
 import { isCapabilityDefinition, productSettings, ProductError, startPlatform, type Product } from '@crab-shack/platform-daemon'
 import { createTempDataDir, type TempDataDir } from '@crab-shack/platform-daemon/testing'
 import { afterEach, describe, expect, it } from 'vitest'

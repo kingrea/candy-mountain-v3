@@ -53,7 +53,7 @@ describe('the Candy Mountain product', () => {
     expect(registry.list().map(m => m.id)).toEqual([...CANDY_MOUNTAIN_PRODUCT.modules])
     for (const module of MODULES) {
       expect(registry.get(module.id).label).toBe(module.label)
-      for (const member of module.capabilities) expect(registry.withCapability(member.capabilityId).map(m => m.id)).toContain(module.id)
+      for (const member of module.plugins) expect(registry.withPlugin(member.pluginId).map(m => m.id)).toContain(module.id)
     }
     expect(registry.byId('billing')).toBeUndefined()
     expect(() => registry.get('billing')).toThrow("Module 'billing' is not registered.")
@@ -82,7 +82,7 @@ describe('daemon boot from the capability definition list', () => {
     const modules = ((await (await app.request(MODULES_PATH)).json()) as ModuleListResponse).modules
 
     expect(booted.product.capabilities.map(c => c.id)).toEqual(Object.keys(DEFINITIONS))
-    expect(modules.map(m => ({ id: m.id, capabilities: m.capabilities.map(c => c.capabilityId) }))).toEqual(MODULES.map(m => ({ id: m.id, capabilities: m.capabilities.map(c => c.capabilityId) })))
+    expect(modules.map(m => ({ id: m.id, plugins: m.plugins.map(p => p.pluginId) }))).toEqual(MODULES.map(m => ({ id: m.id, plugins: m.plugins.map(p => p.pluginId) })))
     expect(sorted(booted.connectionTypes.list().map(t => t.id))).toEqual(sorted(CANDY_MOUNTAIN_PRODUCT.connectionTypes))
     expect(sorted(booted.families.list().map(f => f.id))).toEqual(sorted(definitions.flatMap(d => d.sessionFamilies ?? []).map(f => f.id)))
   })
