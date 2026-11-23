@@ -167,8 +167,8 @@ importers:
   .:
     devDependencies:
       '@crab-shack/platform-config':
-        specifier: 0.20.0
-        version: 0.20.0(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
+        specifier: 0.24.1
+        version: 0.24.1(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
       '@types/node':
         specifier: ^22.20.5
         version: 22.20.5
@@ -194,11 +194,11 @@ importers:
         specifier: workspace:*
         version: link:../../packages/candy-mountain
       '@crab-shack/platform-cli':
-        specifier: 0.20.0
-        version: 0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(hono@4.13.14)(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
+        specifier: 0.24.1
+        version: 0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(hono@4.13.14)(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
       '@crab-shack/platform-config':
-        specifier: 0.20.0
-        version: 0.20.0(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
+        specifier: 0.24.1
+        version: 0.24.1(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
     devDependencies:
       tsdown:
         specifier: ^0.23.2
@@ -210,62 +210,62 @@ importers:
         specifier: workspace:*
         version: link:../../packages/candy-mountain
       '@crab-shack/cap-acp':
-        specifier: 0.1.19
-        version: 0.1.19(f43c275d9db78456a8c885787ed1b6c9)
+        specifier: 0.1.20
+        version: 0.1.20(a7e8a42166f8453f43aa71b9e7f6378d)
       '@crab-shack/cap-agents':
-        specifier: 0.2.11
-        version: 0.2.11(11fa3608c833c5e56c72eccf67e12a8a)
+        specifier: 0.3.0
+        version: 0.3.0(c4c6156907fbbad2fbd7bd6e7fadf77c)
       '@crab-shack/cap-bots':
-        specifier: 0.4.7
-        version: 0.4.7(83aeede35a520966dfbdb5a2035cf082)
+        specifier: 0.5.0
+        version: 0.5.0(4c6cff09fb8f714249b1b1160f44167e)
       '@crab-shack/cap-chat-claude-code':
-        specifier: 0.1.6
-        version: 0.1.6(e91a7e6acf428fc57bc8f18c6c2c8052)
-      '@crab-shack/cap-chat-codex':
-        specifier: 0.1.5
-        version: 0.1.5(4f016851882e9dd51cb6ee1f7d95cd2f)
-      '@crab-shack/cap-deployments':
-        specifier: 0.1.16
-        version: 0.1.16(0864b95c9870f2698e4d4d3a9a0e6e5c)
-      '@crab-shack/cap-issues':
-        specifier: 0.1.6
-        version: 0.1.6(c0847fe4448ae50158e634799081db24)
-      '@crab-shack/cap-team':
-        specifier: 0.2.6
-        version: 0.2.6(@crab-shack/cap-agents@0.2.11(11fa3608c833c5e56c72eccf67e12a8a))(@crab-shack/platform-daemon@0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)(vue@3.5.44(typescript@6.0.3))
-      '@crab-shack/cap-uptime':
-        specifier: 0.1.8
-        version: 0.1.8(@crab-shack/platform-daemon@0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)(vue@3.5.44(typescript@6.0.3))
-      '@crab-shack/cap-worktrees':
-        specifier: 0.1.10
-        version: 0.1.10(f43c275d9db78456a8c885787ed1b6c9)
-      '@crab-shack/platform-config':
-        specifier: 0.20.0
-        version: 0.20.0(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
-      '@crab-shack/platform-daemon':
-        specifier: 0.20.0
-        version: 0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
-      '@crab-shack/platform-sdk':
-        specifier: 0.20.0
-        version: 0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
-      '@crab-shack/plugin-claude-code':
         specifier: 0.1.7
-        version: 0.1.7(@crab-shack/cap-acp@0.1.19(f43c275d9db78456a8c885787ed1b6c9))(@crab-shack/platform-daemon@0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))
-      '@crab-shack/plugin-codex':
+        version: 0.1.7(e0591e236f1880b6e9e5d2566c1346e0)
+      '@crab-shack/cap-chat-codex':
         specifier: 0.1.6
-        version: 0.1.6(@crab-shack/cap-acp@0.1.19(f43c275d9db78456a8c885787ed1b6c9))(@crab-shack/platform-daemon@0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))
-      '@crab-shack/plugin-heroku':
-        specifier: 0.1.5
-        version: 0.1.5(@crab-shack/platform-daemon@0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))
-      '@crab-shack/plugin-netlify':
-        specifier: 0.1.13
-        version: 0.1.13(@crab-shack/platform-daemon@0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))
-      '@crab-shack/plugin-repository':
-        specifier: 0.1.12
-        version: 0.1.12(@crab-shack/platform-daemon@0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)(vue@3.5.44(typescript@6.0.3))
-      '@crab-shack/plugin-slack':
-        specifier: 0.1.5
-        version: 0.1.5(@crab-shack/platform-daemon@0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))
+        version: 0.1.6(57a3441df1638e5cabce878ac87ae95b)
+      '@crab-shack/cap-deployments':
+        specifier: 0.2.0
+        version: 0.2.0(11a2ff8cf1ccc402d3a43c73fed1c348)
+      '@crab-shack/cap-issues':
+        specifier: 0.1.7
+        version: 0.1.7(420d7ae5691177f951654d0396f6215a)
+      '@crab-shack/cap-team':
+        specifier: 0.2.7
+        version: 0.2.7(@crab-shack/cap-agents@0.3.0(c4c6156907fbbad2fbd7bd6e7fadf77c))(@crab-shack/platform-daemon@0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)(vue@3.5.44(typescript@6.0.3))
+      '@crab-shack/cap-uptime':
+        specifier: 0.1.9
+        version: 0.1.9(@crab-shack/platform-daemon@0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)(vue@3.5.44(typescript@6.0.3))
+      '@crab-shack/cap-worktrees':
+        specifier: 0.1.11
+        version: 0.1.11(a7e8a42166f8453f43aa71b9e7f6378d)
+      '@crab-shack/connection-claude-code':
+        specifier: 0.2.0
+        version: 0.2.0(@crab-shack/cap-acp@0.1.20(a7e8a42166f8453f43aa71b9e7f6378d))(@crab-shack/platform-daemon@0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))
+      '@crab-shack/connection-codex':
+        specifier: 0.2.0
+        version: 0.2.0(@crab-shack/cap-acp@0.1.20(a7e8a42166f8453f43aa71b9e7f6378d))(@crab-shack/platform-daemon@0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))
+      '@crab-shack/connection-heroku':
+        specifier: 0.2.0
+        version: 0.2.0(@crab-shack/platform-daemon@0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))
+      '@crab-shack/connection-netlify':
+        specifier: 0.2.0
+        version: 0.2.0(@crab-shack/platform-daemon@0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))
+      '@crab-shack/connection-repository':
+        specifier: 0.2.0
+        version: 0.2.0(@crab-shack/platform-daemon@0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)(vue@3.5.44(typescript@6.0.3))
+      '@crab-shack/connection-slack':
+        specifier: 0.2.0
+        version: 0.2.0(@crab-shack/platform-daemon@0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))
+      '@crab-shack/platform-config':
+        specifier: 0.24.1
+        version: 0.24.1(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
+      '@crab-shack/platform-daemon':
+        specifier: 0.24.1
+        version: 0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
+      '@crab-shack/platform-sdk':
+        specifier: 0.24.1
+        version: 0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
       '@hono/node-server':
         specifier: ^2.1.5
         version: 2.1.5(hono@4.13.14)
@@ -304,59 +304,59 @@ importers:
         specifier: workspace:*
         version: link:../../packages/candy-mountain
       '@crab-shack/cap-acp':
-        specifier: 0.1.19
-        version: 0.1.19(f43c275d9db78456a8c885787ed1b6c9)
+        specifier: 0.1.20
+        version: 0.1.20(a7e8a42166f8453f43aa71b9e7f6378d)
       '@crab-shack/cap-agents':
-        specifier: 0.2.11
-        version: 0.2.11(11fa3608c833c5e56c72eccf67e12a8a)
+        specifier: 0.3.0
+        version: 0.3.0(c4c6156907fbbad2fbd7bd6e7fadf77c)
       '@crab-shack/cap-bots':
-        specifier: 0.4.7
-        version: 0.4.7(83aeede35a520966dfbdb5a2035cf082)
+        specifier: 0.5.0
+        version: 0.5.0(4c6cff09fb8f714249b1b1160f44167e)
       '@crab-shack/cap-chat-claude-code':
-        specifier: 0.1.6
-        version: 0.1.6(e91a7e6acf428fc57bc8f18c6c2c8052)
-      '@crab-shack/cap-chat-codex':
-        specifier: 0.1.5
-        version: 0.1.5(4f016851882e9dd51cb6ee1f7d95cd2f)
-      '@crab-shack/cap-deployments':
-        specifier: 0.1.16
-        version: 0.1.16(0864b95c9870f2698e4d4d3a9a0e6e5c)
-      '@crab-shack/cap-issues':
-        specifier: 0.1.6
-        version: 0.1.6(c0847fe4448ae50158e634799081db24)
-      '@crab-shack/cap-team':
-        specifier: 0.2.6
-        version: 0.2.6(@crab-shack/cap-agents@0.2.11(11fa3608c833c5e56c72eccf67e12a8a))(@crab-shack/platform-daemon@0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)(vue@3.5.44(typescript@6.0.3))
-      '@crab-shack/cap-uptime':
-        specifier: 0.1.8
-        version: 0.1.8(@crab-shack/platform-daemon@0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)(vue@3.5.44(typescript@6.0.3))
-      '@crab-shack/cap-worktrees':
-        specifier: 0.1.10
-        version: 0.1.10(f43c275d9db78456a8c885787ed1b6c9)
-      '@crab-shack/platform-sdk':
-        specifier: 0.20.0
-        version: 0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
-      '@crab-shack/platform-web':
-        specifier: 0.20.0
-        version: 0.20.0(4676216cbc62d6024024456077fb9c20)
-      '@crab-shack/plugin-claude-code':
         specifier: 0.1.7
-        version: 0.1.7(@crab-shack/cap-acp@0.1.19(f43c275d9db78456a8c885787ed1b6c9))(@crab-shack/platform-daemon@0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))
-      '@crab-shack/plugin-codex':
+        version: 0.1.7(e0591e236f1880b6e9e5d2566c1346e0)
+      '@crab-shack/cap-chat-codex':
         specifier: 0.1.6
-        version: 0.1.6(@crab-shack/cap-acp@0.1.19(f43c275d9db78456a8c885787ed1b6c9))(@crab-shack/platform-daemon@0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))
-      '@crab-shack/plugin-heroku':
-        specifier: 0.1.5
-        version: 0.1.5(@crab-shack/platform-daemon@0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))
-      '@crab-shack/plugin-netlify':
-        specifier: 0.1.13
-        version: 0.1.13(@crab-shack/platform-daemon@0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))
-      '@crab-shack/plugin-repository':
-        specifier: 0.1.12
-        version: 0.1.12(@crab-shack/platform-daemon@0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)(vue@3.5.44(typescript@6.0.3))
-      '@crab-shack/plugin-slack':
-        specifier: 0.1.5
-        version: 0.1.5(@crab-shack/platform-daemon@0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))
+        version: 0.1.6(57a3441df1638e5cabce878ac87ae95b)
+      '@crab-shack/cap-deployments':
+        specifier: 0.2.0
+        version: 0.2.0(11a2ff8cf1ccc402d3a43c73fed1c348)
+      '@crab-shack/cap-issues':
+        specifier: 0.1.7
+        version: 0.1.7(420d7ae5691177f951654d0396f6215a)
+      '@crab-shack/cap-team':
+        specifier: 0.2.7
+        version: 0.2.7(@crab-shack/cap-agents@0.3.0(c4c6156907fbbad2fbd7bd6e7fadf77c))(@crab-shack/platform-daemon@0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)(vue@3.5.44(typescript@6.0.3))
+      '@crab-shack/cap-uptime':
+        specifier: 0.1.9
+        version: 0.1.9(@crab-shack/platform-daemon@0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)(vue@3.5.44(typescript@6.0.3))
+      '@crab-shack/cap-worktrees':
+        specifier: 0.1.11
+        version: 0.1.11(a7e8a42166f8453f43aa71b9e7f6378d)
+      '@crab-shack/connection-claude-code':
+        specifier: 0.2.0
+        version: 0.2.0(@crab-shack/cap-acp@0.1.20(a7e8a42166f8453f43aa71b9e7f6378d))(@crab-shack/platform-daemon@0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))
+      '@crab-shack/connection-codex':
+        specifier: 0.2.0
+        version: 0.2.0(@crab-shack/cap-acp@0.1.20(a7e8a42166f8453f43aa71b9e7f6378d))(@crab-shack/platform-daemon@0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))
+      '@crab-shack/connection-heroku':
+        specifier: 0.2.0
+        version: 0.2.0(@crab-shack/platform-daemon@0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))
+      '@crab-shack/connection-netlify':
+        specifier: 0.2.0
+        version: 0.2.0(@crab-shack/platform-daemon@0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))
+      '@crab-shack/connection-repository':
+        specifier: 0.2.0
+        version: 0.2.0(@crab-shack/platform-daemon@0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)(vue@3.5.44(typescript@6.0.3))
+      '@crab-shack/connection-slack':
+        specifier: 0.2.0
+        version: 0.2.0(@crab-shack/platform-daemon@0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))
+      '@crab-shack/platform-sdk':
+        specifier: 0.24.1
+        version: 0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
+      '@crab-shack/platform-web':
+        specifier: 0.24.1
+        version: 0.24.1(4676216cbc62d6024024456077fb9c20)
       '@iconify-json/lucide':
         specifier: ^1.2.147
         version: 1.2.147
@@ -374,8 +374,8 @@ importers:
         version: 5.4.0(@vue/compiler-sfc@3.5.44)(esbuild@0.28.2)(rolldown@1.2.15)(rollup@4.65.1)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))(vue@3.5.44(typescript@6.0.3))
     devDependencies:
       '@crab-shack/platform-config':
-        specifier: 0.20.0
-        version: 0.20.0(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
+        specifier: 0.24.1
+        version: 0.24.1(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
       '@nuxt/eslint':
         specifier: ^1.17.0
         version: 1.17.0(@nuxt/schema@4.6.2)(@typescript-eslint/utils@8.72.0(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3))(@vue/compiler-sfc@3.5.44)(confbox@0.3.1)(crossws@0.4.16(srvx@1.0.7))(dotenv@17.4.2)(esbuild@0.28.2)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(giget@3.3.1)(jiti@2.7.0)(magic-string@1.4.4)(rolldown@1.2.15)(rollup@4.65.1)(srvx@1.0.7)(supports-color@10.2.2)(typescript@6.0.3)(unplugin@3.5.0(esbuild@0.28.2)(rolldown@1.2.15)(rollup@4.65.1)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
@@ -386,12 +386,12 @@ importers:
   packages/candy-mountain:
     dependencies:
       '@crab-shack/platform-sdk':
-        specifier: 0.20.0
-        version: 0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
+        specifier: 0.24.1
+        version: 0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
     devDependencies:
       '@crab-shack/platform-config':
-        specifier: 0.20.0
-        version: 0.20.0(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
+        specifier: 0.24.1
+        version: 0.24.1(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
 
 packages:
 
@@ -639,168 +639,168 @@ packages:
   '@colordx/core@7.3.0':
     resolution: {integrity: sha512-LVzTTPhX7wpy7TkGjouA9zbbCBIw92RGm7ZQqSKFE0oYE3sMx2FGXz90eVpgw7k/+wrrY+qJ86nHXifZWMS5jA==}
 
-  '@crab-shack/cap-acp@0.1.19':
-    resolution: {integrity: sha512-hhOKnQY9RbrkQkg2QY5rZc1pZE7DHfWOhTzju7KsFcRlEEdPUsTUGYuhVxii5+cX2i8i5Uf7drDKk1QVc0Ks6w==, tarball: https://npm.pkg.github.com/download/@crab-shack/cap-acp/0.1.19/629d03ca82da124c06d9259e1cd45aac44679040}
+  '@crab-shack/cap-acp@0.1.20':
+    resolution: {integrity: sha512-iwmZEtK840bRRUxZrO4b9OhKbDLleL4QC5pOVs8AluX3EHTl/5e1KAsZ9wixMS1PFLVH1t80cLgRDhI2HNXhYQ==, tarball: https://npm.pkg.github.com/download/@crab-shack/cap-acp/0.1.20/f97e312649fcd91f8b4d2aa3c1b23dcf41f5c488}
     peerDependencies:
-      '@crab-shack/platform-daemon': '>=0.20.0 <1.0.0'
-      '@crab-shack/platform-sdk': '>=0.20.0 <1.0.0'
-      '@crab-shack/plugin-repository': ^0.1.12
+      '@crab-shack/connection-repository': ^0.2.0
+      '@crab-shack/platform-daemon': '>=0.24.1 <1.0.0'
+      '@crab-shack/platform-sdk': '>=0.24.1 <1.0.0'
 
-  '@crab-shack/cap-agents@0.2.11':
-    resolution: {integrity: sha512-wL3k52ZOa4SnkGeJCuYB5Ljx8bAyGVWwyISTV3SCv9TOmmwL9e5qXbR7f+gwne52e64Gj4TjcMw8EdA7N9RAnA==, tarball: https://npm.pkg.github.com/download/@crab-shack/cap-agents/0.2.11/d9cb15716a5e1c4d4fa52edff5964a4f334a261f}
+  '@crab-shack/cap-agents@0.3.0':
+    resolution: {integrity: sha512-am/XsbPhiDBAj5H/lFjvWw9AOaFNgGnN19GIvon56XKux6b5g5Hvi1GKNqqE//UrlVbBJ7Q3pvzJO65f+0Q7aQ==, tarball: https://npm.pkg.github.com/download/@crab-shack/cap-agents/0.3.0/e6fb13ae09c5f644bc0e9f1b0810315d493f4809}
     peerDependencies:
-      '@crab-shack/cap-acp': ^0.1.19
-      '@crab-shack/platform-daemon': '>=0.20.0 <1.0.0'
-      '@crab-shack/platform-sdk': '>=0.20.0 <1.0.0'
-      '@crab-shack/plugin-repository': ^0.1.12
+      '@crab-shack/cap-acp': ^0.1.20
+      '@crab-shack/connection-repository': ^0.2.0
+      '@crab-shack/platform-daemon': '>=0.24.1 <1.0.0'
+      '@crab-shack/platform-sdk': '>=0.24.1 <1.0.0'
       vue: ^3.5.44
 
-  '@crab-shack/cap-bots@0.4.7':
-    resolution: {integrity: sha512-Ug0auYGP3veeHjDHOyY1YFfOZMpssk+WC0XIdBSkt3rK/DY/15jQyO6jaoL6MnC3bzB5PkbitavexeujoupYPg==, tarball: https://npm.pkg.github.com/download/@crab-shack/cap-bots/0.4.7/31167bf67afde5d7d67eba5e634109a88d876a71}
+  '@crab-shack/cap-bots@0.5.0':
+    resolution: {integrity: sha512-ybZsx9lwQFmTdcbQpsQ1YnGNmooEegP5KZr+rum8DybrD62SPJ6bAPeAo+2Yiu/hOIFjoYVPrZDv9dhPtpShFw==, tarball: https://npm.pkg.github.com/download/@crab-shack/cap-bots/0.5.0/ddf8303cf2734ef6ec1d235e53e5d248f88c4871}
     peerDependencies:
-      '@crab-shack/cap-acp': ^0.1.19
-      '@crab-shack/cap-agents': ^0.2.11
-      '@crab-shack/cap-team': ^0.2.6
-      '@crab-shack/cap-worktrees': ^0.1.10
-      '@crab-shack/platform-daemon': '>=0.20.0 <1.0.0'
-      '@crab-shack/platform-sdk': '>=0.20.0 <1.0.0'
-      '@crab-shack/plugin-claude-code': ^0.1.7
-      '@crab-shack/plugin-codex': ^0.1.6
-      '@crab-shack/plugin-repository': ^0.1.12
-      '@crab-shack/plugin-slack': ^0.1.5
+      '@crab-shack/cap-acp': ^0.1.20
+      '@crab-shack/cap-agents': ^0.3.0
+      '@crab-shack/cap-team': ^0.2.7
+      '@crab-shack/cap-worktrees': ^0.1.11
+      '@crab-shack/connection-claude-code': ^0.2.0
+      '@crab-shack/connection-codex': ^0.2.0
+      '@crab-shack/connection-repository': ^0.2.0
+      '@crab-shack/connection-slack': ^0.2.0
+      '@crab-shack/platform-daemon': '>=0.24.1 <1.0.0'
+      '@crab-shack/platform-sdk': '>=0.24.1 <1.0.0'
       vue: ^3.5.44
 
-  '@crab-shack/cap-chat-claude-code@0.1.6':
-    resolution: {integrity: sha512-Wn0AUgevWY+nTgXhxyWhgde4DuOWSuH1fbbFBc3zXkR15y31ZXqO2yxk1TkNIxCc4hAUNv9Qfy3woBZMXTFgCA==, tarball: https://npm.pkg.github.com/download/@crab-shack/cap-chat-claude-code/0.1.6/65c077bcf4e4eb528e2c1228b37c7667516ec8d8}
+  '@crab-shack/cap-chat-claude-code@0.1.7':
+    resolution: {integrity: sha512-OUvEskZkxEQIIKDP6ztjQIV8fJdSGjVZAX3G0hvS5pXgNbOcAsaY2cweS/C7VErDwRu8DNmai9HuD7a44Zc73w==, tarball: https://npm.pkg.github.com/download/@crab-shack/cap-chat-claude-code/0.1.7/2374256fa829c890a5f4d94b5e026a5c1ce17d4c}
     peerDependencies:
-      '@crab-shack/cap-acp': ^0.1.19
-      '@crab-shack/platform-daemon': '>=0.20.0 <1.0.0'
-      '@crab-shack/platform-sdk': '>=0.20.0 <1.0.0'
-      '@crab-shack/plugin-claude-code': ^0.1.7
+      '@crab-shack/cap-acp': ^0.1.20
+      '@crab-shack/connection-claude-code': ^0.2.0
+      '@crab-shack/platform-daemon': '>=0.24.1 <1.0.0'
+      '@crab-shack/platform-sdk': '>=0.24.1 <1.0.0'
       vue: ^3.5.44
 
-  '@crab-shack/cap-chat-codex@0.1.5':
-    resolution: {integrity: sha512-3OLDh13E+jtoLvlxAbug4hadPRnyxIoN3k0js7wEjmKjLbCW03YEXafAVpTBqcP7B72evYzVygsze2u3jMqvyA==, tarball: https://npm.pkg.github.com/download/@crab-shack/cap-chat-codex/0.1.5/1c77b36a7135e2b79b96cbd329216f17f9d97bf5}
+  '@crab-shack/cap-chat-codex@0.1.6':
+    resolution: {integrity: sha512-gqJubez0KrblEonn0Ky5Uc/Lq9Q1OFBFgFMVdsnZVb/g9Bx6t12LiTGsG/8fDKuvzP7P3dB8nGb4KZNVb3PiQg==, tarball: https://npm.pkg.github.com/download/@crab-shack/cap-chat-codex/0.1.6/de6863659ef1a070542ce39aeaa47536f39b8f6d}
     peerDependencies:
-      '@crab-shack/cap-acp': ^0.1.19
-      '@crab-shack/platform-daemon': '>=0.20.0 <1.0.0'
-      '@crab-shack/platform-sdk': '>=0.20.0 <1.0.0'
-      '@crab-shack/plugin-codex': ^0.1.6
+      '@crab-shack/cap-acp': ^0.1.20
+      '@crab-shack/connection-codex': ^0.2.0
+      '@crab-shack/platform-daemon': '>=0.24.1 <1.0.0'
+      '@crab-shack/platform-sdk': '>=0.24.1 <1.0.0'
       vue: ^3.5.44
 
-  '@crab-shack/cap-deployments@0.1.16':
-    resolution: {integrity: sha512-HX56xJJAXn8Ia7yBWK69U4TKEFVtEhyMSFJ3qJWfkWfj98fRhIpW7QZa75mF/nkmF1cu88DgmvGTWrUvl6jYAQ==, tarball: https://npm.pkg.github.com/download/@crab-shack/cap-deployments/0.1.16/3fc9f45fe6f10d451ff64eb39a0fc9acf719f1f6}
+  '@crab-shack/cap-deployments@0.2.0':
+    resolution: {integrity: sha512-d1fJHhJJRTQDcn2WbyHqvhj6CzMfdTxsHCuMnoIpdmUF2xdChwC6Lk49mKWmW6EtxCi/sIsJA/gvJ2ipai+VOg==, tarball: https://npm.pkg.github.com/download/@crab-shack/cap-deployments/0.2.0/b89a3c9dde2239d2ddc6eda7a1fcb582a8eb6119}
     peerDependencies:
-      '@crab-shack/platform-daemon': '>=0.20.0 <1.0.0'
-      '@crab-shack/platform-sdk': '>=0.20.0 <1.0.0'
-      '@crab-shack/plugin-heroku': ^0.1.5
-      '@crab-shack/plugin-netlify': ^0.1.13
+      '@crab-shack/connection-heroku': ^0.2.0
+      '@crab-shack/connection-netlify': ^0.2.0
+      '@crab-shack/platform-daemon': '>=0.24.1 <1.0.0'
+      '@crab-shack/platform-sdk': '>=0.24.1 <1.0.0'
       vue: ^3.5.44
 
-  '@crab-shack/cap-issues@0.1.6':
-    resolution: {integrity: sha512-7tCAITEt5vDmiQIC9tGuNp31ZSBs+bf5ValcYpIWHjDoaSO59hC2lykP9+JsAWoLxB6m/hctQsYtCXyCrBp8uQ==, tarball: https://npm.pkg.github.com/download/@crab-shack/cap-issues/0.1.6/b5a38740bd8710cbb66ac8766d8549859d41b707}
+  '@crab-shack/cap-issues@0.1.7':
+    resolution: {integrity: sha512-QyDjyO9/QC86jz3a4WAIw9Tzx4BcE0AQKtQN1i+lQTAZrSiNlz0Mt57Ud9wBB5EmCSnP812szrhOUdQgHQjyow==, tarball: https://npm.pkg.github.com/download/@crab-shack/cap-issues/0.1.7/b1a9b8112d1f92bcc58a0c6d4deb98d286118d13}
     peerDependencies:
-      '@crab-shack/platform-daemon': '>=0.20.0 <1.0.0'
-      '@crab-shack/platform-sdk': '>=0.20.0 <1.0.0'
-      '@crab-shack/plugin-repository': ^0.1.12
+      '@crab-shack/connection-repository': ^0.2.0
+      '@crab-shack/platform-daemon': '>=0.24.1 <1.0.0'
+      '@crab-shack/platform-sdk': '>=0.24.1 <1.0.0'
       vue: ^3.5.44
 
-  '@crab-shack/cap-team@0.2.6':
-    resolution: {integrity: sha512-DOq5v5JzivgctK0GVLK3K6KmG6Y/Xafm6KmGH6FI7uhpCtOdsBcMPh4wpYtMSkXgQOsepRKClVO534PN3ecX1g==, tarball: https://npm.pkg.github.com/download/@crab-shack/cap-team/0.2.6/d50bd03ace4726f0f61ff174a4109bac1379bd9b}
+  '@crab-shack/cap-team@0.2.7':
+    resolution: {integrity: sha512-mUfPzow0sTfIdXz4UtDs9gyaiWwjjSUvi2amAmTJEEg5fg9IS1KchI5JtHYS6cuFhMlIbANqwNAROOOqifVsJA==, tarball: https://npm.pkg.github.com/download/@crab-shack/cap-team/0.2.7/4249f5a4f7d0b0ca354179e225837f2c807c1efc}
     peerDependencies:
-      '@crab-shack/cap-agents': ^0.2.11
-      '@crab-shack/platform-daemon': '>=0.20.0 <1.0.0'
-      '@crab-shack/platform-sdk': '>=0.20.0 <1.0.0'
+      '@crab-shack/cap-agents': ^0.3.0
+      '@crab-shack/platform-daemon': '>=0.24.1 <1.0.0'
+      '@crab-shack/platform-sdk': '>=0.24.1 <1.0.0'
       vue: ^3.5.44
 
-  '@crab-shack/cap-uptime@0.1.8':
-    resolution: {integrity: sha512-8qscJY3xyaZaVJ9MSobv3dUDqJMTRuoKcWJ79QhTNOotJ3DaKLp3F7RCVgaSFrT7UrBSbL30WfkygpStNZEKvw==, tarball: https://npm.pkg.github.com/download/@crab-shack/cap-uptime/0.1.8/cc5a50b47f36eed93e4b92c9040e7ff56d288d33}
+  '@crab-shack/cap-uptime@0.1.9':
+    resolution: {integrity: sha512-aTFHNrIXJLMf9CmGegLu/28d13iPAnCKd8S+dL7zZ0VuqHmqbHBWonFAM4OQgigbklhOfUYUd3hVxqDVMann0w==, tarball: https://npm.pkg.github.com/download/@crab-shack/cap-uptime/0.1.9/2946d6a598e62717727d838c9cd89b45962f9631}
     peerDependencies:
-      '@crab-shack/platform-daemon': '>=0.20.0 <1.0.0'
-      '@crab-shack/platform-sdk': '>=0.20.0 <1.0.0'
+      '@crab-shack/platform-daemon': '>=0.24.1 <1.0.0'
+      '@crab-shack/platform-sdk': '>=0.24.1 <1.0.0'
       vue: ^3.5.44
 
-  '@crab-shack/cap-worktrees@0.1.10':
-    resolution: {integrity: sha512-UA62pqbM09CAc4MBOZAVkVPDRI5EpvaY/ASKFf6jsgVTkw4s545bKIPwklpg0hfSMh5kc4pNCv4lW2Rkk06nSQ==, tarball: https://npm.pkg.github.com/download/@crab-shack/cap-worktrees/0.1.10/bc31d9eac418110ef8d93d72c2b0f721a41f479d}
+  '@crab-shack/cap-worktrees@0.1.11':
+    resolution: {integrity: sha512-A+HM6evmBCgkDCay/+dxf5rZVP2rQnxGCV+zTZ0mjPmOCYl4kqxLHsKtLAh6VnE9bOUbldVl5fXsXM1MWKYr9Q==, tarball: https://npm.pkg.github.com/download/@crab-shack/cap-worktrees/0.1.11/c09a7724e2630a6f13704a7c5d3a90723ae5ccba}
     peerDependencies:
-      '@crab-shack/platform-daemon': '>=0.20.0 <1.0.0'
-      '@crab-shack/platform-sdk': '>=0.20.0 <1.0.0'
-      '@crab-shack/plugin-repository': ^0.1.12
+      '@crab-shack/connection-repository': ^0.2.0
+      '@crab-shack/platform-daemon': '>=0.24.1 <1.0.0'
+      '@crab-shack/platform-sdk': '>=0.24.1 <1.0.0'
 
   '@crab-shack/claude-acp@0.1.1':
     resolution: {integrity: sha512-kct1ciHAJ45CR2CfyPQCDuurkruMuMW0Y+o881xXHyD572aJDWGMyT3i2aQOIOy6thaCp5tc29g30UGHZq6X+w==, tarball: https://npm.pkg.github.com/download/@crab-shack/claude-acp/0.1.1/153e3a118adaf00d21225c46cc7fe941473813e2}
     hasBin: true
 
-  '@crab-shack/platform-cli@0.20.0':
-    resolution: {integrity: sha512-0Dl8gJIVic/Sn7lCyV90PKriOsYlT4kxGkafyQsBPszzq9paoB/XOkpJ7Wg6lefcBFBbpooxj142m7cg9pdI2Q==, tarball: https://npm.pkg.github.com/download/@crab-shack/platform-cli/0.20.0/a92f34b27baf07e7bf579e5b3285b383980afc34}
+  '@crab-shack/connection-claude-code@0.2.0':
+    resolution: {integrity: sha512-mzrVBrzwTC/dWR25tkhZGAQHtUwfJtA1XKaSqMtl68oWeiEFveyZPFdTelUbpAnJS+bQQtX0FhoDik4hOssPpw==, tarball: https://npm.pkg.github.com/download/@crab-shack/connection-claude-code/0.2.0/8a5f76ba42a435fd22bbb94197a3eafac4ae380c}
+    peerDependencies:
+      '@crab-shack/cap-acp': ^0.1.20
+      '@crab-shack/platform-daemon': '>=0.24.1 <1.0.0'
+      '@crab-shack/platform-sdk': '>=0.24.1 <1.0.0'
+      vue: ^3.5.44
 
-  '@crab-shack/platform-config@0.20.0':
-    resolution: {integrity: sha512-9qZfFJ7KZ1VkC8sgF5gyFmUEfpp9O+5H4t0bcLN+FWEBK0SGjCJ9CCWU2tDf+RBcsuqXfAxVG1oIDlMCIdcnpA==, tarball: https://npm.pkg.github.com/download/@crab-shack/platform-config/0.20.0/2d3ac133cd94ccd8942aa886cdf8235a79353f18}
+  '@crab-shack/connection-codex@0.2.0':
+    resolution: {integrity: sha512-jMO74DXDgdbA0Lt7SdjxNVJGp2d7JMEQ4wBb9vknC5znYl7NezcViREYNhepZy7kHNz3prQeY5cPGptHXeg2Zw==, tarball: https://npm.pkg.github.com/download/@crab-shack/connection-codex/0.2.0/2f49e12c4a67022cfc589581db11b5aa2d26012e}
+    peerDependencies:
+      '@crab-shack/cap-acp': ^0.1.20
+      '@crab-shack/platform-daemon': '>=0.24.1 <1.0.0'
+      '@crab-shack/platform-sdk': '>=0.24.1 <1.0.0'
+      vue: ^3.5.44
+
+  '@crab-shack/connection-heroku@0.2.0':
+    resolution: {integrity: sha512-Dth05ZDFbQKVCp/vKrbgCHExUNyXam8Si4Ktn8JadDqfpsiF/r4506ULhRTVTznYBx4zuySbG8siwWiE29OMgg==, tarball: https://npm.pkg.github.com/download/@crab-shack/connection-heroku/0.2.0/d6223407a3e5c08f4b0054032dfa748ac7defbc7}
+    peerDependencies:
+      '@crab-shack/platform-daemon': '>=0.24.1 <1.0.0'
+      '@crab-shack/platform-sdk': '>=0.24.1 <1.0.0'
+      vue: ^3.5.44
+
+  '@crab-shack/connection-netlify@0.2.0':
+    resolution: {integrity: sha512-fvbihJmyHLldPeERYRlTcENO40UemP3yKJtTx+BMUSbvFJ7/h+LiA3QbyVTv6cONRkqTAzTDYlEGNqmV0FyWEQ==, tarball: https://npm.pkg.github.com/download/@crab-shack/connection-netlify/0.2.0/de1a7497c8552198cea0231c02b94563732c90b4}
+    hasBin: true
+    peerDependencies:
+      '@crab-shack/platform-daemon': '>=0.24.1 <1.0.0'
+      '@crab-shack/platform-sdk': '>=0.24.1 <1.0.0'
+      vue: ^3.5.44
+
+  '@crab-shack/connection-repository@0.2.0':
+    resolution: {integrity: sha512-h9skCN/f/hQBnI1tS/qUtcgjG2S8YKjW38/aYxvne7eX8Iv1snipIapgwYgrC4cmCxRy3vNOg2D32gPrKOMaAg==, tarball: https://npm.pkg.github.com/download/@crab-shack/connection-repository/0.2.0/cf8e8be394c445d7e98da496505c5be78c0af63e}
+    peerDependencies:
+      '@crab-shack/platform-daemon': '>=0.24.1 <1.0.0'
+      '@crab-shack/platform-sdk': '>=0.24.1 <1.0.0'
+      vue: ^3.5.44
+
+  '@crab-shack/connection-slack@0.2.0':
+    resolution: {integrity: sha512-Yp5V/YdCwl665O4Uv5dhrOnIT4+rXlHeI3hACVKiifmSv6w5+w869rWKA+wb+GHMYT64QONQhX0Lzk8fWgyOaA==, tarball: https://npm.pkg.github.com/download/@crab-shack/connection-slack/0.2.0/ebc189a490c5b991921913a4b8b911c54cccc3c6}
+    peerDependencies:
+      '@crab-shack/platform-daemon': '>=0.24.1 <1.0.0'
+      '@crab-shack/platform-sdk': '>=0.24.1 <1.0.0'
+      vue: ^3.5.44
+
+  '@crab-shack/platform-cli@0.24.1':
+    resolution: {integrity: sha512-KrqYXpGVuo4+a/sz0gt4iaL09F3mpk/Elagoff1Zw3FBhgZ4B6/Fer+dDTeSEof3ngxNH6nK/RP321jaJLgmCw==, tarball: https://npm.pkg.github.com/download/@crab-shack/platform-cli/0.24.1/51852256e97e8223de7d4a989446dc7f2b0ee02e}
+
+  '@crab-shack/platform-config@0.24.1':
+    resolution: {integrity: sha512-lLIwHJs+KuwogvT+frJzdDH0fn5eGJ3r+J0S4u5js/Rq+EHE0pZ6MaE8fZdJa6d07pxHaZGahv9aRimaIpNtjA==, tarball: https://npm.pkg.github.com/download/@crab-shack/platform-config/0.24.1/89ddd7b67d2cdd6d41f54e9859fb439bbd9ec38a}
     hasBin: true
     peerDependencies:
       eslint: ^10.13.0
       vitest: ^5.0.5
 
-  '@crab-shack/platform-daemon@0.20.0':
-    resolution: {integrity: sha512-opi7zkogBt67aTTPk+08OmfBWBM7yOwUdKoO7VXAz2oUp5CEsX1jd1rQP+4fREsgOXIsEZKv9zdmn9nO/H9g4A==, tarball: https://npm.pkg.github.com/download/@crab-shack/platform-daemon/0.20.0/9e707ad3decb2a5567f2d825aa49301accf1c4da}
+  '@crab-shack/platform-daemon@0.24.1':
+    resolution: {integrity: sha512-SjoKwXcLs9c00vsOdKevxWyJx7mLGZZkz/rVPfQ/1v52T+QzCA7LLj2FKeja6OVGrXh0d3SdivO+j6W1J4/BVg==, tarball: https://npm.pkg.github.com/download/@crab-shack/platform-daemon/0.24.1/751b72a863cec24f60efe670320baa90536f3801}
 
-  '@crab-shack/platform-sdk@0.20.0':
-    resolution: {integrity: sha512-SrsJOO6bmlXGtIA6YxuQ9FdDptiV8nBWa77g6KAvaGcEl4xVt68btqwVQ3bvYWwJbsdC0BXq3l6VUpqz2++fWA==, tarball: https://npm.pkg.github.com/download/@crab-shack/platform-sdk/0.20.0/eafcefc865324347ca7f996260ad99b2356138fa}
+  '@crab-shack/platform-sdk@0.24.1':
+    resolution: {integrity: sha512-Q8N8CUPUyAzI0+1rFZP5Yy9zjL2tLZmUhJk/HWMMi4IfEMjGXVQ35C2/nwm8aOEkUHpaWp+IBsE5RLfjoEwneA==, tarball: https://npm.pkg.github.com/download/@crab-shack/platform-sdk/0.24.1/03e03bf3e3a2bd0cd43595f4528e5a52b0e78c79}
     peerDependencies:
       drizzle-orm: ^0.45.4
       hono: ^4.13.14
 
-  '@crab-shack/platform-web@0.20.0':
-    resolution: {integrity: sha512-bsCN2ww2yGxxUm4z26V3KwRgWTUxjzewK0TU/KqP7yHRRQoQH792t0G5V8t/rddD+31Y7V2JxCPpP7f7mS4wnw==, tarball: https://npm.pkg.github.com/download/@crab-shack/platform-web/0.20.0/ac09055216fa4240d53c987c497d67785cb491d2}
+  '@crab-shack/platform-web@0.24.1':
+    resolution: {integrity: sha512-eXa/tK2740EGHiGoejBVwYuBckwBntondLoJeJFw0BzmlJKhmW6hq4q5CeX+JQfZfFmgXS91ThDMapi7A27frw==, tarball: https://npm.pkg.github.com/download/@crab-shack/platform-web/0.24.1/eafeb9c880647b4b30f2a3eb2b0d85ef02b9504a}
     peerDependencies:
       '@nuxt/ui': ^4.12.0
       nuxt: ^4.6.2
       typescript: ~6.0.3
-      vue: ^3.5.44
-
-  '@crab-shack/plugin-claude-code@0.1.7':
-    resolution: {integrity: sha512-Ghy075WuWEtTBVia1YSORRuyT+fqPeKtimV6NZuz8JNVUF4uIurUMQzuAmKDhqf8PSeBqrbJgCKVqHw7BAGYsA==, tarball: https://npm.pkg.github.com/download/@crab-shack/plugin-claude-code/0.1.7/ef15aaf7ba3b6c4ea00346e0cdfcc3440b3d6eb2}
-    peerDependencies:
-      '@crab-shack/cap-acp': ^0.1.19
-      '@crab-shack/platform-daemon': '>=0.20.0 <1.0.0'
-      '@crab-shack/platform-sdk': '>=0.20.0 <1.0.0'
-      vue: ^3.5.44
-
-  '@crab-shack/plugin-codex@0.1.6':
-    resolution: {integrity: sha512-W7JWrnQbivwW9RCgl1t4APA9DW/9dws51F9ecGVa/9eWk883Nviaa5i4IfnkFPEAVT0SjF2agmIYbXM6akix6w==, tarball: https://npm.pkg.github.com/download/@crab-shack/plugin-codex/0.1.6/32ba9cb977aa4f6794fd9241b895ac5546230867}
-    peerDependencies:
-      '@crab-shack/cap-acp': ^0.1.19
-      '@crab-shack/platform-daemon': '>=0.20.0 <1.0.0'
-      '@crab-shack/platform-sdk': '>=0.20.0 <1.0.0'
-      vue: ^3.5.44
-
-  '@crab-shack/plugin-heroku@0.1.5':
-    resolution: {integrity: sha512-xQBlvpAXz/O2Q/qQTl+BicV7Rpemoq6mXMZlPPhyynQsY/U9EcBpbs7mIS08SM8jUuqZewEvFRGSva7bE5W1Kg==, tarball: https://npm.pkg.github.com/download/@crab-shack/plugin-heroku/0.1.5/0c79bcac3fb9d4e0814f95177de1071dad14236a}
-    peerDependencies:
-      '@crab-shack/platform-daemon': '>=0.20.0 <1.0.0'
-      '@crab-shack/platform-sdk': '>=0.20.0 <1.0.0'
-      vue: ^3.5.44
-
-  '@crab-shack/plugin-netlify@0.1.13':
-    resolution: {integrity: sha512-TUYrAhmoPKYd5oD+j/Ciw7mmBcp9ti+56Py/RmJjW9SRPlZxBRsDXdHsHmJeAl/GoVssX9386D6bywlHSCsRiA==, tarball: https://npm.pkg.github.com/download/@crab-shack/plugin-netlify/0.1.13/fa05f492da435800ff446361ccae062c003b64bd}
-    hasBin: true
-    peerDependencies:
-      '@crab-shack/platform-daemon': '>=0.20.0 <1.0.0'
-      '@crab-shack/platform-sdk': '>=0.20.0 <1.0.0'
-      vue: ^3.5.44
-
-  '@crab-shack/plugin-repository@0.1.12':
-    resolution: {integrity: sha512-LyYQAcQoONF4uA1bm40ZBCIYMJ+ZEGzE6GQUSVYicm3R1lt0R1yJgp69kO4xZiqzAmWWkvQWzAlfaXoTPPBL5A==, tarball: https://npm.pkg.github.com/download/@crab-shack/plugin-repository/0.1.12/8eaed14fcf7e799f645a0d4fa5ed86cb63b956e7}
-    peerDependencies:
-      '@crab-shack/platform-daemon': '>=0.20.0 <1.0.0'
-      '@crab-shack/platform-sdk': '>=0.20.0 <1.0.0'
-      vue: ^3.5.44
-
-  '@crab-shack/plugin-slack@0.1.5':
-    resolution: {integrity: sha512-5ksvMGIvCDfQsMvXV1AIVeLzMy5kCSxg+tcHuRWqPAU8pW83BECMHdp85PI+UmgrRwdP7fmdD5SCYC8UJNBiyA==, tarball: https://npm.pkg.github.com/download/@crab-shack/plugin-slack/0.1.5/315c3f88d8a8db5b046d63e5b198caef2b0cc5bb}
-    peerDependencies:
-      '@crab-shack/platform-daemon': '>=0.20.0 <1.0.0'
-      '@crab-shack/platform-sdk': '>=0.20.0 <1.0.0'
       vue: ^3.5.44
 
   '@csstools/css-tokenizer@4.0.2':
@@ -7226,14 +7226,14 @@ snapshots:
 
   '@colordx/core@7.3.0': {}
 
-  '@crab-shack/cap-acp@0.1.19(f43c275d9db78456a8c885787ed1b6c9)':
+  '@crab-shack/cap-acp@0.1.20(a7e8a42166f8453f43aa71b9e7f6378d)':
     dependencies:
       '@agentclientprotocol/codex-acp': 2.3.0
       '@agentclientprotocol/sdk': 1.4.0(zod@4.6.7)
       '@crab-shack/claude-acp': 0.1.1
-      '@crab-shack/platform-daemon': 0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
-      '@crab-shack/platform-sdk': 0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
-      '@crab-shack/plugin-repository': 0.1.12(@crab-shack/platform-daemon@0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)(vue@3.5.44(typescript@6.0.3))
+      '@crab-shack/connection-repository': 0.2.0(@crab-shack/platform-daemon@0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)(vue@3.5.44(typescript@6.0.3))
+      '@crab-shack/platform-daemon': 0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
+      '@crab-shack/platform-sdk': 0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
       drizzle-orm: 0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)
       hono: 4.13.14
       zod: 4.6.7
@@ -7269,12 +7269,12 @@ snapshots:
       - sql.js
       - sqlite3
 
-  '@crab-shack/cap-agents@0.2.11(11fa3608c833c5e56c72eccf67e12a8a)':
+  '@crab-shack/cap-agents@0.3.0(c4c6156907fbbad2fbd7bd6e7fadf77c)':
     dependencies:
-      '@crab-shack/cap-acp': 0.1.19(f43c275d9db78456a8c885787ed1b6c9)
-      '@crab-shack/platform-daemon': 0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
-      '@crab-shack/platform-sdk': 0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
-      '@crab-shack/plugin-repository': 0.1.12(@crab-shack/platform-daemon@0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)(vue@3.5.44(typescript@6.0.3))
+      '@crab-shack/cap-acp': 0.1.20(a7e8a42166f8453f43aa71b9e7f6378d)
+      '@crab-shack/connection-repository': 0.2.0(@crab-shack/platform-daemon@0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)(vue@3.5.44(typescript@6.0.3))
+      '@crab-shack/platform-daemon': 0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
+      '@crab-shack/platform-sdk': 0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
       drizzle-orm: 0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)
       hono: 4.13.14
       vue: 3.5.44(typescript@6.0.3)
@@ -7310,19 +7310,19 @@ snapshots:
       - sql.js
       - sqlite3
 
-  '@crab-shack/cap-bots@0.4.7(83aeede35a520966dfbdb5a2035cf082)':
+  '@crab-shack/cap-bots@0.5.0(4c6cff09fb8f714249b1b1160f44167e)':
     dependencies:
-      '@crab-shack/cap-acp': 0.1.19(f43c275d9db78456a8c885787ed1b6c9)
-      '@crab-shack/cap-agents': 0.2.11(11fa3608c833c5e56c72eccf67e12a8a)
-      '@crab-shack/cap-team': 0.2.6(@crab-shack/cap-agents@0.2.11(11fa3608c833c5e56c72eccf67e12a8a))(@crab-shack/platform-daemon@0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)(vue@3.5.44(typescript@6.0.3))
-      '@crab-shack/cap-worktrees': 0.1.10(f43c275d9db78456a8c885787ed1b6c9)
+      '@crab-shack/cap-acp': 0.1.20(a7e8a42166f8453f43aa71b9e7f6378d)
+      '@crab-shack/cap-agents': 0.3.0(c4c6156907fbbad2fbd7bd6e7fadf77c)
+      '@crab-shack/cap-team': 0.2.7(@crab-shack/cap-agents@0.3.0(c4c6156907fbbad2fbd7bd6e7fadf77c))(@crab-shack/platform-daemon@0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)(vue@3.5.44(typescript@6.0.3))
+      '@crab-shack/cap-worktrees': 0.1.11(a7e8a42166f8453f43aa71b9e7f6378d)
       '@crab-shack/claude-acp': 0.1.1
-      '@crab-shack/platform-daemon': 0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
-      '@crab-shack/platform-sdk': 0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
-      '@crab-shack/plugin-claude-code': 0.1.7(@crab-shack/cap-acp@0.1.19(f43c275d9db78456a8c885787ed1b6c9))(@crab-shack/platform-daemon@0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))
-      '@crab-shack/plugin-codex': 0.1.6(@crab-shack/cap-acp@0.1.19(f43c275d9db78456a8c885787ed1b6c9))(@crab-shack/platform-daemon@0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))
-      '@crab-shack/plugin-repository': 0.1.12(@crab-shack/platform-daemon@0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)(vue@3.5.44(typescript@6.0.3))
-      '@crab-shack/plugin-slack': 0.1.5(@crab-shack/platform-daemon@0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))
+      '@crab-shack/connection-claude-code': 0.2.0(@crab-shack/cap-acp@0.1.20(a7e8a42166f8453f43aa71b9e7f6378d))(@crab-shack/platform-daemon@0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))
+      '@crab-shack/connection-codex': 0.2.0(@crab-shack/cap-acp@0.1.20(a7e8a42166f8453f43aa71b9e7f6378d))(@crab-shack/platform-daemon@0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))
+      '@crab-shack/connection-repository': 0.2.0(@crab-shack/platform-daemon@0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)(vue@3.5.44(typescript@6.0.3))
+      '@crab-shack/connection-slack': 0.2.0(@crab-shack/platform-daemon@0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))
+      '@crab-shack/platform-daemon': 0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
+      '@crab-shack/platform-sdk': 0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
       drizzle-orm: 0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)
       hono: 4.13.14
       vue: 3.5.44(typescript@6.0.3)
@@ -7359,28 +7359,28 @@ snapshots:
       - sql.js
       - sqlite3
 
-  '@crab-shack/cap-chat-claude-code@0.1.6(e91a7e6acf428fc57bc8f18c6c2c8052)':
+  '@crab-shack/cap-chat-claude-code@0.1.7(e0591e236f1880b6e9e5d2566c1346e0)':
     dependencies:
-      '@crab-shack/cap-acp': 0.1.19(f43c275d9db78456a8c885787ed1b6c9)
-      '@crab-shack/platform-daemon': 0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
-      '@crab-shack/platform-sdk': 0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
-      '@crab-shack/plugin-claude-code': 0.1.7(@crab-shack/cap-acp@0.1.19(f43c275d9db78456a8c885787ed1b6c9))(@crab-shack/platform-daemon@0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))
+      '@crab-shack/cap-acp': 0.1.20(a7e8a42166f8453f43aa71b9e7f6378d)
+      '@crab-shack/connection-claude-code': 0.2.0(@crab-shack/cap-acp@0.1.20(a7e8a42166f8453f43aa71b9e7f6378d))(@crab-shack/platform-daemon@0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))
+      '@crab-shack/platform-daemon': 0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
+      '@crab-shack/platform-sdk': 0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
       vue: 3.5.44(typescript@6.0.3)
 
-  '@crab-shack/cap-chat-codex@0.1.5(4f016851882e9dd51cb6ee1f7d95cd2f)':
+  '@crab-shack/cap-chat-codex@0.1.6(57a3441df1638e5cabce878ac87ae95b)':
     dependencies:
-      '@crab-shack/cap-acp': 0.1.19(f43c275d9db78456a8c885787ed1b6c9)
-      '@crab-shack/platform-daemon': 0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
-      '@crab-shack/platform-sdk': 0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
-      '@crab-shack/plugin-codex': 0.1.6(@crab-shack/cap-acp@0.1.19(f43c275d9db78456a8c885787ed1b6c9))(@crab-shack/platform-daemon@0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))
+      '@crab-shack/cap-acp': 0.1.20(a7e8a42166f8453f43aa71b9e7f6378d)
+      '@crab-shack/connection-codex': 0.2.0(@crab-shack/cap-acp@0.1.20(a7e8a42166f8453f43aa71b9e7f6378d))(@crab-shack/platform-daemon@0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))
+      '@crab-shack/platform-daemon': 0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
+      '@crab-shack/platform-sdk': 0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
       vue: 3.5.44(typescript@6.0.3)
 
-  '@crab-shack/cap-deployments@0.1.16(0864b95c9870f2698e4d4d3a9a0e6e5c)':
+  '@crab-shack/cap-deployments@0.2.0(11a2ff8cf1ccc402d3a43c73fed1c348)':
     dependencies:
-      '@crab-shack/platform-daemon': 0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
-      '@crab-shack/platform-sdk': 0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
-      '@crab-shack/plugin-heroku': 0.1.5(@crab-shack/platform-daemon@0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))
-      '@crab-shack/plugin-netlify': 0.1.13(@crab-shack/platform-daemon@0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))
+      '@crab-shack/connection-heroku': 0.2.0(@crab-shack/platform-daemon@0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))
+      '@crab-shack/connection-netlify': 0.2.0(@crab-shack/platform-daemon@0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))
+      '@crab-shack/platform-daemon': 0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
+      '@crab-shack/platform-sdk': 0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
       drizzle-orm: 0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)
       hono: 4.13.14
       vue: 3.5.44(typescript@6.0.3)
@@ -7416,11 +7416,11 @@ snapshots:
       - sql.js
       - sqlite3
 
-  '@crab-shack/cap-issues@0.1.6(c0847fe4448ae50158e634799081db24)':
+  '@crab-shack/cap-issues@0.1.7(420d7ae5691177f951654d0396f6215a)':
     dependencies:
-      '@crab-shack/platform-daemon': 0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
-      '@crab-shack/platform-sdk': 0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
-      '@crab-shack/plugin-repository': 0.1.12(@crab-shack/platform-daemon@0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)(vue@3.5.44(typescript@6.0.3))
+      '@crab-shack/connection-repository': 0.2.0(@crab-shack/platform-daemon@0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)(vue@3.5.44(typescript@6.0.3))
+      '@crab-shack/platform-daemon': 0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
+      '@crab-shack/platform-sdk': 0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
       drizzle-orm: 0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)
       hono: 4.13.14
       marked: 17.0.6
@@ -7458,11 +7458,11 @@ snapshots:
       - sql.js
       - sqlite3
 
-  '@crab-shack/cap-team@0.2.6(@crab-shack/cap-agents@0.2.11(11fa3608c833c5e56c72eccf67e12a8a))(@crab-shack/platform-daemon@0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)(vue@3.5.44(typescript@6.0.3))':
+  '@crab-shack/cap-team@0.2.7(@crab-shack/cap-agents@0.3.0(c4c6156907fbbad2fbd7bd6e7fadf77c))(@crab-shack/platform-daemon@0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)(vue@3.5.44(typescript@6.0.3))':
     dependencies:
-      '@crab-shack/cap-agents': 0.2.11(11fa3608c833c5e56c72eccf67e12a8a)
-      '@crab-shack/platform-daemon': 0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
-      '@crab-shack/platform-sdk': 0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
+      '@crab-shack/cap-agents': 0.3.0(c4c6156907fbbad2fbd7bd6e7fadf77c)
+      '@crab-shack/platform-daemon': 0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
+      '@crab-shack/platform-sdk': 0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
       drizzle-orm: 0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)
       hono: 4.13.14
       vue: 3.5.44(typescript@6.0.3)
@@ -7499,10 +7499,10 @@ snapshots:
       - sql.js
       - sqlite3
 
-  '@crab-shack/cap-uptime@0.1.8(@crab-shack/platform-daemon@0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)(vue@3.5.44(typescript@6.0.3))':
+  '@crab-shack/cap-uptime@0.1.9(@crab-shack/platform-daemon@0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)(vue@3.5.44(typescript@6.0.3))':
     dependencies:
-      '@crab-shack/platform-daemon': 0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
-      '@crab-shack/platform-sdk': 0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
+      '@crab-shack/platform-daemon': 0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
+      '@crab-shack/platform-sdk': 0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
       drizzle-orm: 0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)
       hono: 4.13.14
       vue: 3.5.44(typescript@6.0.3)
@@ -7539,11 +7539,11 @@ snapshots:
       - sql.js
       - sqlite3
 
-  '@crab-shack/cap-worktrees@0.1.10(f43c275d9db78456a8c885787ed1b6c9)':
+  '@crab-shack/cap-worktrees@0.1.11(a7e8a42166f8453f43aa71b9e7f6378d)':
     dependencies:
-      '@crab-shack/platform-daemon': 0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
-      '@crab-shack/platform-sdk': 0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
-      '@crab-shack/plugin-repository': 0.1.12(@crab-shack/platform-daemon@0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)(vue@3.5.44(typescript@6.0.3))
+      '@crab-shack/connection-repository': 0.2.0(@crab-shack/platform-daemon@0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)(vue@3.5.44(typescript@6.0.3))
+      '@crab-shack/platform-daemon': 0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
+      '@crab-shack/platform-sdk': 0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
       drizzle-orm: 0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)
       hono: 4.13.14
     transitivePeerDependencies:
@@ -7583,10 +7583,86 @@ snapshots:
       '@agentclientprotocol/sdk': 1.4.0(zod@4.6.7)
       zod: 4.6.7
 
-  '@crab-shack/platform-cli@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(hono@4.13.14)(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))':
+  '@crab-shack/connection-claude-code@0.2.0(@crab-shack/cap-acp@0.1.20(a7e8a42166f8453f43aa71b9e7f6378d))(@crab-shack/platform-daemon@0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))':
     dependencies:
-      '@crab-shack/platform-config': 0.20.0(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
-      '@crab-shack/platform-sdk': 0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
+      '@crab-shack/cap-acp': 0.1.20(a7e8a42166f8453f43aa71b9e7f6378d)
+      '@crab-shack/platform-daemon': 0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
+      '@crab-shack/platform-sdk': 0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
+      vue: 3.5.44(typescript@6.0.3)
+
+  '@crab-shack/connection-codex@0.2.0(@crab-shack/cap-acp@0.1.20(a7e8a42166f8453f43aa71b9e7f6378d))(@crab-shack/platform-daemon@0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))':
+    dependencies:
+      '@crab-shack/cap-acp': 0.1.20(a7e8a42166f8453f43aa71b9e7f6378d)
+      '@crab-shack/platform-daemon': 0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
+      '@crab-shack/platform-sdk': 0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
+      vue: 3.5.44(typescript@6.0.3)
+
+  '@crab-shack/connection-heroku@0.2.0(@crab-shack/platform-daemon@0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))':
+    dependencies:
+      '@crab-shack/platform-daemon': 0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
+      '@crab-shack/platform-sdk': 0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
+      vue: 3.5.44(typescript@6.0.3)
+
+  '@crab-shack/connection-netlify@0.2.0(@crab-shack/platform-daemon@0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))':
+    dependencies:
+      '@crab-shack/platform-daemon': 0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
+      '@crab-shack/platform-sdk': 0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
+      vue: 3.5.44(typescript@6.0.3)
+
+  '@crab-shack/connection-repository@0.2.0(@crab-shack/platform-daemon@0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)(vue@3.5.44(typescript@6.0.3))':
+    dependencies:
+      '@crab-shack/platform-daemon': 0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
+      '@crab-shack/platform-sdk': 0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
+      drizzle-orm: 0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)
+      hono: 4.13.14
+      vue: 3.5.44(typescript@6.0.3)
+      zod: 4.6.7
+    transitivePeerDependencies:
+      - '@aws-sdk/client-rds-data'
+      - '@cloudflare/workers-types'
+      - '@electric-sql/pglite'
+      - '@libsql/client'
+      - '@libsql/client-wasm'
+      - '@neondatabase/serverless'
+      - '@netlify/db'
+      - '@op-engineering/op-sqlite'
+      - '@opentelemetry/api'
+      - '@planetscale/database'
+      - '@prisma/client'
+      - '@tidbcloud/serverless'
+      - '@types/better-sqlite3'
+      - '@types/pg'
+      - '@types/sql.js'
+      - '@upstash/redis'
+      - '@vercel/postgres'
+      - '@xata.io/client'
+      - better-sqlite3
+      - bun-types
+      - expo-sqlite
+      - gel
+      - knex
+      - kysely
+      - mysql2
+      - pg
+      - postgres
+      - prisma
+      - sql.js
+      - sqlite3
+
+  '@crab-shack/connection-slack@0.2.0(@crab-shack/platform-daemon@0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))':
+    dependencies:
+      '@crab-shack/platform-daemon': 0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
+      '@crab-shack/platform-sdk': 0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
+      vue: 3.5.44(typescript@6.0.3)
+      ws: 8.22.0
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
+  '@crab-shack/platform-cli@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(hono@4.13.14)(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))':
+    dependencies:
+      '@crab-shack/platform-config': 0.24.1(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
+      '@crab-shack/platform-sdk': 0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
     transitivePeerDependencies:
       - drizzle-orm
       - eslint
@@ -7595,7 +7671,7 @@ snapshots:
       - typescript
       - vitest
 
-  '@crab-shack/platform-config@0.20.0(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))':
+  '@crab-shack/platform-config@0.24.1(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))':
     dependencies:
       '@eslint/js': 10.0.1(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))
       eslint: 10.13.0(jiti@2.7.0)(supports-color@10.2.2)
@@ -7608,11 +7684,11 @@ snapshots:
       - supports-color
       - typescript
 
-  '@crab-shack/platform-daemon@0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))':
+  '@crab-shack/platform-daemon@0.24.1(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))':
     dependencies:
       '@agentclientprotocol/sdk': 1.4.0(zod@4.6.7)
-      '@crab-shack/platform-config': 0.20.0(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
-      '@crab-shack/platform-sdk': 0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
+      '@crab-shack/platform-config': 0.24.1(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
+      '@crab-shack/platform-sdk': 0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
       '@hono/node-server': 2.1.5(hono@4.13.14)
       '@mastra/core': 1.79.0(supports-color@10.2.2)(zod@4.6.7)
       '@mastra/libsql': 1.27.0(@mastra/core@1.79.0(supports-color@10.2.2)(zod@4.6.7))
@@ -7672,16 +7748,16 @@ snapshots:
       - zod-openapi
       - zod-to-json-schema
 
-  '@crab-shack/platform-sdk@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)':
+  '@crab-shack/platform-sdk@0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)':
     dependencies:
       drizzle-orm: 0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)
       hono: 4.13.14
       yaml: 2.9.1
 
-  '@crab-shack/platform-web@0.20.0(4676216cbc62d6024024456077fb9c20)':
+  '@crab-shack/platform-web@0.24.1(4676216cbc62d6024024456077fb9c20)':
     dependencies:
-      '@crab-shack/platform-config': 0.20.0(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
-      '@crab-shack/platform-sdk': 0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
+      '@crab-shack/platform-config': 0.24.1(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
+      '@crab-shack/platform-sdk': 0.24.1(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
       '@iconify-json/lucide': 1.2.147
       '@nuxt/eslint': 1.17.0(@nuxt/schema@4.6.2)(@typescript-eslint/utils@8.72.0(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3))(@vue/compiler-sfc@3.5.44)(confbox@0.3.1)(crossws@0.4.16(srvx@1.0.7))(dotenv@17.4.2)(esbuild@0.28.2)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(giget@3.3.1)(jiti@2.7.0)(magic-string@1.4.4)(rolldown@1.2.15)(rollup@4.65.1)(srvx@1.0.7)(supports-color@10.2.2)(typescript@6.0.3)(unplugin@3.5.0(esbuild@0.28.2)(rolldown@1.2.15)(rollup@4.65.1)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
       '@nuxt/eslint-config': 1.17.0(@typescript-eslint/utils@8.72.0(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3))(@vue/compiler-sfc@3.5.44)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)
@@ -7735,82 +7811,6 @@ snapshots:
       - vite-plugin-eslint2
       - vitest
       - webpack
-
-  '@crab-shack/plugin-claude-code@0.1.7(@crab-shack/cap-acp@0.1.19(f43c275d9db78456a8c885787ed1b6c9))(@crab-shack/platform-daemon@0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))':
-    dependencies:
-      '@crab-shack/cap-acp': 0.1.19(f43c275d9db78456a8c885787ed1b6c9)
-      '@crab-shack/platform-daemon': 0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
-      '@crab-shack/platform-sdk': 0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
-      vue: 3.5.44(typescript@6.0.3)
-
-  '@crab-shack/plugin-codex@0.1.6(@crab-shack/cap-acp@0.1.19(f43c275d9db78456a8c885787ed1b6c9))(@crab-shack/platform-daemon@0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))':
-    dependencies:
-      '@crab-shack/cap-acp': 0.1.19(f43c275d9db78456a8c885787ed1b6c9)
-      '@crab-shack/platform-daemon': 0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
-      '@crab-shack/platform-sdk': 0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
-      vue: 3.5.44(typescript@6.0.3)
-
-  '@crab-shack/plugin-heroku@0.1.5(@crab-shack/platform-daemon@0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))':
-    dependencies:
-      '@crab-shack/platform-daemon': 0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
-      '@crab-shack/platform-sdk': 0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
-      vue: 3.5.44(typescript@6.0.3)
-
-  '@crab-shack/plugin-netlify@0.1.13(@crab-shack/platform-daemon@0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))':
-    dependencies:
-      '@crab-shack/platform-daemon': 0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
-      '@crab-shack/platform-sdk': 0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
-      vue: 3.5.44(typescript@6.0.3)
-
-  '@crab-shack/plugin-repository@0.1.12(@crab-shack/platform-daemon@0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)(vue@3.5.44(typescript@6.0.3))':
-    dependencies:
-      '@crab-shack/platform-daemon': 0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
-      '@crab-shack/platform-sdk': 0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
-      drizzle-orm: 0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)
-      hono: 4.13.14
-      vue: 3.5.44(typescript@6.0.3)
-      zod: 4.6.7
-    transitivePeerDependencies:
-      - '@aws-sdk/client-rds-data'
-      - '@cloudflare/workers-types'
-      - '@electric-sql/pglite'
-      - '@libsql/client'
-      - '@libsql/client-wasm'
-      - '@neondatabase/serverless'
-      - '@netlify/db'
-      - '@op-engineering/op-sqlite'
-      - '@opentelemetry/api'
-      - '@planetscale/database'
-      - '@prisma/client'
-      - '@tidbcloud/serverless'
-      - '@types/better-sqlite3'
-      - '@types/pg'
-      - '@types/sql.js'
-      - '@upstash/redis'
-      - '@vercel/postgres'
-      - '@xata.io/client'
-      - better-sqlite3
-      - bun-types
-      - expo-sqlite
-      - gel
-      - knex
-      - kysely
-      - mysql2
-      - pg
-      - postgres
-      - prisma
-      - sql.js
-      - sqlite3
-
-  '@crab-shack/plugin-slack@0.1.5(@crab-shack/platform-daemon@0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(@crab-shack/platform-sdk@0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14))(vue@3.5.44(typescript@6.0.3))':
-    dependencies:
-      '@crab-shack/platform-daemon': 0.20.0(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
-      '@crab-shack/platform-sdk': 0.20.0(drizzle-orm@0.45.4(@libsql/client@0.18.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(hono@4.13.14)
-      vue: 3.5.44(typescript@6.0.3)
-      ws: 8.22.0
-    transitivePeerDependencies:
-      - bufferutil
-      - utf-8-validate
 
   '@csstools/css-tokenizer@4.0.2': {}
 

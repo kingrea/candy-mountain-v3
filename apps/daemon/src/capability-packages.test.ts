@@ -11,7 +11,7 @@ const problems = capabilityPackageProblems(packages, { daemon: packages.get('@ca
 
 /** The lint allows what package.json lists; the runtime starts what dependsOn names. They must be the same list. */
 describe('capability packages', () => {
-  it('live, in the workspace, in packages/cap-<id> or packages/plugin-<id> after their name, and expose one root entry', () => {
+  it('live, in the workspace, in packages/cap-<id> or packages/connection-<id> after their name, and expose one root entry', () => {
     expect(problems.placement).toEqual([])
   })
 
@@ -28,7 +28,7 @@ describe('capability packages', () => {
     expect(problems.sdk).toEqual([])
   })
 
-  it('bring plugin types only from plugin- packages, each without a manifest and bringing the type named by its id', () => {
+  it('bring connection types only from connection- packages, each without a manifest and bringing the type named by its id', () => {
     expect(problems.kind).toEqual([])
   })
 })

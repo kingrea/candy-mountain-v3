@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { MODULES } from './modules'
 import { CANDY_MOUNTAIN_PRODUCT as product } from './product'
 
-const LISTS = ['capabilities', 'modules', 'pluginTypes', 'layers'] as const
+const LISTS = ['capabilities', 'modules', 'connectionTypes', 'layers'] as const
 
 describe('CANDY_MOUNTAIN_PRODUCT', () => {
   it('has a name and a label in every form', () => {

@@ -59,7 +59,7 @@ describe('the Candy Mountain web distribution', () => {
     const loaded = await load(envName)
     const names = routeNames(loaded.pages)
     expect(loaded.pages.map(page => page.path)).toContain('/p/:project()')
-    expect(names).toEqual(expect.arrayContaining(['projects', 'p-project', 'p-project-setup-plugins']))
+    expect(names).toEqual(expect.arrayContaining(['projects', 'p-project', 'p-project-setup-connections']))
     expect(withPages(packages).filter(id => !names.includes(`p-project-${id}`))).toEqual([])
     expect(sorted(loaded.layers.filter(id => packages.has(id)))).toEqual(sorted(packages.keys()))
     expect(loaded.product).toEqual(CANDY_MOUNTAIN_PRODUCT)

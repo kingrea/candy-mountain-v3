@@ -42,7 +42,7 @@ describe('the Candy Mountain product', () => {
   })
 
   it('loads the real definition list', () => {
-    const registry = createCapabilityRegistry([...platformDefinitions(), ...CANDY_MOUNTAIN.capabilities], { pluginTypeIds: [] })
+    const registry = createCapabilityRegistry([...platformDefinitions(), ...CANDY_MOUNTAIN.capabilities], { connectionTypeIds: [] })
     const withManifest = definitions.filter(d => d.manifest).map(d => d.id)
     expect(withManifest.filter(id => !registry.has(id))).toEqual([])
     expect(withManifest.length).toBeGreaterThan(0)
@@ -76,14 +76,14 @@ describe('daemon boot from the capability definition list', () => {
     return platform
   }
 
-  it('boots Candy Mountain with the capabilities, modules, plugin types and families its configuration and definitions name', async () => {
+  it('boots Candy Mountain with the capabilities, modules, connection types and families its configuration and definitions name', async () => {
     const booted = boot()
     const app = platformApp(booted)
     const modules = ((await (await app.request(MODULES_PATH)).json()) as ModuleListResponse).modules
 
     expect(booted.product.capabilities.map(c => c.id)).toEqual(Object.keys(DEFINITIONS))
     expect(modules.map(m => ({ id: m.id, capabilities: m.capabilities.map(c => c.capabilityId) }))).toEqual(MODULES.map(m => ({ id: m.id, capabilities: m.capabilities.map(c => c.capabilityId) })))
-    expect(sorted(booted.pluginTypes.list().map(t => t.id))).toEqual(sorted(CANDY_MOUNTAIN_PRODUCT.pluginTypes))
+    expect(sorted(booted.connectionTypes.list().map(t => t.id))).toEqual(sorted(CANDY_MOUNTAIN_PRODUCT.connectionTypes))
     expect(sorted(booted.families.list().map(f => f.id))).toEqual(sorted(definitions.flatMap(d => d.sessionFamilies ?? []).map(f => f.id)))
   })
 

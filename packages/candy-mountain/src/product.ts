@@ -36,7 +36,7 @@ export const CANDY_MOUNTAIN_PRODUCT: Readonly<ProductConfig> = {
     'platform-agent',
   ],
   modules: ['issues', 'agent-hub', 'operations'],
-  pluginTypes: ['repository', 'claude-code', 'codex', 'netlify', 'heroku', 'slack'],
+  connectionTypes: ['repository', 'claude-code', 'codex', 'netlify', 'heroku', 'slack'],
   layers: [
     'overview',
     'issues',
