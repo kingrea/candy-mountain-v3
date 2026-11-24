@@ -9,5 +9,6 @@ export const CANDY_MOUNTAIN_SETTINGS = {
   'platform-agent': {
     about: 'Candy Mountain is a platform for managing codebases.',
     instructions: ['Say "issue", never "bead".'],
+    avatar: 'i-lucide-mountain',
   },
 } as const satisfies ProductSettings

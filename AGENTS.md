@@ -2,7 +2,7 @@
 
 ## Source of truth
 
-The architecture overview at <https://github.com/crab-shack/platform/blob/main/docs/architecture.md> is the source of truth, above this repository's conventions and older plans. When the two disagree, follow the overview and tell Jack what disagreed. The code's words differ from the overview's until the renames land; the glossary at <https://github.com/crab-shack/platform/blob/main/docs/architecture-glossary.md> translates them.
+The architecture overview at <https://github.com/crab-shack/platform/blob/main/docs/architecture.md> is the source of truth, above this repository's conventions and older plans. When the two disagree, follow the overview and tell Jack what disagreed. The code uses the overview's words (plugin, connection, module, workspace, access level); Candy Mountain's own word for a workspace, the one a person reads, is a project.
 
 This project uses **bd** (beads) for issue tracking. Run `bd prime` for full workflow context.
 

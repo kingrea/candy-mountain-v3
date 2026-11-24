@@ -1,6 +1,6 @@
 # @candy-mountain/daemon
 
-Candy Mountain's daemon distribution. It holds no platform code and no capability code: `src/index.ts` is `await runDaemon(candyMountainProduct({}, process.env))` (the build, and what `pnpm dev` runs under `tsx watch`), and the rest of `src/` is the product wiring and the product's own tests. The platform and every capability are installed packages. The platform's contract with a capability (the runtime definition, service lifecycle, schema ownership, the dependency declaration and what the platform keeps stable) is not described here: it is the platform's conventions document, `packages/platform-daemon/README.md` in the base repository (crab-shack/platform), also the README of the installed `@crab-shack/platform-daemon` package. How a capability behaves is not described here either: it is in the capability's own package ([Where each capability is documented](#where-each-capability-is-documented)). This README covers the distribution's shape, adding a capability to Candy Mountain, its variables and how the platform's subsystems behave in it.
+Candy Mountain's daemon distribution. It holds no platform code and no capability code: `src/index.ts` refuses the variables' old names and then runs `await runDaemon(candyMountainProduct({}, process.env))` (the build, and what `pnpm dev` runs under `tsx watch`), and the rest of `src/` is the product wiring and the product's own tests. The platform and every capability are installed packages. The platform's contract with a capability (the runtime definition, service lifecycle, schema ownership, the dependency declaration and what the platform keeps stable) is not described here: it is the platform's conventions document, `packages/platform-daemon/README.md` in the base repository (crab-shack/platform), also the README of the installed `@crab-shack/platform-daemon` package. How a capability behaves is not described here either: it is in the capability's own package ([Where each capability is documented](#where-each-capability-is-documented)). This README covers the distribution's shape, adding a capability to Candy Mountain, its variables and how the platform's subsystems behave in it.
 
 ## Shape
 
@@ -12,7 +12,7 @@ Candy Mountain's daemon distribution. It holds no platform code and no capabilit
 | `packages/candy-mountain` (`@candy-mountain/candy-mountain`) | The product as plain data: `CANDY_MOUNTAIN_PRODUCT` (name, theme, workspace label, URL prefix and list path, and the capability, module, connection type and layer ids), `MODULES` (the module definitions) and `CANDY_MOUNTAIN_SETTINGS`. The web app and the CLI read the same object. |
 | `src/definitions.ts` | `DEFINITIONS`, the capability definition factories keyed by capability id in registration order (`overview` and `platform-agent` come from the platform package, the rest from the capability packages), and `capabilityDefinitions(options)`, whose options are keyed by the same ids so tests can hand a definition fakes. |
 | `src/candy-mountain.ts` | `candyMountainProduct(options, env)`: the product data joined with the definitions (`connectionTypes` is empty: every connection type comes with its connection package) and the settings, and `CANDY_MOUNTAIN`. |
-| `src/settings.ts` | `candyMountainSettings(env)`: the product's settings with the environment overrides Candy Mountain keeps ([Product settings](#product-settings)). |
+| `src/settings.ts` | `candyMountainSettings(env)`: the product's settings with the environment overrides Candy Mountain keeps ([Product settings](#product-settings)), and `RENAMED_VARIABLES`, every old `CM_` name the entry point refuses ([From a version before the CRAB_ names](#from-a-version-before-the-crab_-names)). |
 | `src/*.test.ts` | Tests of the product: `candy-mountain.test.ts` (the product matches its configuration, a drift is refused naming every mismatch, each definition is keyed by its id and listed in the product, the modules load, and a boot registers the capabilities, modules, connection types and families the product names, each after what it depends on), `capability-packages.test.ts` (every capability package the workspace installs is in both the daemon's `dependencies` and `DEFINITIONS`, its `package.json` names the capabilities its `dependsOn` does, it states its SDK major, and only a `connection-` package brings a connection type), `schema.test.ts` (every migration set the product boots matches its latest snapshot and references only tables it may) and `settings.test.ts`. Tests that run the capabilities together (a boot without each capability, workspace deletion across every capability's tables, the platform agent's Claude Code, Codex, issues and bots cases) live with the capabilities, in the development distribution of crab-shack/capabilities. |
 
 The build (`tsdown`) bundles the product package, which is TypeScript source, into `dist/index.mjs` and leaves the platform and the capabilities as imports, so the built daemon starts under plain `node` and loads each from `node_modules`; a capability finds its migrations by its own package name. Below, a `src/` path is in the base's `packages/platform-daemon/src`.
@@ -29,7 +29,7 @@ A capability is its package plus one entry in each list that names it. For a cap
 
 A capability particular to Candy Mountain is written here instead: `packages/plugin-<id>` (or `packages/connection-<id>` for a connection) under the `@candy-mountain` scope, to the conventions in the platform's `packages/platform-daemon/README.md` (copy the base's `packages/plugin-template`, whose README walks through the copy step by step), with `"@candy-mountain/plugin-<id>": "workspace:*"` as its dependency line in both apps and the rest of the list unchanged. There is none today.
 
-Removing one is the reverse: the two dependency lines, the import and the entry, its ids from `product.ts` and its member from `modules.ts`, then `pnpm install`. A missed list names itself: the daemon refuses to boot while the product data and the definitions disagree (`assertProduct`); `capability-packages.test.ts` fails naming a package that is installed but not in `DEFINITIONS`; a package `DEFINITIONS` imports that the daemon's `package.json` does not list fails the lint (`cm-packages`) and, once `pnpm install` has dropped it, the tests' import of it; and `packages/candy-mountain/src/product.test.ts` fails while a module names an unlisted plugin. A capability that others need goes with its dependents: the daemon refuses to boot a definition whose `dependsOn`, required connection type or required workspace fact has gone, naming both. Variables a removed capability read (below) are ignored.
+Removing one is the reverse: the two dependency lines, the import and the entry, its ids from `product.ts` and its member from `modules.ts`, then `pnpm install`. A missed list names itself: the daemon refuses to boot while the product data and the definitions disagree (`assertProduct`); `capability-packages.test.ts` fails naming a package that is installed but not in `DEFINITIONS`; a package `DEFINITIONS` imports that the daemon's `package.json` does not list fails the lint (`crab-packages`) and, once `pnpm install` has dropped it, the tests' import of it; and `packages/candy-mountain/src/product.test.ts` fails while a module names an unlisted plugin. A capability that others need goes with its dependents: the daemon refuses to boot a definition whose `dependsOn`, required connection type or required workspace fact has gone, naming both. Variables a removed capability read (below) are ignored.
 
 ### Development-only capabilities
 
@@ -39,23 +39,51 @@ A product may include a capability only in development through `developmentProdu
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `CM_DAEMON_HOST` | `127.0.0.1` | Bind address |
-| `CM_DAEMON_PORT` | `4310` | Port |
-| `CM_DATA_DIR` | `$XDG_DATA_HOME/candy-mountain`, else `~/.local/share/candy-mountain` | Data directory (`~` is expanded, relative paths resolve against the working directory) |
-| `CM_SECRETS_KEY` | unset | Secrets master key: exactly 32 bytes, base64-encoded. Generate with `openssl rand -base64 32`. See [Secrets](#secrets) |
-| `CM_AUTH_STRATEGY` | `development` | `development`, `password` or `trusted-header`. See [Auth](#auth) |
-| `CM_AUTH_TRUSTED_HEADER` | unset | Header carrying the username; required with `trusted-header` |
-| `CM_ADMIN_PASSWORD` | unset | Sets or resets the admin password at boot (any strategy). See [Password strategy](#password-strategy) |
-| `CM_AUTH_SESSION_TTL` | `30d` | Password-strategy session lifetime: `<n>s`, `<n>m`, `<n>h` or `<n>d`, at most `400d` |
-| `CM_AUTH_LOGIN_MAX_FAILURES` | `10` | Password strategy: failed logins allowed per username and per client IP within the window before `429` |
-| `CM_AUTH_LOGIN_WINDOW` | `1m` | Password strategy: the failed-login window, same duration format as the session TTL |
-| `CM_AUTH_COOKIE_SECURE` | `false` | `true` adds `Secure` to the session cookie; set it when the web app is served over https |
-| `CM_WORKTREES_PER_PROJECT` | `4` | Worktrees: active worktree leases allowed per project; an acquire beyond it is refused. Overrides the worktrees setting `maxPerWorkspace`; see [Product settings](#product-settings) |
-| `CM_WORKTREE_IDLE_TIMEOUT` | `2h` | Worktrees: a lease unused this long is reclaimed if its worktree holds no uncommitted or unpushed work (`90s`, `15m`, `2h`, `1d`; at most `30d`). Overrides the worktrees setting `idleTimeoutMs` |
-| `CM_WORKTREE_RECLAIM_INTERVAL` | `10m` | Worktrees: how often the idle reclaim pass runs, in the same duration format. Overrides the worktrees setting `reclaimIntervalMs` |
-| `CM_WEB_URL` | `http://127.0.0.1:4300` | Origin of the web app, used to build the absolute links in Slack notifications. See [Notifications](#notifications) |
+| `CRAB_DAEMON_HOST` | `127.0.0.1` | Bind address |
+| `CRAB_DAEMON_PORT` | `4310` | Port |
+| `CRAB_DATA_DIR` | `$XDG_DATA_HOME/candy-mountain`, else `~/.local/share/candy-mountain` | Data directory (`~` is expanded, relative paths resolve against the working directory) |
+| `CRAB_SECRETS_KEY` | unset | Secrets master key: exactly 32 bytes, base64-encoded. Generate with `openssl rand -base64 32`. See [Secrets](#secrets) |
+| `CRAB_AUTH_STRATEGY` | `development` | `development`, `password` or `trusted-header`. See [Auth](#auth) |
+| `CRAB_AUTH_TRUSTED_HEADER` | unset | Header carrying the username; required with `trusted-header` |
+| `CRAB_ADMIN_PASSWORD` | unset | Sets or resets the admin password at boot (any strategy). See [Password strategy](#password-strategy) |
+| `CRAB_AUTH_SESSION_TTL` | `30d` | Password-strategy session lifetime: `<n>s`, `<n>m`, `<n>h` or `<n>d`, at most `400d` |
+| `CRAB_AUTH_LOGIN_MAX_FAILURES` | `10` | Password strategy: failed logins allowed per username and per client IP within the window before `429` |
+| `CRAB_AUTH_LOGIN_WINDOW` | `1m` | Password strategy: the failed-login window, same duration format as the session TTL |
+| `CRAB_AUTH_COOKIE_SECURE` | `false` | `true` adds `Secure` to the session cookie; set it when the web app is served over https |
+| `CRAB_WORKTREES_PER_PROJECT` | `4` | Worktrees: active worktree leases allowed per project; an acquire beyond it is refused. Overrides the worktrees setting `maxPerWorkspace`; see [Product settings](#product-settings) |
+| `CRAB_WORKTREE_IDLE_TIMEOUT` | `2h` | Worktrees: a lease unused this long is reclaimed if its worktree holds no uncommitted or unpushed work (`90s`, `15m`, `2h`, `1d`; at most `30d`). Overrides the worktrees setting `idleTimeoutMs` |
+| `CRAB_WORKTREE_RECLAIM_INTERVAL` | `10m` | Worktrees: how often the idle reclaim pass runs, in the same duration format. Overrides the worktrees setting `reclaimIntervalMs` |
+| `CRAB_WEB_URL` | `http://127.0.0.1:4300` | Origin of the web app, used to build the absolute links in Slack notifications. See [Notifications](#notifications) |
 
-The platform reads the address, data directory, secrets key, auth, admin password and `CM_WEB_URL` in `loadDaemonConfig`. `CM_WORKTREE*` are Candy Mountain's own: they override product settings (below). A capability reads its own variables when its definition starts, so an invalid value still fails the daemon at boot, and a variable of a capability the product does not list is ignored: `CM_SESSION_IDLE_TIMEOUT`, `CM_SESSION_MAX_LIVE` and `CM_DECISION_TIMEOUT` (`@crab-shack/plugin-acp`), `CM_UPTIME_HISTORY_MAX` and `CM_UPTIME_HISTORY_MAX_AGE` (`@crab-shack/plugin-uptime`). Their defaults and formats are in those packages' READMEs. Options a test hands a definition override its variables.
+The platform reads the address, data directory, secrets key, auth, admin password and `CRAB_WEB_URL` in `loadDaemonConfig`. `CRAB_WORKTREE*` are Candy Mountain's own: they override product settings (below), and keep "project", Candy Mountain's word for a workspace. A capability reads its own variables when its definition starts, so an invalid value still fails the daemon at boot, and a variable of a capability the product does not list is ignored: `CRAB_SESSION_IDLE_TIMEOUT`, `CRAB_SESSION_MAX_LIVE`, `CRAB_SESSION_INSTRUCTIONS_TIMEOUT` and `CRAB_DECISION_TIMEOUT` (`@crab-shack/plugin-acp`), `CRAB_UPTIME_HISTORY_MAX` and `CRAB_UPTIME_HISTORY_MAX_AGE` (`@crab-shack/plugin-uptime`). Their defaults and formats are in those packages' READMEs. Options a test hands a definition override its variables.
+
+### From a version before the CRAB_ names
+
+Until Candy Mountain moved to platform 0.30.0 (with `@crab-shack/plugin-acp` 0.3.0 and `@crab-shack/plugin-uptime` 0.3.0), every variable above started `CM_`; the rest of each name is unchanged. An old name is never read. While one is set, even empty or beside its new name, `src/index.ts` refuses to start before the platform opens the data directory, naming the new name for each:
+
+```
+RenamedVariablesError: The environment sets variables under an old name, which is no longer read. Rename each and start again:
+  CM_SECRETS_KEY is now CRAB_SECRETS_KEY
+  CM_WORKTREE_IDLE_TIMEOUT is now CRAB_WORKTREE_IDLE_TIMEOUT
+```
+
+The web app (`nuxt dev`, `nuxt build` and the built server) and the `candy-mountain` command refuse the platform's old names the same way; the command checks the shell and, with the service installed, `~/.config/candy-mountain/service.env`, and exits 2, which keeps the service stopped. The command does not know Candy Mountain's own old names or the plugins': with one of those left in `service.env`, the daemon refuses at every start of the service and `candy-mountain logs` shows the list.
+
+| Old name | New name | Read by |
+| --- | --- | --- |
+| `CM_DATA_DIR`, `CM_DAEMON_HOST`, `CM_DAEMON_PORT`, `CM_WEB_HOST`, `CM_WEB_PORT`, `CM_WEB_URL` | `CRAB_DATA_DIR`, `CRAB_DAEMON_HOST`, `CRAB_DAEMON_PORT`, `CRAB_WEB_HOST`, `CRAB_WEB_PORT`, `CRAB_WEB_URL` | the platform |
+| `CM_SECRETS_KEY`, `CM_ADMIN_PASSWORD` | `CRAB_SECRETS_KEY`, `CRAB_ADMIN_PASSWORD` | the platform |
+| `CM_AUTH_STRATEGY`, `CM_AUTH_TRUSTED_HEADER`, `CM_AUTH_SESSION_TTL`, `CM_AUTH_COOKIE_SECURE`, `CM_AUTH_LOGIN_MAX_FAILURES`, `CM_AUTH_LOGIN_WINDOW` | `CRAB_AUTH_STRATEGY`, `CRAB_AUTH_TRUSTED_HEADER`, `CRAB_AUTH_SESSION_TTL`, `CRAB_AUTH_COOKIE_SECURE`, `CRAB_AUTH_LOGIN_MAX_FAILURES`, `CRAB_AUTH_LOGIN_WINDOW` | the platform |
+| `CM_AGENT_MCP_HOST`, `CM_AGENT_MCP_PORT`, `CM_AGENT_MCP_AGENT_HOST` | `CRAB_AGENT_MCP_HOST`, `CRAB_AGENT_MCP_PORT`, `CRAB_AGENT_MCP_AGENT_HOST` | the platform |
+| `CM_SESSION_IDLE_TIMEOUT`, `CM_SESSION_MAX_LIVE`, `CM_SESSION_INSTRUCTIONS_TIMEOUT`, `CM_DECISION_TIMEOUT` | `CRAB_SESSION_IDLE_TIMEOUT`, `CRAB_SESSION_MAX_LIVE`, `CRAB_SESSION_INSTRUCTIONS_TIMEOUT`, `CRAB_DECISION_TIMEOUT` | `@crab-shack/plugin-acp` |
+| `CM_UPTIME_HISTORY_MAX`, `CM_UPTIME_HISTORY_MAX_AGE` | `CRAB_UPTIME_HISTORY_MAX`, `CRAB_UPTIME_HISTORY_MAX_AGE` | `@crab-shack/plugin-uptime` |
+| `CM_WORKTREES_PER_PROJECT`, `CM_WORKTREE_IDLE_TIMEOUT`, `CM_WORKTREE_RECLAIM_INTERVAL` | `CRAB_WORKTREES_PER_PROJECT`, `CRAB_WORKTREE_IDLE_TIMEOUT`, `CRAB_WORKTREE_RECLAIM_INTERVAL` | Candy Mountain |
+
+An existing install moves in this order:
+
+1. **Back up the data directory first, with the old version.** The first start on this version also runs the shared plugins' migrations that rename stored columns (`project_id` to `workspace_id` in `team_members`, `uptime_monitors`, `uptime_incidents`, `environments` and `slack_threads`, and the table `project_assignees` to `workspace_assignees`). A data directory they have run on cannot be opened by an earlier version, so the backup is the only way back. Stop Candy Mountain (`candy-mountain stop`, or stop `pnpm dev`) and copy the whole directory, for example `cp -a ~/.local/share/candy-mountain ~/.local/share/candy-mountain-backup-$(date +%F)`.
+2. **Rename every `CM_` line** wherever the install's settings are kept, keeping each value: the service's `~/.config/candy-mountain/service.env` (it was written with `CM_DATA_DIR`, the ports and a commented `# CM_SECRETS_KEY=`), a `.env` you load before `pnpm dev` or `pnpm start`, and a shell profile that exports one. In `service.env`, `sed -i 's/^CM_/CRAB_/; s/^# CM_/# CRAB_/' ~/.config/candy-mountain/service.env` renames them all. A copy of the secrets key kept elsewhere, in a password manager for instance, is now the value of `CRAB_SECRETS_KEY`: the value does not change.
+3. **Update and start**: `pnpm install && pnpm build`, then `candy-mountain install-service` with the service (its unit gains `RestartPreventExitStatus=2`), or `candy-mountain start`. The start log names the migrations it ran.
 
 ### Product settings
 
@@ -63,14 +91,14 @@ A capability can declare product-level settings; the platform checks the product
 
 | Capability | Setting | Default | Environment override |
 |---|---|---|---|
-| `worktrees` | `maxPerWorkspace` | `4` | `CM_WORKTREES_PER_PROJECT` |
-| `worktrees` | `idleTimeoutMs` | `7200000` (2h) | `CM_WORKTREE_IDLE_TIMEOUT` |
-| `worktrees` | `reclaimIntervalMs` | `600000` (10m) | `CM_WORKTREE_RECLAIM_INTERVAL` |
+| `worktrees` | `maxPerWorkspace` | `4` | `CRAB_WORKTREES_PER_PROJECT` |
+| `worktrees` | `idleTimeoutMs` | `7200000` (2h) | `CRAB_WORKTREE_IDLE_TIMEOUT` |
+| `worktrees` | `reclaimIntervalMs` | `600000` (10m) | `CRAB_WORKTREE_RECLAIM_INTERVAL` |
 
 - Declared by `@crab-shack/plugin-worktrees` (`WORKTREES_SETTINGS`, exported from its root entry and described under "Settings" in its README; the durations are integers of milliseconds from 1 to 30 days).
-- `platform-agent` takes `about` and `instructions`, declared by `@crab-shack/platform-daemon` (`PLATFORM_AGENT_SETTINGS`; the base's `docs/product-file.md`, "The platform agent"). Candy Mountain sets them so its agent is told what Candy Mountain is and to say "issue", never "bead". No variable overrides them.
+- `platform-agent` takes `about`, `instructions` and `avatar`, declared by `@crab-shack/platform-daemon` (`PLATFORM_AGENT_SETTINGS`; the base's `docs/product-file.md`, "The platform agent"). Candy Mountain sets `about` and `instructions` so its agent is told what Candy Mountain is and to say "issue", never "bead", and `avatar` to `i-lucide-mountain`, so the agent is drawn as Candy Mountain's mountain rather than the platform's own `i-lucide-compass`. No variable overrides them.
 - Candy Mountain's values are `CANDY_MOUNTAIN_SETTINGS` in `packages/candy-mountain/src/settings.ts`; change them there.
-- The environment is read in `apps/daemon/src/settings.ts` (`candyMountainSettings(env)`), which the entry point calls with `process.env` through `candyMountainProduct({}, process.env)`. A set variable wins over the product's value, keeps its old format (a positive integer; `90s`, `15m`, `2h`, `1d` up to `30d`) and is checked against the declaration, so a bad one stops the boot with, for example, `Capability 'worktrees' setting 'idleTimeoutMs': CM_WORKTREE_IDLE_TIMEOUT must be a duration such as 90s, 15m or 2h, at most 30d, got "2 hours".` An empty variable leaves the product's value. Tests boot `CANDY_MOUNTAIN` without the environment.
+- The environment is read in `apps/daemon/src/settings.ts` (`candyMountainSettings(env)`), which the entry point calls with `process.env` through `candyMountainProduct({}, process.env)`. A set variable wins over the product's value, keeps its old format (a positive integer; `90s`, `15m`, `2h`, `1d` up to `30d`) and is checked against the declaration, so a bad one stops the boot with, for example, `Capability 'worktrees' setting 'idleTimeoutMs': CRAB_WORKTREE_IDLE_TIMEOUT must be a duration such as 90s, 15m or 2h, at most 30d, got "2 hours".` An empty variable leaves the product's value. An old name (`CM_WORKTREES_PER_PROJECT`, `CM_WORKTREE_IDLE_TIMEOUT`, `CM_WORKTREE_RECLAIM_INTERVAL`) is refused there too, even beside its new one, rather than left to fall back on the product's value. Tests boot `CANDY_MOUNTAIN` without the environment.
 - `capabilityDefinitions({ worktrees: { pool } })` options still override the settings, for tests.
 
 `~/.candy-mountain` is not used because Candy Mountain v2 owns it. Keep the data directory outside any repository.
@@ -123,7 +151,7 @@ The sets Candy Mountain boots:
 |---|---|
 | `platform` | organisations, workspaces, workspace_modules, users, user_passwords, user_roles, roles, auth_sessions, role_grants, connections, platform_meta, activity_events, chat_threads, chat_thread_sessions, agent_sessions, agent_session_events |
 | `repository` | repositories |
-| `issues` | project_assignees |
+| `issues` | workspace_assignees |
 | `agents` | agents, agents_removed |
 | `bots` | bot_settings, slack_threads, slack_turns, slack_deliveries |
 | `worktrees` | worktrees_leases, worktrees_workspace_caps |
@@ -154,11 +182,11 @@ Tests in the platform package and in every capability package use the platform's
 
 ## Secrets
 
-`src/secrets/` stores tokens and keys for connections, bots and auth. Each value is encrypted with AES-256-GCM under `CM_SECRETS_KEY` (random 12-byte IV per write; owner and name bound in as associated data, so a file copied to another slot fails to decrypt) and written atomically to `secrets/<owner>/<name>.json` with mode `0600` inside `0700` directories. Owners and names are 1-128 of letters, digits and `. _ : @ -`, starting with a letter or digit.
+`src/secrets/` stores tokens and keys for connections, bots and auth. Each value is encrypted with AES-256-GCM under `CRAB_SECRETS_KEY` (random 12-byte IV per write; owner and name bound in as associated data, so a file copied to another slot fails to decrypt) and written atomically to `secrets/<owner>/<name>.json` with mode `0600` inside `0700` directories. Owners and names are 1-128 of letters, digits and `. _ : @ -`, starting with a letter or digit.
 
 Keep the key outside the data directory and back it up separately: moving machines means copying the data directory and setting the same key. Without it the values cannot be recovered.
 
-If `CM_SECRETS_KEY` is unset the daemon still starts, logs a warning, and the store is locked: `set` and `get` throw `SecretsLockedError`, while `isSet`, `delete` and `deleteOwner` keep working. A malformed key (not base64, or not 32 bytes) stops the daemon at boot.
+If `CRAB_SECRETS_KEY` is unset the daemon still starts, logs a warning, and the store is locked: `set` and `get` throw `SecretsLockedError`, while `isSet`, `delete` and `deleteOwner` keep working. A malformed key (not base64, or not 32 bytes) stops the daemon at boot.
 
 `startPlatform(dataDir, { product, secretsKey })` returns the store as `platform.secrets`:
 
@@ -180,24 +208,24 @@ Mastra runs as a library only (no server routes or Studio). `createMastra(paths,
 
 Every request passes one middleware (`src/auth/middleware.ts`) that asks the configured strategy for an actor. Routes read `c.var.actor` (`{ id, username, displayName, roles }`, type `Actor` from `@crab-shack/platform-sdk`) and never a header or cookie. No actor means `401 { error: { code: 'unauthenticated' } }`. Only `PUBLIC_PATHS` (`/health`, `/auth/strategy`) and a strategy's own `publicPaths` skip the check; `c.var.actor` is unset there.
 
-Strategies, chosen with `CM_AUTH_STRATEGY` at boot (an invalid value stops the daemon):
+Strategies, chosen with `CRAB_AUTH_STRATEGY` at boot (an invalid value stops the daemon):
 
 - `development` (default): every request is the admin.
 - `password`: a server-side session identified by a cookie, issued by logging in. See [Password strategy](#password-strategy).
-- `trusted-header`: the value of `CM_AUTH_TRUSTED_HEADER` is matched exactly against `users.username`; missing, empty or unknown is a 401. Only safe when a proxy in front of the web app overwrites that header on every request and nothing else can reach the web app or daemon, since the web proxy forwards browser headers unchanged.
+- `trusted-header`: the value of `CRAB_AUTH_TRUSTED_HEADER` is matched exactly against `users.username`; missing, empty or unknown is a 401. Only safe when a proxy in front of the web app overwrites that header on every request and nothing else can reach the web app or daemon, since the web proxy forwards browser headers unchanged.
 
 Users live in `users`, roles in `roles` (keyed by `slug`), membership in `user_roles`. `seedAuth` runs on every start and ensures the `admin` user holding the `admin` role exists. `GET /auth/me` returns `{ actor }`. `GET /auth/strategy` is public under every strategy and returns `{ strategy }`, so a login page can tell whether to show itself before anyone is signed in.
 
 ### Password strategy
 
-- `POST /auth/login` with JSON `{ username, password }`: `200 { actor }` plus a `cm_session` cookie (`HttpOnly; SameSite=Lax; Path=/; Max-Age=<ttl>`, `Secure` with `CM_AUTH_COOKIE_SECURE=true`). A wrong username or password is `401 { error: { code: 'invalid_credentials' } }` and creates no session; a malformed body is `400 invalid_request`. Logging in replaces the session the request's cookie held.
+- `POST /auth/login` with JSON `{ username, password }`: `200 { actor }` plus a `cm_session` cookie (`HttpOnly; SameSite=Lax; Path=/; Max-Age=<ttl>`, `Secure` with `CRAB_AUTH_COOKIE_SECURE=true`). A wrong username or password is `401 { error: { code: 'invalid_credentials' } }` and creates no session; a malformed body is `400 invalid_request`. Logging in replaces the session the request's cookie held.
 - `POST /auth/logout`: deletes the session, clears the cookie, `204`. Public, so an expired cookie can still be cleared.
-- Login is rate limited in memory (reset on restart): more than `CM_AUTH_LOGIN_MAX_FAILURES` failures within `CM_AUTH_LOGIN_WINDOW` for a username or for a client IP gets `429 { error: { code: 'rate_limited' } }` with `Retry-After` before the password is checked. A successful login clears that username's counter. The IP is the socket address; `X-Forwarded-For` is ignored, so behind a reverse proxy all clients share the proxy's IP.
+- Login is rate limited in memory (reset on restart): more than `CRAB_AUTH_LOGIN_MAX_FAILURES` failures within `CRAB_AUTH_LOGIN_WINDOW` for a username or for a client IP gets `429 { error: { code: 'rate_limited' } }` with `Retry-After` before the password is checked. A successful login clears that username's counter. The IP is the socket address; `X-Forwarded-For` is ignored, so behind a reverse proxy all clients share the proxy's IP.
 - Both routes exist only under this strategy (`404` otherwise).
-- Sessions live in `auth_sessions`, keyed by the SHA-256 of the cookie token, and expire `CM_AUTH_SESSION_TTL` after login (no sliding renewal). An expired session is a 401 and is deleted; logins purge other expired rows.
+- Sessions live in `auth_sessions`, keyed by the SHA-256 of the cookie token, and expire `CRAB_AUTH_SESSION_TTL` after login (no sliding renewal). An expired session is a 401 and is deleted; logins purge other expired rows.
 - Password hashes live in `user_passwords` (one row per user, cascading with `users`), never in `users` and never in a response. Format `scrypt$N$r$p$salt$hash` from `node:crypto` scrypt (N=2^17, r=8, p=1, OWASP's baseline), so there is no native hashing dependency; verification reads the parameters from the stored hash, so they can be raised later.
-- Setting the admin password: start the daemon with `CM_ADMIN_PASSWORD` (8 to 1024 characters). A different value replaces the hash and signs the admin out everywhere; the same value is a no-op, so leaving it set does not log you out on restart. It can be removed after the first start since the hash persists. Inside the daemon, `setUserPassword(db, userId, password)` does the same for any user.
-- With `CM_AUTH_STRATEGY=password` and no admin password stored, the daemon refuses to start.
+- Setting the admin password: start the daemon with `CRAB_ADMIN_PASSWORD` (8 to 1024 characters). A different value replaces the hash and signs the admin out everywhere; the same value is a no-op, so leaving it set does not log you out on restart. It can be removed after the first start since the hash persists. Inside the daemon, `setUserPassword(db, userId, password)` does the same for any user.
+- With `CRAB_AUTH_STRATEGY=password` and no admin password stored, the daemon refuses to start.
 
 ### Adding a strategy
 
@@ -271,7 +299,7 @@ Health checks get secrets through `createConnectionSecrets(platform.secrets, con
 
 A connection is one set-up of a connection type, owned by a workspace (`owner: 'workspace'`) or by the whole instance (`owner: 'instance'`). Rows live in `connections` (cascade-deleted with their project); secret values live only in the secrets store under owner `connection:<connection id>`. Code is in `src/connections/`, wire types in `@crab-shack/platform-sdk` (`connections.ts`).
 
-A data directory from platform 0.21.0 or earlier kept these as the table `plugin_instances` (column `scope`, value `'global'`) and the secrets owner `plugin:<id>`. The first start on 0.22.0 or later renames them (migration `0002_connections`) and, with the `CM_SECRETS_KEY` they were written with, moves each connection's secrets, logging `Moved the secrets of N connection(s) to their new stored name`. An upgraded data directory does not go back: back it up before that start.
+A data directory from platform 0.21.0 or earlier kept these as the table `plugin_instances` (column `scope`, value `'global'`) and the secrets owner `plugin:<id>`. The first start on 0.22.0 or later renames them (migration `0002_connections`) and, with the secrets key they were written with (`CRAB_SECRETS_KEY`), moves each connection's secrets, logging `Moved the secrets of N connection(s) to their new stored name`. An upgraded data directory does not go back: back it up before that start.
 
 Admin-only REST under `/connections` (403 `forbidden` for anyone else); `GET /connection-types` -> `{ types: ConnectionTypeInfo[] }` is open to any signed-in actor:
 
@@ -314,7 +342,7 @@ The one tool today is `post_blocks`, which `@crab-shack/connection-slack` offers
 
 ## Platform settings
 
-`GET`/`PUT /settings/platform` (admin only, mounted when `AppDeps.secrets` is passed) hold the LLM gateway and platform agent settings. Values live in the `platform_meta` table (`llm.gatewayBaseUrl`, `platformAgent.modelId`); the gateway key is a secret (`platform:llm-gateway` / `api-key`) and is only ever reported as `gatewayKeySet`. In a `PUT`, omitted fields are unchanged and `null` or blank clears. Saving a key without `CM_SECRETS_KEY` returns 409 `secrets_locked`. Daemon code that needs the plaintext calls `resolveLlmGatewayConfig(db, platform.secrets)` from `src/settings`; it is never exposed over HTTP. Everything is unset by default and the daemon boots normally.
+`GET`/`PUT /settings/platform` (admin only, mounted when `AppDeps.secrets` is passed) hold the LLM gateway and platform agent settings. Values live in the `platform_meta` table (`llm.gatewayBaseUrl`, `platformAgent.modelId`); the gateway key is a secret (`platform:llm-gateway` / `api-key`) and is only ever reported as `gatewayKeySet`. In a `PUT`, omitted fields are unchanged and `null` or blank clears. Saving a key without `CRAB_SECRETS_KEY` returns 409 `secrets_locked`. Daemon code that needs the plaintext calls `resolveLlmGatewayConfig(db, platform.secrets)` from `src/settings`; it is never exposed over HTTP. Everything is unset by default and the daemon boots normally.
 
 ## Notifications
 
@@ -322,7 +350,7 @@ The one tool today is `post_blocks`, which `@crab-shack/connection-slack` offers
 
 `GET`/`PUT /workspaces/:slug/notifications` (admin only, `workspaceNotificationsPath(slug)`) -> `{ kinds: [{ id, label }], rules }`, with one rule per listed kind. `PUT { rules: { <kind>: { enabled?, destination? } } }` merges: kinds left out are unchanged, and a kind that is present has its last failure cleared. Errors: `invalid_request` 400 (unknown kind, bad id, enabled without destination, both ids), `forbidden` 403, `not_found` 404.
 
-The dispatcher (`platform.notifications`, started by `startPlatform`) subscribes to `subscribeActivityEvents(db, listener)` in `src/activity/events.ts`, so it sees every `appendActivityEvent` on the platform database in-process; there is no polling and no catch-up after a restart. For each event with a matching enabled rule it builds one `NotificationDelivery` (workspace, kind, destination, title and `CM_WEB_URL` + the event's `link`, or the project page when the event has none) and offers it to the `NotificationChannel`s the capability definitions returned, in list order: a channel answers false when it has no identity for that workspace and throws for a failed delivery. The dispatcher knows nothing of Slack; the Slack channel (offered by the `slack` definition; `@crab-shack/connection-slack`'s README says what it posts and as whom) declines when the workspace has no Slack identity to post with. When no channel accepts, or none is offered, the dispatcher records `lastFailureAt` / `lastFailureReason` (`No delivery channel: ...`) on the rule and carries on. A channel error is recorded the same way; a success stamps `lastDeliveredAt` and clears the failure. Each delivery has 10 s in total.
+The dispatcher (`platform.notifications`, started by `startPlatform`) subscribes to `subscribeActivityEvents(db, listener)` in `src/activity/events.ts`, so it sees every `appendActivityEvent` on the platform database in-process; there is no polling and no catch-up after a restart. For each event with a matching enabled rule it builds one `NotificationDelivery` (workspace, kind, destination, title and `CRAB_WEB_URL` + the event's `link`, or the project page when the event has none) and offers it to the `NotificationChannel`s the capability definitions returned, in list order: a channel answers false when it has no identity for that workspace and throws for a failed delivery. The dispatcher knows nothing of Slack; the Slack channel (offered by the `slack` definition; `@crab-shack/connection-slack`'s README says what it posts and as whom) declines when the workspace has no Slack identity to post with. When no channel accepts, or none is offered, the dispatcher records `lastFailureAt` / `lastFailureReason` (`No delivery channel: ...`) on the rule and carries on. A channel error is recorded the same way; a success stamps `lastDeliveredAt` and clears the failure. Each delivery has 10 s in total.
 
 Exactly-once: delivered event ids are kept per project in `platform_meta` (`notifications.delivered.<workspaceId>`, the last 500 ids) and an id is claimed before anything is sent. The tradeoff is at-most-once: a crash between the claim and the post loses that message rather than repeating it, and an id older than the ring would be delivered again if it were ever re-emitted, which nothing does today.
 
@@ -349,7 +377,7 @@ A workspace's agents appear as chat agents too; `@crab-shack/plugin-agents`'s RE
 
 ## Platform agent
 
-The `platform-agent` plugin (`src/platform-agent/manifest.ts`) is standalone (in no module, so a candidate for every project), has no views, requires the `llmGateway` platform fact, grants `chat` to everyone through `everyoneAccessLevel`, and contributes the registry agent `platform` (family `platform`, avatar `i-lucide-mountain`) with three tools at the `chat` access level: `open_view`, `start_chat`, `describe_platform`. Until the gateway base URL, key and model id are all set on the Settings page the plugin is not ready, so the agent is absent from `registry.agents` (the rail hides it), the admin sees the `platform-fact` reason, and creating or prompting one of its threads is refused `not_ready` 409.
+The `platform-agent` plugin (`src/platform-agent/manifest.ts`) is standalone (in no module, so a candidate for every project), has no views, requires the `llmGateway` platform fact, grants `chat` to everyone through `everyoneAccessLevel`, and contributes the registry agent `platform` (family `platform`, avatar `i-lucide-mountain`, which Candy Mountain sets through `settings.platform-agent.avatar` ([Product settings](#product-settings)); the platform's own is `i-lucide-compass`) with three tools at the `chat` access level: `open_view`, `start_chat`, `describe_platform`. Until the gateway base URL, key and model id are all set on the Settings page the plugin is not ready, so the agent is absent from `registry.agents` (the rail hides it), the admin sees the `platform-fact` reason, and creating or prompting one of its threads is refused `not_ready` 409.
 
 `src/platform-agent/` holds the agent. `createPlatformAgent({ storage })` builds one Mastra `Agent` registered in `createMastra` under the id `platform`; its instructions, model and tools are dynamic arguments resolved per turn from the Mastra request context (`PlatformTurnContext` under `PLATFORM_TURN_KEY`): the actor, the project, the actor's `RegistryResponse` for that project (which is what the instructions and `describe_platform` are built from), a memoised `access(pluginId)` -> `PluginAccess`, and the gateway settings. The model is an OpenAI-compatible config `{ providerId: 'llm-gateway', modelId, url: baseUrl, apiKey, api: 'chat' }`, so the gateway must speak `POST <baseUrl>/chat/completions`. Memory is `@mastra/memory` on the same LibSQL store (last 30 messages, no title generation, no semantic recall): the memory thread id is the chat thread id and the resource is the actor id, so a thread continues across turns and an actor's threads stay theirs.
 

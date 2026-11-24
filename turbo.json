@@ -8,7 +8,7 @@
     },
     "build": {
       "dependsOn": ["^build"],
-      "env": ["CM_*", "NUXT_*"],
+      "env": ["CRAB_*", "NUXT_*"],
       "outputs": ["dist/**", ".output/**"]
     },
     "typecheck": {
@@ -16,7 +16,7 @@
     },
     "test": {
       "dependsOn": ["^transit"],
-      "env": ["CM_*"]
+      "env": ["CRAB_*"]
     },
     "lint": {
       "dependsOn": ["^transit"]

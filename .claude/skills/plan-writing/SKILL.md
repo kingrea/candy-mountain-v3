@@ -65,7 +65,7 @@ The same phase, written two ways.
 
 > Introduce `type ScopeRef = { kind: "global" } | { kind: "organisation"; slug: string }
 > | { kind: "project"; slug: string }` and `type PluginInstanceRef = { scope: ScopeRef;
-> owner: string; instanceSlug: string }`. Add `CM_GLOBAL_DIR` defaulting to
+> owner: string; instanceSlug: string }`. Add `CRAB_GLOBAL_DIR` defaulting to
 > `~/.candy-mountain/global/` containing `plugins.json` and `secrets.enc.json`. Instance
 > identity must serialize canonically. Global config must use lazy storage with
 > atomic-write, permissions, encryption, and redaction guarantees…

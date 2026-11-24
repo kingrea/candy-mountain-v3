@@ -6,7 +6,7 @@
 
 The commands, the supervisor, systemd unit generation and the log and pid handling live in `@crab-shack/platform-cli` (installed from the registry; `packages/platform-cli` in the base repository), which knows no product. This app is only the `candy-mountain` bin: `src/distribution.ts` hands `runCli` Candy Mountain's product configuration (`CANDY_MOUNTAIN_PRODUCT` from `@candy-mountain/candy-mountain`, the same object the daemon and web apps read), this repository's paths (the bin itself at `apps/cli/dist/index.mjs`, the daemon at `apps/daemon/dist/index.mjs`, the web server at `apps/web/.output/server/index.mjs`) and the data directory resolution from `@crab-shack/platform-config`.
 
-The package names everything after the product: `Candy Mountain` becomes the command `candy-mountain`, the unit `candy-mountain.service` and the folder `~/.config/candy-mountain`. Another distribution writes its own bin the same way and gets its own unit, environment file and messages; the `CM_*` variables stay the same.
+The package names everything after the product: `Candy Mountain` becomes the command `candy-mountain`, the unit `candy-mountain.service` and the folder `~/.config/candy-mountain`. Another distribution writes its own bin the same way and gets its own unit, environment file and messages; the `CRAB_*` variables stay the same.
 
 ## Setup
 
@@ -30,7 +30,7 @@ The CLI finds the repository from its own real path, so the checkout must stay w
 | `install-service` | Installs and starts the systemd user service (below) |
 | `uninstall-service` | Stops, disables and removes it |
 
-Configuration comes from `CM_DATA_DIR`, `CM_DAEMON_HOST`, `CM_DAEMON_PORT`, `CM_WEB_HOST`, `CM_WEB_PORT` (see `apps/daemon/README.md`). Logs go to `<data dir>/logs/`, pid files to `<data dir>/run/`.
+Configuration comes from `CRAB_DATA_DIR`, `CRAB_DAEMON_HOST`, `CRAB_DAEMON_PORT`, `CRAB_WEB_HOST`, `CRAB_WEB_PORT` (see `apps/daemon/README.md`). Until Candy Mountain moved to platform 0.30.0 they started `CM_`: every command but `--help` and `uninstall-service` refuses while the shell, or the installed service's `service.env`, still sets one of the platform's old names, and exits 2. [From a version before the CRAB_ names](../daemon/README.md#from-a-version-before-the-crab_-names) lists every name to rename, after a backup. Logs go to `<data dir>/logs/`, pid files to `<data dir>/run/`.
 
 ## Running as a systemd user service
 
@@ -60,8 +60,8 @@ This:
 
 1. Checks that systemd user services are available and that the CLI, daemon and web server are built.
 2. Stops any copy started with `candy-mountain start`, so the service can take over the ports.
-3. Creates `~/.config/candy-mountain/service.env` (mode 0600) if it does not exist, with the resolved `CM_DATA_DIR`, ports, and your current `PATH` (the service does not read your shell profile, and the daemon runs tools such as `git` and `bd`). An existing file is kept as is.
-4. Writes `~/.config/systemd/user/candy-mountain.service`: `Type=simple`, `ExecStart=<absolute node> <repo>/apps/cli/dist/index.mjs run`, `EnvironmentFile=` the file above, `Restart=on-failure`, `TimeoutStopSec=45`, `WantedBy=default.target`.
+3. Creates `~/.config/candy-mountain/service.env` (mode 0600) if it does not exist, with the resolved `CRAB_DATA_DIR`, ports, and your current `PATH` (the service does not read your shell profile, and the daemon runs tools such as `git` and `bd`). An existing file is kept as is.
+4. Writes `~/.config/systemd/user/candy-mountain.service`: `Type=simple`, `ExecStart=<absolute node> <repo>/apps/cli/dist/index.mjs run`, `EnvironmentFile=` the file above, `Restart=on-failure`, `RestartPreventExitStatus=2` (so a start refused for its settings stays stopped), `TimeoutStopSec=45`, `WantedBy=default.target`.
 5. Runs `systemctl --user daemon-reload`, `systemctl --user enable --now candy-mountain.service` (plus `restart` when it was already running on an older unit), and `loginctl enable-linger $USER`, printing each command.
 6. Waits for both health checks and prints the URL.
 
@@ -74,11 +74,11 @@ The unit holds the absolute path of the node that ran `install-service`. After s
 Secrets never go in the unit. Set the key in the environment file and restart:
 
 ```bash
-$EDITOR ~/.config/candy-mountain/service.env    # uncomment CM_SECRETS_KEY=<openssl rand -base64 32>
+$EDITOR ~/.config/candy-mountain/service.env    # uncomment CRAB_SECRETS_KEY=<openssl rand -base64 32>
 systemctl --user restart candy-mountain
 ```
 
-Keep a copy of the key somewhere other than the data directory. Ports and the data directory are changed in the same file. While the service is installed the CLI reads `CM_*` values from this file in preference to the shell, so `status` and `logs` look where the service actually runs.
+Keep a copy of the key somewhere other than the data directory. Ports and the data directory are changed in the same file. While the service is installed the CLI reads `CRAB_*` values from this file in preference to the shell, so `status` and `logs` look where the service actually runs.
 
 ### Day to day
 

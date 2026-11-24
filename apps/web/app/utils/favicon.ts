@@ -2,8 +2,8 @@ import type { Workspace } from '@crab-shack/platform-sdk'
 
 export const DEFAULT_FAVICON = '/brand/favicon-64.png'
 
-export function projectFaviconColor(slug: unknown, projects: Pick<Workspace, 'slug' | 'color'>[]): string | null {
-  const color = projects.find(project => project.slug === slug)?.color
+export function workspaceFaviconColor(slug: unknown, workspaces: Pick<Workspace, 'slug' | 'color'>[]): string | null {
+  const color = workspaces.find(workspace => workspace.slug === slug)?.color
   return color && /^#[0-9a-f]{6}$/i.test(color) ? color : null
 }
 

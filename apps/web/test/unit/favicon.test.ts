@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { projectFaviconColor, tintFaviconPixels } from '../../app/utils/favicon'
+import { workspaceFaviconColor, tintFaviconPixels } from '../../app/utils/favicon'
 
-describe('project favicon', () => {
-  const projects = [{ slug: 'alpha', color: '#2563eb' }, { slug: 'beta', color: '#16a34a' }]
+describe('workspace favicon', () => {
+  const workspaces = [{ slug: 'alpha', color: '#2563eb' }, { slug: 'beta', color: '#16a34a' }]
 
-  it('follows the route project and uses the default outside a known project', () => {
-    expect(projectFaviconColor('alpha', projects)).toBe('#2563eb')
-    expect(projectFaviconColor('beta', projects)).toBe('#16a34a')
-    expect(projectFaviconColor(undefined, projects)).toBeNull()
-    expect(projectFaviconColor('missing', projects)).toBeNull()
-    expect(projectFaviconColor('bad', [{ slug: 'bad', color: 'invalid' }])).toBeNull()
+  it('follows the route\'s workspace and uses the default outside a known workspace', () => {
+    expect(workspaceFaviconColor('alpha', workspaces)).toBe('#2563eb')
+    expect(workspaceFaviconColor('beta', workspaces)).toBe('#16a34a')
+    expect(workspaceFaviconColor(undefined, workspaces)).toBeNull()
+    expect(workspaceFaviconColor('missing', workspaces)).toBeNull()
+    expect(workspaceFaviconColor('bad', [{ slug: 'bad', color: 'invalid' }])).toBeNull()
   })
 
   it('recolours red, preserves white and alpha, and keeps the source unchanged', () => {

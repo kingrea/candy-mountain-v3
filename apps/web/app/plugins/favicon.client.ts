@@ -1,11 +1,11 @@
 import type { WorkspaceListResponse } from '@crab-shack/platform-sdk'
-import { coloredFavicon, DEFAULT_FAVICON, projectFaviconColor } from '../utils/favicon'
+import { coloredFavicon, DEFAULT_FAVICON, workspaceFaviconColor } from '../utils/favicon'
 
 export default defineNuxtPlugin(() => {
   const route = useRoute()
   // Share the shell's directory without fetching authenticated data on the login page.
-  const { data } = useNuxtData<WorkspaceListResponse>(PROJECT_DIRECTORY_KEYS[0]!)
-  const color = computed(() => projectFaviconColor(route.params[PROJECT_ROUTE_PARAM], data.value?.workspaces ?? []))
+  const { data } = useNuxtData<WorkspaceListResponse>(WORKSPACE_DIRECTORY_KEYS[0]!)
+  const color = computed(() => workspaceFaviconColor(route.params[WORKSPACE_ROUTE_PARAM], data.value?.workspaces ?? []))
   const href = ref(DEFAULT_FAVICON)
 
   useHead(() => ({

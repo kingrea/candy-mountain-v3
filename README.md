@@ -2,7 +2,7 @@
 
 ## Source of truth
 
-The architecture overview at <https://github.com/crab-shack/platform/blob/main/docs/architecture.md> is the source of truth, above this repository's conventions and older plans. When the two disagree, follow the overview and tell Jack what disagreed. The code's words differ from the overview's until the renames land; the glossary at <https://github.com/crab-shack/platform/blob/main/docs/architecture-glossary.md> translates them.
+The architecture overview at <https://github.com/crab-shack/platform/blob/main/docs/architecture.md> is the source of truth, above this repository's conventions and older plans. When the two disagree, follow the overview and tell Jack what disagreed. The code uses the overview's words (plugin, connection, module, workspace, access level); Candy Mountain's own word for a workspace, the one a person reads, is a project.
 
 A product built on the Crab Shack platform: its description as data, its brand, and thin apps that assemble the installed platform with the installed capabilities. A pnpm workspace (`apps/*`, `packages/*`) whose tasks run through [Turborepo](https://turborepo.com). Neither the platform nor the capabilities are here. Both are installed from the private registry: the platform as the `@crab-shack/platform-*` packages (see [The platform](#the-platform)), and each plugin and connection as its own `@crab-shack/plugin-*` or `@crab-shack/connection-*` package (see [The capabilities](#the-capabilities)).
 
@@ -17,7 +17,7 @@ The product as data, and thin apps that join it with the installed platform and 
 | `apps/web` | The web distribution: a `nuxt.config.ts` extending `@crab-shack/platform-web` and every layer the product lists, each found in an installed capability package named in its `package.json`, plus the brand assets under `public/`. |
 | `apps/cli` | The `candy-mountain` bin: `runCli` with this repository's paths and the product. |
 
-Dependencies point one way: the apps depend on the product package, the platform and the capability packages; the product package on the platform's SDK alone. `pnpm lint` enforces it (`cm-packages` for script files, explained in the platform's `packages/platform-daemon/README.md`: an installed capability is imported only where a `package.json` lists it, and only through its root entry; `cm-layers` for the web app, explained in its `packages/platform-web/README.md`).
+Dependencies point one way: the apps depend on the product package, the platform and the capability packages; the product package on the platform's SDK alone. `pnpm lint` enforces it (`crab-packages` for script files, explained in the platform's `packages/platform-daemon/README.md`: an installed capability is imported only where a `package.json` lists it, and only through its root entry; `crab-layers` for the web app, explained in its `packages/platform-web/README.md`).
 
 ## The capabilities
 
@@ -100,6 +100,8 @@ Run from the repo root:
 
 The web app's dev server listens on `127.0.0.1` only, as the daemon does, so it is reachable from this machine alone (under WSL, a browser on the Windows side still reaches it at `http://localhost:4300`). To reach it from another device, ask for it with `NUXT_HOST=0.0.0.0 pnpm dev`, or name one address instead of `0.0.0.0`. Under the default development auth strategy that exposes an admin session to everyone on that network: anyone who can reach the port reads and changes everything through the web app's proxy to the daemon.
 
+Every setting Candy Mountain reads from the environment starts `CRAB_` (the variables are listed in `apps/daemon/README.md`, [Configuration](apps/daemon/README.md#configuration)). Until Candy Mountain moved to platform 0.30.0 they started `CM_`; an old name is never read, and while one is set the daemon refuses to start, naming the new name for each. An existing install renames them in its environment file, after backing up its data directory: [From a version before the CRAB_ names](apps/daemon/README.md#from-a-version-before-the-crab_-names).
+
 Typecheck runs serially on purpose: parallel `tsc` and `nuxt typecheck` runs use enough memory to be killed on a developer machine. Do not raise its concurrency.
 
 To run a task for one package and what it depends on, filter it: `pnpm turbo run test --filter=<package name>...`. `--force` ignores the cache; `--dry` shows the task graph and hashes without running anything.
@@ -110,7 +112,7 @@ To run a task for one package and what it depends on, filter it: `pnpm turbo run
 
 - `build` depends on dependencies' `build` and caches `dist/**` and `.output/**`.
 - `test`, `lint` and `typecheck` depend on dependencies' `transit`, a task no package defines: it orders nothing but carries each dependency's files into the hash. The product package exports TypeScript source, so these tasks need no prior build; the installed platform and capability packages are already built, and a change of their versions reaches the hash through `pnpm-lock.yaml`.
-- `CM_*` variables are part of the `build` and `test` hashes (plus `NUXT_*` for build); other environment variables pass through without affecting the cache.
+- `CRAB_*` variables are part of the `build` and `test` hashes (plus `NUXT_*` for build); other environment variables pass through without affecting the cache.
 
 ## Adding a package
 
