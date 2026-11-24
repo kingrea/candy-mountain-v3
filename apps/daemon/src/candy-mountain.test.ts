@@ -43,7 +43,7 @@ describe('the Candy Mountain product', () => {
   })
 
   it('loads the real definition list', () => {
-    const registry = createCapabilityRegistry([...platformDefinitions(), ...CANDY_MOUNTAIN.capabilities], { connectionTypeIds: [] })
+    const registry = createCapabilityRegistry([...platformDefinitions(CANDY_MOUNTAIN.capabilities), ...CANDY_MOUNTAIN.capabilities], { connectionTypeIds: [] })
     const withManifest = definitions.filter(d => d.manifest).map(d => d.id)
     expect(withManifest.filter(id => !registry.has(id))).toEqual([])
     expect(withManifest.length).toBeGreaterThan(0)
@@ -84,15 +84,15 @@ describe('daemon boot from the capability definition list', () => {
 
     expect(booted.product.capabilities.map(c => c.id)).toEqual(Object.keys(DEFINITIONS))
     expect(modules.map(m => ({ id: m.id, plugins: m.plugins.map(p => p.pluginId) }))).toEqual(MODULES.map(m => ({ id: m.id, plugins: m.plugins.map(p => p.pluginId) })))
-    expect(sorted(booted.connectionTypes.list().map(t => t.id))).toEqual(sorted(CANDY_MOUNTAIN_PRODUCT.connectionTypes))
+    expect(sorted(booted.connectionTypes.list().map(t => t.id))).toEqual(sorted([...CANDY_MOUNTAIN_PRODUCT.connectionTypes, 'llm-gateway']))
     expect(sorted(booted.families.list().map(f => f.id))).toEqual(sorted(definitions.flatMap(d => d.sessionFamilies ?? []).map(f => f.id)))
   })
 
   it('starts every definition after the ones it depends on', () => {
     const started = boot().runtime.started.map(s => s.definition.id)
 
-    expect(sorted(started)).toEqual(sorted(['threads', ...Object.keys(DEFINITIONS)]))
-    const providers = [...platformDefinitions(), ...definitions]
+    expect(sorted(started)).toEqual(sorted(['threads', 'llm-gateway', ...Object.keys(DEFINITIONS)]))
+    const providers = [...platformDefinitions(CANDY_MOUNTAIN.capabilities), ...definitions]
     const late = definitions.flatMap(d => capabilityNeeds(d).flatMap((need) => {
       const provider = needProvider(need, providers)
       return provider && started.indexOf(provider.id) > started.indexOf(d.id) ? [`${d.id} before ${provider.id}`] : []

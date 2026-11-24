@@ -7,7 +7,7 @@ import { getTableConfig, SQLiteTable } from 'drizzle-orm/sqlite-core'
 import { describe, expect, it } from 'vitest'
 import { CANDY_MOUNTAIN } from './candy-mountain'
 
-const definitions = [...platformDefinitions(), ...CANDY_MOUNTAIN.capabilities.filter(isCapabilityDefinition)]
+const definitions = [...platformDefinitions(CANDY_MOUNTAIN.capabilities), ...CANDY_MOUNTAIN.capabilities.filter(isCapabilityDefinition)]
 /** Every set the product boots, each checked against its own folder's latest snapshot. */
 const sets = migrationSets(definitions)
 
