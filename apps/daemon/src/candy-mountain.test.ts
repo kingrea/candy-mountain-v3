@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs'
 import { CANDY_MOUNTAIN_PRODUCT, MODULES } from '@candy-mountain/candy-mountain'
 import { MODULES_PATH, type ModuleListResponse } from '@crab-shack/platform-sdk'
+import { capabilityNeeds, needProvider } from '@crab-shack/platform-sdk/daemon'
 import { assertProduct, createCapabilityRegistry, createModuleRegistry, isCapabilityDefinition, platformDefinitions, productCapabilityRegistry, ProductError, startPlatform, type Platform, type Product } from '@crab-shack/platform-daemon'
 import { createTempDataDir, platformApp, startTestPlatform, type TempDataDir } from '@crab-shack/platform-daemon/testing'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -91,7 +92,11 @@ describe('daemon boot from the capability definition list', () => {
     const started = boot().runtime.started.map(s => s.definition.id)
 
     expect(sorted(started)).toEqual(sorted(['threads', ...Object.keys(DEFINITIONS)]))
-    const late = definitions.flatMap(d => (d.dependsOn ?? []).filter(dep => started.indexOf(dep) > started.indexOf(d.id)).map(dep => `${d.id} before ${dep}`))
+    const providers = [...platformDefinitions(), ...definitions]
+    const late = definitions.flatMap(d => capabilityNeeds(d).flatMap((need) => {
+      const provider = needProvider(need, providers)
+      return provider && started.indexOf(provider.id) > started.indexOf(d.id) ? [`${d.id} before ${provider.id}`] : []
+    }))
     expect(late).toEqual([])
   })
 })

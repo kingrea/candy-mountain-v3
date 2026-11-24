@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { isCapabilityDefinition, migrationSets, platformDefinitions } from '@crab-shack/platform-daemon'
+import { capabilityNeeds, needProvider } from '@crab-shack/platform-sdk/daemon'
 import { generateSQLiteDrizzleJson, generateSQLiteMigration, type DrizzleSQLiteSnapshotJSON } from 'drizzle-kit/api'
 import { getTableConfig, SQLiteTable } from 'drizzle-orm/sqlite-core'
 import { describe, expect, it } from 'vitest'
@@ -23,8 +24,9 @@ describe('schema', () => {
   })
 
   it.each(sets.filter(set => set.id !== 'platform').map(set => [set.id, set] as const))('set %s references only platform tables, its own and its declared dependencies\'', (id, set) => {
-    const dependsOn = definitions.find(definition => definition.id === id)?.dependsOn ?? []
-    const allowed = new Set(sets.filter(other => other.id === 'platform' || other.id === id || dependsOn.includes(other.id)).flatMap(other => tablesOf(other.schema).map(table => getTableConfig(table).name)))
+    const definition = definitions.find(definition => definition.id === id)!
+    const providers = capabilityNeeds(definition).flatMap(need => needProvider(need, definitions)?.id ?? [])
+    const allowed = new Set(sets.filter(other => other.id === 'platform' || other.id === id || providers.includes(other.id)).flatMap(other => tablesOf(other.schema).map(table => getTableConfig(table).name)))
     const referenced = tablesOf(set.schema).flatMap(table => getTableConfig(table).foreignKeys.map(fk => getTableConfig(fk.reference().foreignTable).name))
     expect(referenced.filter(name => !allowed.has(name))).toEqual([])
   })

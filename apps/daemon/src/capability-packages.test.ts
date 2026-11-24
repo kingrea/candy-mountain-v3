@@ -2,14 +2,15 @@ import { fileURLToPath } from 'node:url'
 import { capabilityPackageProblems, workspacePackages, workspaceRoot } from '@crab-shack/platform-config/package-boundaries'
 import { describe, expect, it } from 'vitest'
 import { capabilityDefinitions, DEFINITIONS } from './definitions'
+import { CANDY_MOUNTAIN } from './candy-mountain'
 
 const root = workspaceRoot(fileURLToPath(import.meta.url))!
 const packages = workspacePackages(root)
 const capabilities = [...packages.values()].filter(pkg => pkg.kind === 'capability')
 // The capability packages installed from the registry, and any the workspace holds.
-const problems = capabilityPackageProblems(packages, { daemon: packages.get('@candy-mountain/daemon')!, listed: Object.keys(DEFINITIONS), definitions: capabilityDefinitions() })
+const problems = capabilityPackageProblems(packages, { daemon: packages.get('@candy-mountain/daemon')!, listed: Object.keys(DEFINITIONS), definitions: capabilityDefinitions(), connectionTypes: CANDY_MOUNTAIN.connectionTypes })
 
-/** The lint allows what package.json lists; the runtime starts what dependsOn names. They must be the same list. */
+/** The lint allows what package.json lists; the runtime starts declared providers. They must agree. */
 describe('capability packages', () => {
   it('live, in the workspace, in packages/plugin-<id> or packages/connection-<id> after their name, and expose one root entry', () => {
     expect(problems.placement).toEqual([])
@@ -20,7 +21,7 @@ describe('capability packages', () => {
     expect(problems.registration).toEqual([])
   })
 
-  it('declare the same capability dependencies in package.json and in dependsOn', () => {
+  it('declare the same capability needs in package.json and in their definitions', () => {
     expect(problems.dependencies).toEqual([])
   })
 
