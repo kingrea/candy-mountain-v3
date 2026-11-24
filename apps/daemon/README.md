@@ -206,7 +206,7 @@ Mastra runs as a library only (no server routes or Studio). `createMastra(paths,
 
 ## Auth
 
-Every request passes one middleware (`src/auth/middleware.ts`) that asks the configured strategy for an actor. Routes read `c.var.actor` (`{ id, username, displayName, roles }`, type `Actor` from `@crab-shack/platform-sdk`) and never a header or cookie. No actor means `401 { error: { code: 'unauthenticated' } }`. Only `PUBLIC_PATHS` (`/health`, `/auth/strategy`) and a strategy's own `publicPaths` skip the check; `c.var.actor` is unset there.
+Every request passes one middleware (`src/auth/middleware.ts`) that asks the configured strategy for an actor. Routes read `c.var.actor` (`{ id, username, displayName, admin, groups }`, type `Actor` from `@crab-shack/platform-sdk`) and never a header or cookie. No actor means `401 { error: { code: 'unauthenticated' } }`. Only `PUBLIC_PATHS` (`/health`, `/auth/strategy`) and a strategy's own `publicPaths` skip the check; `c.var.actor` is unset there.
 
 Strategies, chosen with `CRAB_AUTH_STRATEGY` at boot (an invalid value stops the daemon):
 
@@ -214,7 +214,7 @@ Strategies, chosen with `CRAB_AUTH_STRATEGY` at boot (an invalid value stops the
 - `password`: a server-side session identified by a cookie, issued by logging in. See [Password strategy](#password-strategy).
 - `trusted-header`: the value of `CRAB_AUTH_TRUSTED_HEADER` is matched exactly against `users.username`; missing, empty or unknown is a 401. Only safe when a proxy in front of the web app overwrites that header on every request and nothing else can reach the web app or daemon, since the web proxy forwards browser headers unchanged.
 
-Users live in `users`, roles in `roles` (keyed by `slug`), membership in `user_roles`. `seedAuth` runs on every start and ensures the `admin` user holding the `admin` role exists. `GET /auth/me` returns `{ actor }`. `GET /auth/strategy` is public under every strategy and returns `{ strategy }`, so a login page can tell whether to show itself before anyone is signed in.
+Accounts are off by default, leaving the admin as the only account that can sign in. The admin can switch accounts on and manage accounts and groups; grants give a user or group access to modules in individual projects. Switching accounts off preserves those accounts, groups and grants, but prevents other users from signing in. `GET /auth/me` returns `{ actor }`. `GET /auth/strategy` is public under every strategy and returns `{ strategy }`. See the platform daemon README for account and group management.
 
 ### Password strategy
 
@@ -247,22 +247,13 @@ The registry is `platform.capabilities` and `c.var.capabilities` in routes: `lis
 
 Modules are product data, declared in `packages/candy-mountain/src/modules.ts` (`MODULES`): `issues`, `agent-hub`, `operations`. Each lists its member plugins under `plugins` as `{ pluginId, defaultAccessLevel }`; a plugin may sit in several modules and an empty module is valid. `startPlatform` checks them against the capability registry before touching disk (member registered, default access level one of the plugin's access levels, no duplicates) and refuses to boot with `ModuleDefinitionError`. The registry is `platform.modules` and `c.var.modules`: `list()`, `byId()`, `get()`, `has()`, `withPlugin(id)`.
 
-Grants live in `role_grants`, one row per role and target (`module` or `plugin`), with an access level per plugin in `access_levels` (`src/grants/`, wire types in `grants.ts`). A module grant stores every member's access level; a member missing from a stored grant (added to the module later) gets its default access level. Rows cascade with the role.
+A grant gives a user or group a module in one project, with access levels for its plugins. A member omitted from a grant follows the module's default level. The admin has every plugin's top access level in every project without a grant. Other users see projects where a direct or group grant reaches them. With accounts off, only the admin can sign in and grant changes are unavailable.
 
-A data directory from platform 0.25.0 or earlier kept that column as `rungs` and a grant on one plugin as the target kind `'capability'`. The first start on 0.26.0 or later renames them (migration `0003_plugins`); ids, level names and the access each grant gives are kept, and no other table is touched. An upgraded data directory does not go back: back it up before that start.
+Back up the data directory before upgrading from platform 0.43 or earlier. The first start migrates stored grants to the workspace grant model and removes the old table; earlier releases cannot read the upgraded data. The admin can inspect grants that could not be carried over at `GET /grants/uncarried`.
 
-`resolveActorAccessLevels({ db, capabilities, modules }, actor)` (pass `c.var` in a route) returns the access level of every registered plugin: the admin role gets every plugin's top access level without reading grants; anyone else gets the highest access level across all grants of all their roles; anything ungranted, unknown or stale is `none`; any error resolves everything to `none`. `accessLevelOf(accessLevels, id)` reads one plugin, defaulting to `none`.
+Admin-only routes list grants at `GET /grants` and manage a project's grants at `GET` and `PUT /workspaces/:slug/grants` and `DELETE /workspaces/:slug/grants/:id`. See the platform daemon README for the request shapes and group and account routes.
 
-On every start `seedAdminGrants` gives the admin role a grant on each module it has none for, at each member's top access level; existing grants are never overwritten.
-
-Admin-only REST under `/grants` (403 `forbidden` for anyone else):
-
-- `GET /grants` -> `{ grants: RoleGrant[], roles: { role, name, accessLevels }[] }` with each role's resolved access levels.
-- `PUT /grants` with `{ role, target: { kind, id }, accessLevels }` -> `{ grant }`, creating or replacing that role's grant on the target. A plugin grant names exactly its own plugin. Errors: `invalid_request` 400, `role_not_found`, `target_not_found`, `invalid_access_level` 422.
-
-Guard any other admin-only route with `app.use(requireAdmin())` from `src/auth`.
-
-A manifest's optional `everyoneAccessLevel` is an access level every signed-in actor holds without any grant (the platform agent uses `chat`); the resolver applies it before grants, so grants can raise a role above it but never below, and the admin still resolves to the top access level. `assertPlugin` requires it to be one of the plugin's access levels other than `none`.
+`resolveActorAccessLevels({ db, capabilities, modules }, actor, workspace)` resolves access for one project. A plugin's `everyoneAccessLevel` applies to signed-in users in projects they can access; the admin retains the top level.
 
 ## Workspace modules
 

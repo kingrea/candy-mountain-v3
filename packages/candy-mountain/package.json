@@ -12,9 +12,9 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@crab-shack/platform-sdk": "0.43.1"
+    "@crab-shack/platform-sdk": "0.47.1"
   },
   "devDependencies": {
-    "@crab-shack/platform-config": "0.43.1"
+    "@crab-shack/platform-config": "0.47.1"
   }
 }
